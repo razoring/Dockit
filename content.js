@@ -8,12 +8,15 @@ let _fixedObserver = null;
 const _fixedElementsSet = new Set();
 
 //inject main world scroll interception
-const _injectScript = document.createElement('script');
-_injectScript.src = chrome.runtime.getURL('scroll.js');
-document.documentElement.appendChild(_injectScript);
-_injectScript.remove();
+if (window === window.top) {
+  const _injectScript = document.createElement('script');
+  _injectScript.src = chrome.runtime.getURL('scroll.js');
+  document.documentElement.appendChild(_injectScript);
+  _injectScript.remove();
+}
 
 async function init() {
+  if (window !== window.top) return;
   if (document.getElementById('dockit-host-root')) return;
 
   //create host element
@@ -79,6 +82,27 @@ async function init() {
   `;
   document.head.appendChild(layoutStyle);
 
+  //gmail targeted patch
+  if (window.location.hostname.includes('mail.google.com')) {
+    const gmailStyle = document.createElement('style');
+    gmailStyle.id = 'dockit-gmail-patch';
+    gmailStyle.textContent = `
+      body:not(.dockit-full-width) #gb {
+        width: calc(100% - 24px) !important;
+        right: 24px !important;
+      }
+      body:not(.dockit-full-width) #gb + div,
+      body:not(.dockit-full-width) #gb + .nH {
+        width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
+        margin-right: ${SIDEBAR_WIDTH}px !important;
+      }
+      body:not(.dockit-full-width) .nH {
+        max-width: 100% !important;
+      }
+    `;
+    document.head.appendChild(gmailStyle);
+  }
+
   //append sidebar host to html element
   document.documentElement.appendChild(_hostElement);
 
@@ -134,22 +158,22 @@ async function init() {
   });
 }
 
-//constrain fixed elements
+//constrain fixed/absolute elements
 function _constrainFixedElement(el) {
   if (el.dataset.dockitFixed) return;
   //skip extension elements
   if (_hostElement && (_hostElement === el || _hostElement.contains(el))) return;
   if (el.id === 'dockit-host-root') return;
+  if (el.closest('#gb')) return;
+
+  const rect = el.getBoundingClientRect();
+  const isOverlappingRight = rect.right > window.innerWidth - SIDEBAR_WIDTH;
+  const isFullWidth = rect.width >= window.innerWidth - 1;
+
+  if (!isOverlappingRight && !isFullWidth) return;
 
   el.dataset.dockitFixed = '1';
-
   const computed = getComputedStyle(el);
-  const rect = el.getBoundingClientRect();
-
-  const isNearRightEdge = rect.right >= window.innerWidth - 60;
-  const isFullWidth = rect.width >= window.innerWidth - 20;
-
-  if (!isNearRightEdge && !isFullWidth) return;
 
   //offset right anchored elements
   const computedRight = parseFloat(computed.right);
@@ -175,7 +199,7 @@ function _scanFixedElements() {
   const allElements = document.body.querySelectorAll('*');
   for (const el of allElements) {
     const computed = getComputedStyle(el);
-    if (computed.position === 'fixed') {
+    if (computed.position === 'fixed' || computed.position === 'absolute') {
       _fixedElementsSet.add(el);
       _constrainFixedElement(el);
     }
@@ -185,7 +209,7 @@ function _scanFixedElements() {
 function _checkAndConstrain(el) {
   if (el.nodeType !== Node.ELEMENT_NODE) return;
   const computed = getComputedStyle(el);
-  if (computed.position === 'fixed') {
+  if (computed.position === 'fixed' || computed.position === 'absolute') {
     _fixedElementsSet.add(el);
     _constrainFixedElement(el);
   } else {
@@ -197,7 +221,7 @@ function _checkAndConstrain(el) {
   const children = el.querySelectorAll('*');
   for (const child of children) {
     const childComputed = getComputedStyle(child);
-    if (childComputed.position === 'fixed') {
+    if (childComputed.position === 'fixed' || childComputed.position === 'absolute') {
       _fixedElementsSet.add(child);
       _constrainFixedElement(child);
     } else {
