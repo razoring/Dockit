@@ -1,4 +1,4 @@
-// content.js
+//content.js
 
 const SIDEBAR_WIDTH = 48;
 let _wrapper = null;
@@ -8,10 +8,160 @@ let _isSidebarHidden = false;
 let _fixedObserver = null;
 let _scanTimeout = null;
 
+//inject main world scroll interception
+const _injectScript = document.createElement('script');
+_injectScript.textContent = `
+  (function() {
+    const _targetId = 'dockit-page-wrapper';
+    const _getWrapper = () => document.getElementById(_targetId);
+
+    Object.defineProperty(document, 'scrollingElement', {
+      get: () => _getWrapper() || document.documentElement,
+      configurable: true
+    });
+
+    Object.defineProperty(window, 'scrollY', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollTop : 0;
+      },
+      configurable: true
+    });
+    Object.defineProperty(window, 'pageYOffset', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollTop : 0;
+      },
+      configurable: true
+    });
+    Object.defineProperty(window, 'scrollX', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollLeft : 0;
+      },
+      configurable: true
+    });
+    Object.defineProperty(window, 'pageXOffset', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollLeft : 0;
+      },
+      configurable: true
+    });
+
+    Object.defineProperty(document.documentElement, 'scrollTop', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollTop : 0;
+      },
+      set: (val) => {
+        const _w = _getWrapper();
+        if (_w) _w.scrollTop = val;
+      },
+      configurable: true
+    });
+    Object.defineProperty(document.documentElement, 'scrollLeft', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollLeft : 0;
+      },
+      set: (val) => {
+        const _w = _getWrapper();
+        if (_w) _w.scrollLeft = val;
+      },
+      configurable: true
+    });
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollHeight : document.documentElement.clientHeight;
+      },
+      configurable: true
+    });
+    Object.defineProperty(document.documentElement, 'scrollWidth', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollWidth : document.documentElement.clientWidth;
+      },
+      configurable: true
+    });
+
+    Object.defineProperty(document.body, 'scrollTop', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollTop : 0;
+      },
+      set: (val) => {
+        const _w = _getWrapper();
+        if (_w) _w.scrollTop = val;
+      },
+      configurable: true
+    });
+    Object.defineProperty(document.body, 'scrollLeft', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollLeft : 0;
+      },
+      set: (val) => {
+        const _w = _getWrapper();
+        if (_w) _w.scrollLeft = val;
+      },
+      configurable: true
+    });
+    Object.defineProperty(document.body, 'scrollHeight', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollHeight : document.body.clientHeight;
+      },
+      configurable: true
+    });
+    Object.defineProperty(document.body, 'scrollWidth', {
+      get: () => {
+        const _w = _getWrapper();
+        return _w ? _w.scrollWidth : document.body.clientWidth;
+      },
+      configurable: true
+    });
+
+    const _origScrollTo = window.scrollTo;
+    window.scrollTo = function(x, y) {
+      const _w = _getWrapper();
+      if (_w) {
+        if (typeof x === 'object') _w.scrollTo(x);
+        else _w.scrollTo(x, y);
+      } else {
+        _origScrollTo.apply(window, arguments);
+      }
+    };
+    const _origScrollBy = window.scrollBy;
+    window.scrollBy = function(x, y) {
+      const _w = _getWrapper();
+      if (_w) {
+        if (typeof x === 'object') _w.scrollBy(x);
+        else _w.scrollBy(x, y);
+      } else {
+        _origScrollBy.apply(window, arguments);
+      }
+    };
+    const _origScroll = window.scroll;
+    window.scroll = function(x, y) {
+      const _w = _getWrapper();
+      if (_w) {
+        if (typeof x === 'object') _w.scrollTo(x);
+        else _w.scrollTo(x, y);
+      } else {
+        _origScroll.apply(window, arguments);
+      }
+    };
+  })();
+`;
+document.documentElement.appendChild(_injectScript);
+_injectScript.remove();
+
 async function init() {
   if (document.getElementById('dockit-host-root')) return;
 
-  //capture original body margins before modifying
+  //capture margins
   const bodyComputed = getComputedStyle(document.body);
   const origMargins = {
     top: bodyComputed.marginTop,
@@ -20,22 +170,22 @@ async function init() {
     left: bodyComputed.marginLeft
   };
 
-  //create page wrapper (becomes sibling of sidebar)
+  //create page wrapper
   _wrapper = document.createElement('div');
   _wrapper.id = 'dockit-page-wrapper';
 
-  //move all existing body children into wrapper
+  //move existing body children
   while (document.body.firstChild) {
     _wrapper.appendChild(document.body.firstChild);
   }
 
-  //create sidebar host with shadow DOM
+  //create host element
   _hostElement = document.createElement('div');
   _hostElement.id = 'dockit-host-root';
 
   const shadowRoot = _hostElement.attachShadow({ mode: 'open' });
 
-  //inject CSS into shadow DOM
+  //inject styles
   try {
     const cssUrl = chrome.runtime.getURL('styles.css');
     const res = await fetch(cssUrl);
@@ -60,7 +210,7 @@ async function init() {
   const sidebarEl = await _sidebar.render();
   shadowRoot.appendChild(sidebarEl);
 
-  //inject layout styles: body becomes flex container, wrapper and sidebar are siblings
+  //inject layout styles
   const layoutStyle = document.createElement('style');
   layoutStyle.id = 'dockit-layout-styles';
   layoutStyle.textContent = `
@@ -69,41 +219,48 @@ async function init() {
       height: 100% !important;
     }
     body {
-      display: flex !important;
-      flex-direction: row !important;
       overflow: hidden !important;
-      height: 100vh !important;
+      height: 100% !important;
       margin: 0 !important;
+      padding: 0 !important;
+      position: relative !important;
     }
     #dockit-page-wrapper {
-      flex: 1 1 auto;
-      overflow-y: auto;
-      overflow-x: auto;
-      height: 100vh;
-      min-width: 0;
-      position: relative;
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
+      height: 100% !important;
+      overflow-y: auto !important;
+      overflow-x: auto !important;
       padding: ${origMargins.top} ${origMargins.right} ${origMargins.bottom} ${origMargins.left};
+      box-sizing: border-box !important;
+      transition: width 0.2s ease-in-out !important;
+    }
+    #dockit-page-wrapper.dockit-full-width {
+      width: 100% !important;
     }
     #dockit-host-root {
       width: ${SIDEBAR_WIDTH}px;
       height: 100vh;
-      flex-shrink: 0;
-      position: relative;
+      position: fixed !important;
+      top: 0 !important;
+      right: 0 !important;
       z-index: 2147483647;
     }
   `;
   document.head.appendChild(layoutStyle);
 
-  //append wrapper and sidebar host as siblings inside body
+  //append elements
   document.body.appendChild(_wrapper);
   document.body.appendChild(_hostElement);
 
-  //forward scroll events so sites that listen on window still work
+  //forward scroll events
   _wrapper.addEventListener('scroll', () => {
     window.dispatchEvent(new Event('scroll'));
   });
 
-  //intercept elements added directly to body by page scripts
+  //intercept dynamic body elements
   const bodyObserver = new MutationObserver((mutations) => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
@@ -114,10 +271,8 @@ async function init() {
             if (!document.body.contains(node)) return;
             const pos = getComputedStyle(node).position;
             if (pos === 'fixed') {
-              //leave fixed elements on body but constrain them
               if (!_isSidebarHidden) _constrainFixedElement(node);
             } else {
-              //move normal content into the wrapper
               _wrapper.appendChild(node);
             }
           });
@@ -129,13 +284,13 @@ async function init() {
   });
   bodyObserver.observe(document.body, { childList: true });
 
-  //scan for fixed/sticky elements that need constraining
+  //initial scans
   requestAnimationFrame(() => {
     _scanFixedElements();
     _startFixedObserver();
   });
 
-  //check initial side panel state
+  //check initial sidepanel state
   let currentWindowId = null;
   chrome.runtime.sendMessage({ type: 'GET_WINDOW_ID' }, (winId) => {
     currentWindowId = winId;
@@ -144,22 +299,25 @@ async function init() {
         if (data[`sidePanelOpen_${winId}`]) {
           _isSidebarHidden = true;
           _hostElement.style.display = 'none';
+          _wrapper.classList.add('dockit-full-width');
           _removeFixedConstraints();
         }
       });
     }
   });
 
-  //react to side panel open/close
+  //react to sidepanel open/close
   chrome.storage.onChanged.addListener((changes) => {
     if (currentWindowId && changes[`sidePanelOpen_${currentWindowId}`]) {
       if (changes[`sidePanelOpen_${currentWindowId}`].newValue) {
         _isSidebarHidden = true;
         _hostElement.style.display = 'none';
+        _wrapper.classList.add('dockit-full-width');
         _removeFixedConstraints();
       } else {
         _isSidebarHidden = false;
         _hostElement.style.display = '';
+        _wrapper.classList.remove('dockit-full-width');
         requestAnimationFrame(() => _scanFixedElements());
         _sidebar.loadData();
       }
@@ -172,60 +330,100 @@ async function init() {
   });
 }
 
+//constrain fixed elements
 function _constrainFixedElement(el) {
   if (el.dataset.dockitFixed) return;
+  //skip extension elements
+  if (_hostElement && (_hostElement === el || _hostElement.contains(el))) return;
+  if (el.id === 'dockit-page-wrapper' || el.id === 'dockit-host-root') return;
+
   el.dataset.dockitFixed = '1';
 
   const computed = getComputedStyle(el);
   const rect = el.getBoundingClientRect();
 
-  //only constrain elements near the viewport's right edge
-  if (rect.right < window.innerWidth - 60) return;
+  const isNearRightEdge = rect.right >= window.innerWidth - 60;
+  const isFullWidth = rect.width >= window.innerWidth - 20;
 
-  //offset right-anchored elements
+  if (!isNearRightEdge && !isFullWidth) return;
+
+  //offset right anchored elements
   const computedRight = parseFloat(computed.right);
   if (!isNaN(computedRight) && computedRight < SIDEBAR_WIDTH) {
     el.style.setProperty('right', (computedRight + SIDEBAR_WIDTH) + 'px', 'important');
+  } else if (computed.right === 'auto' || isNaN(computedRight)) {
+    const curRight = window.innerWidth - rect.right;
+    el.style.setProperty('right', (curRight + SIDEBAR_WIDTH) + 'px', 'important');
   }
 
-  //constrain full-width elements
-  if (rect.width >= window.innerWidth - 20) {
+  //constrain full width elements
+  if (isFullWidth) {
     el.style.setProperty('max-width', `calc(100vw - ${SIDEBAR_WIDTH}px)`, 'important');
+    const computedLeft = parseFloat(computed.left);
+    if (!isNaN(computedLeft) && computedLeft === 0) {
+      el.style.setProperty('right', `${SIDEBAR_WIDTH}px`, 'important');
+    }
   }
 }
 
+//scan body and wrapper
 function _scanFixedElements() {
-  //check inside wrapper
-  const wrapperEls = _wrapper.querySelectorAll('*');
-  for (const el of wrapperEls) {
-    if (el.dataset.dockitFixed) continue;
-    const computed = getComputedStyle(el);
-    if (computed.position === 'fixed' || computed.position === 'sticky') {
-      _constrainFixedElement(el);
-    }
-  }
-  //check direct body children (fixed elements that stayed outside wrapper)
   for (const el of document.body.children) {
     if (el === _wrapper || el === _hostElement) continue;
     if (el.nodeType !== Node.ELEMENT_NODE) continue;
-    if (el.dataset.dockitFixed) continue;
     const computed = getComputedStyle(el);
-    if (computed.position === 'fixed' || computed.position === 'sticky') {
+    if (computed.position === 'fixed') {
+      _constrainFixedElement(el);
+    }
+  }
+  const fixedEls = _wrapper.querySelectorAll('*');
+  for (const el of fixedEls) {
+    const computed = getComputedStyle(el);
+    if (computed.position === 'fixed') {
       _constrainFixedElement(el);
     }
   }
 }
 
-function _startFixedObserver() {
-  if (_fixedObserver) return;
-  _fixedObserver = new MutationObserver(() => {
-    if (_isSidebarHidden) return;
-    if (_scanTimeout) clearTimeout(_scanTimeout);
-    _scanTimeout = setTimeout(_scanFixedElements, 300);
-  });
-  _fixedObserver.observe(_wrapper, { childList: true, subtree: true });
+function _checkAndConstrain(el) {
+  if (el.nodeType !== Node.ELEMENT_NODE) return;
+  const computed = getComputedStyle(el);
+  if (computed.position === 'fixed') {
+    _constrainFixedElement(el);
+  }
+  const children = el.querySelectorAll('*');
+  for (const child of children) {
+    const childComputed = getComputedStyle(child);
+    if (childComputed.position === 'fixed') {
+      _constrainFixedElement(child);
+    }
+  }
 }
 
+//start mutation observer
+function _startFixedObserver() {
+  if (_fixedObserver) return;
+  _fixedObserver = new MutationObserver((mutations) => {
+    if (_isSidebarHidden) return;
+    for (const m of mutations) {
+      if (m.type === 'childList') {
+        for (const node of m.addedNodes) {
+          _checkAndConstrain(node);
+        }
+      } else if (m.type === 'attributes') {
+        _checkAndConstrain(m.target);
+      }
+    }
+  });
+  _fixedObserver.observe(_wrapper, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'style']
+  });
+}
+
+//remove constraints
 function _removeFixedConstraints() {
   document.querySelectorAll('[data-dockit-fixed]').forEach(el => {
     el.style.removeProperty('right');
