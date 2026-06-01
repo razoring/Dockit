@@ -1,39 +1,20 @@
 //content.js
 
 const SIDEBAR_WIDTH = 48;
-let _wrapper = null;
 let _hostElement = null;
 let _sidebar = null;
 let _isSidebarHidden = false;
 let _fixedObserver = null;
-let _scanTimeout = null;
+const _fixedElementsSet = new Set();
 
 //inject main world scroll interception
 const _injectScript = document.createElement('script');
-_injectScript.src = chrome.runtime.getURL('scroll-interceptor.js');
+_injectScript.src = chrome.runtime.getURL('scroll.js');
 document.documentElement.appendChild(_injectScript);
 _injectScript.remove();
 
 async function init() {
   if (document.getElementById('dockit-host-root')) return;
-
-  //capture margins
-  const bodyComputed = getComputedStyle(document.body);
-  const origMargins = {
-    top: bodyComputed.marginTop,
-    right: bodyComputed.marginRight,
-    bottom: bodyComputed.marginBottom,
-    left: bodyComputed.marginLeft
-  };
-
-  //create page wrapper
-  _wrapper = document.createElement('div');
-  _wrapper.id = 'dockit-page-wrapper';
-
-  //move existing body children
-  while (document.body.firstChild) {
-    _wrapper.appendChild(document.body.firstChild);
-  }
 
   //create host element
   _hostElement = document.createElement('div');
@@ -75,25 +56,16 @@ async function init() {
       height: 100% !important;
     }
     body {
-      overflow: hidden !important;
-      height: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      position: relative !important;
-    }
-    #dockit-page-wrapper {
-      position: absolute !important;
-      top: 0 !important;
-      left: 0 !important;
       width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
       height: 100% !important;
       overflow-y: auto !important;
       overflow-x: auto !important;
-      padding: ${origMargins.top} ${origMargins.right} ${origMargins.bottom} ${origMargins.left};
+      position: relative !important;
+      margin: 0 !important;
       box-sizing: border-box !important;
       transition: width 0.2s ease-in-out !important;
     }
-    #dockit-page-wrapper.dockit-full-width {
+    body.dockit-full-width {
       width: 100% !important;
     }
     #dockit-host-root {
@@ -107,40 +79,16 @@ async function init() {
   `;
   document.head.appendChild(layoutStyle);
 
-  //append elements
-  document.body.appendChild(_wrapper);
-  document.body.appendChild(_hostElement);
+  //append sidebar host to html element
+  document.documentElement.appendChild(_hostElement);
 
-  //forward scroll events
-  _wrapper.addEventListener('scroll', () => {
+  //forward scroll events from body to window
+  document.body.addEventListener('scroll', () => {
     window.dispatchEvent(new Event('scroll'));
+    document.dispatchEvent(new Event('scroll'));
   });
 
-  //intercept dynamic body elements
-  const bodyObserver = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      for (const node of m.addedNodes) {
-        if (node === _wrapper || node === _hostElement) continue;
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          if (node.id === 'dockit-page-wrapper' || node.id === 'dockit-host-root' || node.id === 'dockit-layout-styles') continue;
-          requestAnimationFrame(() => {
-            if (!document.body.contains(node)) return;
-            const pos = getComputedStyle(node).position;
-            if (pos === 'fixed') {
-              if (!_isSidebarHidden) _constrainFixedElement(node);
-            } else {
-              _wrapper.appendChild(node);
-            }
-          });
-        } else if (node.nodeType === Node.TEXT_NODE) {
-          _wrapper.appendChild(node);
-        }
-      }
-    }
-  });
-  bodyObserver.observe(document.body, { childList: true });
-
-  //initial scans
+  //initial scan for fixed elements
   requestAnimationFrame(() => {
     _scanFixedElements();
     _startFixedObserver();
@@ -155,7 +103,7 @@ async function init() {
         if (data[`sidePanelOpen_${winId}`]) {
           _isSidebarHidden = true;
           _hostElement.style.display = 'none';
-          _wrapper.classList.add('dockit-full-width');
+          document.body.classList.add('dockit-full-width');
           _removeFixedConstraints();
         }
       });
@@ -168,12 +116,12 @@ async function init() {
       if (changes[`sidePanelOpen_${currentWindowId}`].newValue) {
         _isSidebarHidden = true;
         _hostElement.style.display = 'none';
-        _wrapper.classList.add('dockit-full-width');
+        document.body.classList.add('dockit-full-width');
         _removeFixedConstraints();
       } else {
         _isSidebarHidden = false;
         _hostElement.style.display = '';
-        _wrapper.classList.remove('dockit-full-width');
+        document.body.classList.remove('dockit-full-width');
         requestAnimationFrame(() => _scanFixedElements());
         _sidebar.loadData();
       }
@@ -191,7 +139,7 @@ function _constrainFixedElement(el) {
   if (el.dataset.dockitFixed) return;
   //skip extension elements
   if (_hostElement && (_hostElement === el || _hostElement.contains(el))) return;
-  if (el.id === 'dockit-page-wrapper' || el.id === 'dockit-host-root') return;
+  if (el.id === 'dockit-host-root') return;
 
   el.dataset.dockitFixed = '1';
 
@@ -222,20 +170,13 @@ function _constrainFixedElement(el) {
   }
 }
 
-//scan body and wrapper
+//scan body for fixed elements
 function _scanFixedElements() {
-  for (const el of document.body.children) {
-    if (el === _wrapper || el === _hostElement) continue;
-    if (el.nodeType !== Node.ELEMENT_NODE) continue;
+  const allElements = document.body.querySelectorAll('*');
+  for (const el of allElements) {
     const computed = getComputedStyle(el);
     if (computed.position === 'fixed') {
-      _constrainFixedElement(el);
-    }
-  }
-  const fixedEls = _wrapper.querySelectorAll('*');
-  for (const el of fixedEls) {
-    const computed = getComputedStyle(el);
-    if (computed.position === 'fixed') {
+      _fixedElementsSet.add(el);
       _constrainFixedElement(el);
     }
   }
@@ -245,13 +186,25 @@ function _checkAndConstrain(el) {
   if (el.nodeType !== Node.ELEMENT_NODE) return;
   const computed = getComputedStyle(el);
   if (computed.position === 'fixed') {
+    _fixedElementsSet.add(el);
     _constrainFixedElement(el);
+  } else {
+    if (_fixedElementsSet.has(el)) {
+      _fixedElementsSet.delete(el);
+      _removeConstraint(el);
+    }
   }
   const children = el.querySelectorAll('*');
   for (const child of children) {
     const childComputed = getComputedStyle(child);
     if (childComputed.position === 'fixed') {
+      _fixedElementsSet.add(child);
       _constrainFixedElement(child);
+    } else {
+      if (_fixedElementsSet.has(child)) {
+        _fixedElementsSet.delete(child);
+        _removeConstraint(child);
+      }
     }
   }
 }
@@ -271,7 +224,7 @@ function _startFixedObserver() {
       }
     }
   });
-  _fixedObserver.observe(_wrapper, {
+  _fixedObserver.observe(document.body, {
     childList: true,
     subtree: true,
     attributes: true,
@@ -279,13 +232,17 @@ function _startFixedObserver() {
   });
 }
 
+function _removeConstraint(el) {
+  el.style.removeProperty('right');
+  el.style.removeProperty('max-width');
+  delete el.dataset.dockitFixed;
+}
+
 //remove constraints
 function _removeFixedConstraints() {
-  document.querySelectorAll('[data-dockit-fixed]').forEach(el => {
-    el.style.removeProperty('right');
-    el.style.removeProperty('max-width');
-    delete el.dataset.dockitFixed;
-  });
+  for (const el of _fixedElementsSet) {
+    _removeConstraint(el);
+  }
 }
 
 if (document.readyState === 'loading') {
