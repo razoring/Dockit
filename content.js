@@ -2,6 +2,7 @@
 
 const SIDEBAR_WIDTH = 48;
 const _isGmail = window.location.hostname.includes('mail.google.com');
+const _shouldScanAbsolute = _isGmail || window.location.hostname.includes('stitch.withgoogle.com');
 let _hostElement = null;
 let _sidebar = null;
 let _isSidebarHidden = false;
@@ -26,17 +27,11 @@ async function init() {
 
   const shadowRoot = _hostElement.attachShadow({ mode: 'open' });
 
-  //inject styles
-  try {
-    const cssUrl = chrome.runtime.getURL('styles.css');
-    const res = await fetch(cssUrl);
-    const cssText = await res.text();
-    const styleEl = document.createElement('style');
-    styleEl.textContent = cssText;
-    shadowRoot.appendChild(styleEl);
-  } catch (e) {
-    console.error('Dockit: Failed to load styles', e);
-  }
+  //inject stylesheet via link tag to bypass csp
+  const cssLink = document.createElement('link');
+  cssLink.rel = 'stylesheet';
+  cssLink.href = chrome.runtime.getURL('styles.css');
+  shadowRoot.appendChild(cssLink);
 
   //inject cached fonts
   const storage = await chrome.storage.local.get(['fontCss']);
@@ -104,8 +99,32 @@ async function init() {
     document.head.appendChild(gmailStyle);
   }
 
+  //full viewport app targeted patches
+  if (window.location.hostname.includes('stitch.withgoogle.com') || window.location.hostname.includes('chatgpt.com')) {
+    const appStyle = document.createElement('style');
+    appStyle.id = 'dockit-app-patch';
+    appStyle.textContent = `
+      body:not(.dockit-full-width) {
+        overflow: hidden !important;
+      }
+      body:not(.dockit-full-width) > div {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+    `;
+    document.head.appendChild(appStyle);
+  }
+
   //append sidebar host to html element
   document.documentElement.appendChild(_hostElement);
+
+  //ensure sidebar host is permanent
+  const _recoveryObserver = new MutationObserver(() => {
+    if (_hostElement && !_hostElement.parentNode && document.documentElement) {
+      document.documentElement.appendChild(_hostElement);
+    }
+  });
+  _recoveryObserver.observe(document.documentElement, { childList: true });
 
   //forward scroll events from body to window
   document.body.addEventListener('scroll', () => {
@@ -200,7 +219,7 @@ function _scanFixedElements() {
   const allElements = document.body.querySelectorAll('*');
   for (const el of allElements) {
     const computed = getComputedStyle(el);
-    if (computed.position === 'fixed' || (_isGmail && computed.position === 'absolute')) {
+    if (computed.position === 'fixed' || (_shouldScanAbsolute && computed.position === 'absolute')) {
       _fixedElementsSet.add(el);
       _constrainFixedElement(el);
     }
@@ -210,7 +229,7 @@ function _scanFixedElements() {
 function _checkAndConstrain(el) {
   if (el.nodeType !== Node.ELEMENT_NODE) return;
   const computed = getComputedStyle(el);
-  if (computed.position === 'fixed' || (_isGmail && computed.position === 'absolute')) {
+  if (computed.position === 'fixed' || (_shouldScanAbsolute && computed.position === 'absolute')) {
     _fixedElementsSet.add(el);
     _constrainFixedElement(el);
   } else {
@@ -222,7 +241,7 @@ function _checkAndConstrain(el) {
   const children = el.querySelectorAll('*');
   for (const child of children) {
     const childComputed = getComputedStyle(child);
-    if (childComputed.position === 'fixed' || (_isGmail && childComputed.position === 'absolute')) {
+    if (childComputed.position === 'fixed' || (_shouldScanAbsolute && childComputed.position === 'absolute')) {
       _fixedElementsSet.add(child);
       _constrainFixedElement(child);
     } else {
