@@ -28,7 +28,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["styles.css", "_favicon/*"],
+      "resources": ["styles.css", "scroll-interceptor.js", "_favicon/*"],
       "matches": ["<all_urls>"]
     }
   ],
