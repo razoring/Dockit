@@ -8,7 +8,7 @@ class DockitSidebar {
     this.element.dataset.themeColors = 'background,border';
     this._dragState = null;
   }
-  
+
   async render() {
     this.element.innerHTML = `
       <div class="dockit-section" id="pinned-section"></div>
@@ -29,7 +29,7 @@ class DockitSidebar {
          </button>
       </div>
     `;
-    
+
     await this.injectIcons();
     await this.loadData();
     this._setupMouseDrag();
@@ -41,10 +41,10 @@ class DockitSidebar {
     if (data.lucideIcons) {
       const plusIcon = this.element.querySelector('.icon-plus');
       if (plusIcon) plusIcon.outerHTML = data.lucideIcons['plus'];
-      
+
       const extIcon = this.element.querySelector('.icon-puzzle');
-      if (extIcon) extIcon.outerHTML = data.lucideIcons['puzzle'];
-      
+      if (extIcon) extIcon.outerHTML = data.lucideIcons['blocks'];
+
       const setIcon = this.element.querySelector('.icon-settings');
       if (setIcon) setIcon.outerHTML = data.lucideIcons['settings'];
 
@@ -65,7 +65,7 @@ class DockitSidebar {
 
     this._renderApps(pinnedSection, pinnedApps, 'pinned');
     this._renderApps(tempSection, tempApps, 'temp');
-    
+
     if (pinnedDivider) {
       pinnedDivider.style.display = pinnedApps.length > 0 ? 'block' : 'none';
     }
@@ -87,7 +87,7 @@ class DockitSidebar {
       el.dataset.index = index;
       el.title = app.title;
       el.innerHTML = `<img src="${app.iconUrl}" alt="${app.title}" draggable="false" />`;
-      
+
       //click to navigate
       el.addEventListener('click', (e) => {
         if (this._dragState && this._dragState.didMove) return;
@@ -179,7 +179,7 @@ class DockitSidebar {
     root.addEventListener('mouseup', async (e) => {
       if (!this._dragState) return;
       const ds = this._dragState;
-      
+
       if (!ds.didMove) {
         this._dragState = null;
         return;
@@ -241,10 +241,10 @@ class DockitSidebar {
       if (!el) return;
       const r = el.getBoundingClientRect();
       if (r.height === 0) return;
-      
+
       const center = r.top + r.height / 2;
       const distance = Math.abs(clientY - center);
-      
+
       if (distance < minDistance) {
         minDistance = distance;
         bestTarget = { type, el, rect: r, ...extra };
@@ -253,7 +253,7 @@ class DockitSidebar {
 
     // check trash
     check('trash', this.element.querySelector('#add-btn'));
-    
+
     // check apps
     const apps = this.element.querySelectorAll('.dockit-app:not(.dockit-floating-ghost)');
     for (const appEl of apps) {
@@ -276,7 +276,7 @@ class DockitSidebar {
     if (minDistance < 60) {
       return bestTarget;
     }
-    
+
     return null;
   }
 
@@ -290,25 +290,25 @@ class DockitSidebar {
     const data = await chrome.storage.local.get(['pinnedApps', 'temporaryApps']);
     let fromArr = fromList === 'pinned' ? (data.pinnedApps || []) : (data.temporaryApps || []);
     let toArr = toList === 'pinned' ? (data.pinnedApps || []) : (data.temporaryApps || []);
-    
+
     const origIndex = fromArr.findIndex(a => a.id === app.id);
     if (origIndex === -1) return;
 
     fromArr.splice(origIndex, 1);
-    
+
     if (fromList === toList && targetIndex > origIndex) {
-       targetIndex--;
+      targetIndex--;
     }
 
     if (targetIndex === -1) {
-       toArr.push(app);
+      toArr.push(app);
     } else {
-       toArr.splice(targetIndex, 0, app);
+      toArr.splice(targetIndex, 0, app);
     }
-    
+
     if (fromList === 'pinned') data.pinnedApps = fromArr; else data.temporaryApps = fromArr;
     if (toList === 'pinned') data.pinnedApps = toArr; else data.temporaryApps = toArr;
-    
+
     await chrome.storage.local.set({ pinnedApps: data.pinnedApps, temporaryApps: data.temporaryApps });
     await this.loadData();
   }
@@ -317,7 +317,7 @@ class DockitSidebar {
     const data = await chrome.storage.local.get(['pinnedApps', 'temporaryApps']);
     let arr = listType === 'pinned' ? (data.pinnedApps || []) : (data.temporaryApps || []);
     arr = arr.filter(a => a.id !== app.id);
-    
+
     if (listType === 'pinned') {
       await chrome.storage.local.set({ pinnedApps: arr });
     } else {

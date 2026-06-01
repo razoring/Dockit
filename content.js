@@ -1,13 +1,22 @@
 //content.js
 
 const SIDEBAR_WIDTH = 48;
-const _isGmail = window.location.hostname.includes('mail.google.com');
-const _shouldScanAbsolute = _isGmail || window.location.hostname.includes('stitch.withgoogle.com');
+const _shouldScanAbsolute = window.location.hostname.includes('mail.google.com') || window.location.hostname.includes('stitch.withgoogle.com');
 let _hostElement = null;
 let _sidebar = null;
 let _isSidebarHidden = false;
 let _fixedObserver = null;
 const _fixedElementsSet = new Set();
+const _SKIPPED_TAGS = new Set([
+  'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'li', 'ul', 'ol', 'img', 'svg', 'path', 'g', 'code',
+  'pre', 'strong', 'em', 'i', 'b', 'u', 'br', 'hr',
+  'script', 'style', 'link', 'meta', 'noscript', 'canvas',
+  'rect', 'circle', 'polygon', 'line', 'polyline', 'ellipse', 'use', 'defs', 'symbol',
+  'option', 'thead', 'tbody', 'tr', 'td', 'th', 'col', 'colgroup'
+]);
+const _pendingNodes = new Set();
+let _pendingTimeout = null;
 
 
 
@@ -244,6 +253,7 @@ function _constrainFixedElement(el) {
 function _scanFixedElements() {
   const allElements = document.body.querySelectorAll('*');
   for (const el of allElements) {
+    if (_SKIPPED_TAGS.has(el.tagName.toLowerCase())) continue;
     const computed = getComputedStyle(el);
     if (computed.position === 'fixed' || (_shouldScanAbsolute && computed.position === 'absolute')) {
       _fixedElementsSet.add(el);
@@ -254,6 +264,9 @@ function _scanFixedElements() {
 
 function _checkAndConstrain(el) {
   if (el.nodeType !== Node.ELEMENT_NODE) return;
+  const tagName = el.tagName.toLowerCase();
+  if (_SKIPPED_TAGS.has(tagName)) return;
+
   const computed = getComputedStyle(el);
   if (computed.position === 'fixed' || (_shouldScanAbsolute && computed.position === 'absolute')) {
     _fixedElementsSet.add(el);
@@ -266,6 +279,7 @@ function _checkAndConstrain(el) {
   }
   const children = el.querySelectorAll('*');
   for (const child of children) {
+    if (_SKIPPED_TAGS.has(child.tagName.toLowerCase())) continue;
     const childComputed = getComputedStyle(child);
     if (childComputed.position === 'fixed' || (_shouldScanAbsolute && childComputed.position === 'absolute')) {
       _fixedElementsSet.add(child);
@@ -279,7 +293,21 @@ function _checkAndConstrain(el) {
   }
 }
 
-//start mutation observer
+function _queueCheckAndConstrain(node) {
+  _pendingNodes.add(node);
+  if (!_pendingTimeout) {
+    _pendingTimeout = setTimeout(() => {
+      for (const el of _pendingNodes) {
+        if (document.body.contains(el)) {
+          _checkAndConstrain(el);
+        }
+      }
+      _pendingNodes.clear();
+      _pendingTimeout = null;
+    }, 0);
+  }
+}
+
 function _startFixedObserver() {
   if (_fixedObserver) return;
   _fixedObserver = new MutationObserver((mutations) => {
@@ -287,10 +315,10 @@ function _startFixedObserver() {
     for (const m of mutations) {
       if (m.type === 'childList') {
         for (const node of m.addedNodes) {
-          _checkAndConstrain(node);
+          _queueCheckAndConstrain(node);
         }
       } else if (m.type === 'attributes') {
-        _checkAndConstrain(m.target);
+        _queueCheckAndConstrain(m.target);
       }
     }
   });
