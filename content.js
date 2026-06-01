@@ -115,6 +115,28 @@ async function init() {
     document.head.appendChild(appStyle);
   }
 
+  //reddit targeted patch
+  if (window.location.hostname.includes('reddit.com')) {
+    const redditStyle = document.createElement('style');
+    redditStyle.id = 'dockit-reddit-patch';
+    redditStyle.textContent = `
+      body:not(.dockit-full-width) reddit-header-large *,
+      body:not(.dockit-full-width) [class*="reddit-header"] * {
+        max-width: 100% !important;
+      }
+      body:not(.dockit-full-width) #reddit-logo,
+      body:not(.dockit-full-width) [id="reddit-logo"] {
+        margin-left: 48px !important;
+      }
+      body:not(.dockit-full-width) #user-drawer-content,
+      body:not(.dockit-full-width) [id="user-drawer-content"] {
+        right: 64px !important;
+        margin-left: -180px !important;
+      }
+    `;
+    document.head.appendChild(redditStyle);
+  }
+
   //append sidebar host to html element
   document.documentElement.appendChild(_hostElement);
 
