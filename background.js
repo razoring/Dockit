@@ -56,7 +56,7 @@ async function registerScrollScript() {
 async function cacheAssets() {
   try {
     // 1. Cache specific Lucide SVGs to avoid Manifest V3 CSP dynamic code restrictions
-    const iconsToFetch = ['plus', 'puzzle', 'settings', 'trash-2'];
+    const iconsToFetch = ['plus', 'puzzle', 'settings', 'trash-2', 'blocks'];
     const lucideIcons = {};
     for (const icon of iconsToFetch) {
       const res = await fetch(`https://unpkg.com/lucide-static@latest/icons/${icon}.svg`);
