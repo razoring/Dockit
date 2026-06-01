@@ -79,14 +79,101 @@ class DockitSidebar {
     return this.element;
   }
 
-  openSystemApp(name) {
+  async openSystemApp(name) {
     const inPage = this.element.querySelector('.dockit-in-page');
     if (!inPage) return;
     const titleEl = this.element.querySelector('#dockit-in-page-title');
     const contentEl = this.element.querySelector('#dockit-in-page-content');
     if (titleEl) titleEl.textContent = name;
     if (contentEl) {
-      contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to ${name}</div>`;
+      if (name === 'Edit Apps') {
+        contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Loading current site...</div>`;
+        try {
+          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (tab && tab.url && !tab.url.startsWith('chrome://')) {
+            const urlObj = new URL(tab.url);
+            let displayUrl = urlObj.hostname + urlObj.pathname;
+            if (displayUrl.endsWith('/')) {
+              displayUrl = displayUrl.slice(0, -1);
+            }
+            const title = tab.title || urlObj.hostname;
+            const favIconUrl = tab.favIconUrl || `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
+            const storageData = await chrome.storage.local.get(['lucideIcons', 'pinnedApps']);
+            const pinIconSvg = (storageData.lucideIcons && storageData.lucideIcons['pin']) || 'Pin';
+            const cleanPinIcon = `<div style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); pointer-events: none; color: currentColor;">${pinIconSvg}</div>`;
+            const pinnedAppsInitial = storageData.pinnedApps || [];
+            const isCurrentlyPinned = pinnedAppsInitial.some(app => app.url === tab.url);
+            
+            contentEl.innerHTML = `
+              <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: 12px; padding: 12px; gap: 12px; margin-bottom: 16px;">
+                <img class="dockit-active-site-favicon" src="${favIconUrl}" style="width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;" />
+                <div class="dockit-active-site-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
+                  <div class="dockit-active-site-title" style="font-weight: 600; font-size: 14px; line-height: 1.15; word-break: break-word;">${title}</div>
+                  <div class="dockit-active-site-url" style="font-size: 12px; opacity: 0.6; line-height: 1.15; word-break: break-all; margin-top: 1px;">${displayUrl}</div>
+                </div>
+                <button class="dockit-pin-btn" style="background: transparent; border: none; width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; transition: color 0.2s, opacity 0.2s; display: flex; align-items: center; justify-content: center; padding: 0;" title="Pin to Sidebar">
+                  ${cleanPinIcon}
+                </button>
+              </div>
+            `;
+            const pinBtn = contentEl.querySelector('.dockit-pin-btn');
+            if (pinBtn) {
+              const updatePinState = (pinned) => {
+                if (pinned) {
+                  pinBtn.style.color = 'var(--color-primary)';
+                  pinBtn.title = 'Remove Pinned Item';
+                  pinBtn.style.opacity = '1';
+                } else {
+                  pinBtn.style.color = 'rgba(255, 255, 255, 0.4)';
+                  pinBtn.title = 'Pin to Sidebar';
+                  pinBtn.style.opacity = '0.7';
+                }
+              };
+
+              let activePinned = isCurrentlyPinned;
+              updatePinState(activePinned);
+
+              pinBtn.addEventListener('click', async () => {
+                const data = await chrome.storage.local.get(['pinnedApps']);
+                let pinnedList = data.pinnedApps || [];
+                if (activePinned) {
+                  pinnedList = pinnedList.filter(app => app.url !== tab.url);
+                  await chrome.storage.local.set({ pinnedApps: pinnedList });
+                  activePinned = false;
+                } else {
+                  if (!pinnedList.some(app => app.url === tab.url)) {
+                    pinnedList.push({
+                      id: 'app_' + Date.now(),
+                      url: tab.url,
+                      title: title,
+                      iconUrl: favIconUrl
+                    });
+                    await chrome.storage.local.set({ pinnedApps: pinnedList });
+                    activePinned = true;
+                  }
+                }
+                updatePinState(activePinned);
+              });
+
+              const syncListener = (changes) => {
+                if (changes.pinnedApps) {
+                  const currentList = changes.pinnedApps.newValue || [];
+                  const isStillPinned = currentList.some(app => app.url === tab.url);
+                  activePinned = isStillPinned;
+                  updatePinState(activePinned);
+                }
+              };
+              chrome.storage.onChanged.addListener(syncListener);
+            }
+          } else {
+            contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">No active website to pin. Open a web page first!</div>`;
+          }
+        } catch (err) {
+          contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to Edit Apps. Open a site to pin it!</div>`;
+        }
+      } else {
+        contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to ${name}</div>`;
+      }
     }
     inPage.classList.remove('dockit-hidden');
   }

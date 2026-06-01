@@ -9,6 +9,18 @@
   const elScrollHeight = getDesc(Element.prototype, 'scrollHeight');
   const elScrollWidth = getDesc(Element.prototype, 'scrollWidth');
 
+  const safeDefine = (obj, prop, descriptor) => {
+    try {
+      const desc = getDesc(obj, prop);
+      if (desc && !desc.configurable) {
+        return;
+      }
+      Object.defineProperty(obj, prop, descriptor);
+    } catch (e) {
+      console.warn(`Dockit failed to define ${prop}:`, e);
+    }
+  };
+
   //bing targeted patch
   if (window.location.hostname.includes('bing.com')) {
     // stop resize events from triggering bing's dynamic parameter reloads
@@ -18,7 +30,7 @@
   }
 
   //override scrollingelement
-  Object.defineProperty(document, 'scrollingElement', {
+  safeDefine(document, 'scrollingElement', {
     get: () => _getWrapper() || document.documentElement,
     configurable: true
   });
@@ -45,7 +57,7 @@
 
   //override window innerwidth
   if (winInnerWidthDesc) {
-    Object.defineProperty(window, 'innerWidth', {
+    safeDefine(window, 'innerWidth', {
       get: () => {
         const bingCw = _getBingCw();
         if (bingCw !== null) {
@@ -60,7 +72,7 @@
 
   //override documentelement clientwidth
   if (elClientWidthDesc) {
-    Object.defineProperty(document.documentElement, 'clientWidth', {
+    safeDefine(document.documentElement, 'clientWidth', {
       get: () => {
         const bingCw = _getBingCw();
         if (bingCw !== null) {
@@ -74,28 +86,28 @@
   }
 
   //override window scroll positions
-  Object.defineProperty(window, 'scrollY', {
+  safeDefine(window, 'scrollY', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollTop.get.call(_w) : 0;
     },
     configurable: true
   });
-  Object.defineProperty(window, 'pageYOffset', {
+  safeDefine(window, 'pageYOffset', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollTop.get.call(_w) : 0;
     },
     configurable: true
   });
-  Object.defineProperty(window, 'scrollX', {
+  safeDefine(window, 'scrollX', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollLeft.get.call(_w) : 0;
     },
     configurable: true
   });
-  Object.defineProperty(window, 'pageXOffset', {
+  safeDefine(window, 'pageXOffset', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollLeft.get.call(_w) : 0;
@@ -104,7 +116,7 @@
   });
 
   //override documentelement scroll metrics
-  Object.defineProperty(document.documentElement, 'scrollTop', {
+  safeDefine(document.documentElement, 'scrollTop', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollTop.get.call(_w) : 0;
@@ -115,7 +127,7 @@
     },
     configurable: true
   });
-  Object.defineProperty(document.documentElement, 'scrollLeft', {
+  safeDefine(document.documentElement, 'scrollLeft', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollLeft.get.call(_w) : 0;
@@ -126,14 +138,14 @@
     },
     configurable: true
   });
-  Object.defineProperty(document.documentElement, 'scrollHeight', {
+  safeDefine(document.documentElement, 'scrollHeight', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollHeight.get.call(_w) : elScrollHeight.get.call(document.documentElement);
     },
     configurable: true
   });
-  Object.defineProperty(document.documentElement, 'scrollWidth', {
+  safeDefine(document.documentElement, 'scrollWidth', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollWidth.get.call(_w) : elScrollWidth.get.call(document.documentElement);
@@ -142,7 +154,7 @@
   });
 
   //override body scroll metrics
-  Object.defineProperty(HTMLBodyElement.prototype, 'scrollTop', {
+  safeDefine(HTMLBodyElement.prototype, 'scrollTop', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollTop.get.call(_w) : 0;
@@ -153,7 +165,7 @@
     },
     configurable: true
   });
-  Object.defineProperty(HTMLBodyElement.prototype, 'scrollLeft', {
+  safeDefine(HTMLBodyElement.prototype, 'scrollLeft', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollLeft.get.call(_w) : 0;
@@ -164,14 +176,14 @@
     },
     configurable: true
   });
-  Object.defineProperty(HTMLBodyElement.prototype, 'scrollHeight', {
+  safeDefine(HTMLBodyElement.prototype, 'scrollHeight', {
     get: function() {
       const _w = _getWrapper();
       return _w ? elScrollHeight.get.call(_w) : elScrollHeight.get.call(this);
     },
     configurable: true
   });
-  Object.defineProperty(HTMLBodyElement.prototype, 'scrollWidth', {
+  safeDefine(HTMLBodyElement.prototype, 'scrollWidth', {
     get: function() {
       const _w = _getWrapper();
       return _w ? elScrollWidth.get.call(_w) : elScrollWidth.get.call(this);

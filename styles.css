@@ -249,3 +249,9 @@ body {
   padding: 16px;
   overflow-y: auto;
 }
+
+.dockit-pin-btn svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
