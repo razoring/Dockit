@@ -111,6 +111,12 @@ async function init() {
         max-width: 100% !important;
         width: 100% !important;
       }
+      body:not(.dockit-full-width) appcompanion-layout,
+      body:not(.dockit-full-width) [class*="appcompanion-layout"],
+      body:not(.dockit-full-width) [id*="appcompanion-layout"] {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
     `;
     document.head.appendChild(appStyle);
   }
