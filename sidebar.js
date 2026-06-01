@@ -16,7 +16,7 @@ class DockitSidebar {
       <div class="dockit-section" id="temp-section"></div>
       <div class="dockit-divider" id="temp-divider" data-theme-colors="border" style="display:none"></div>
       
-      <button class="dockit-action-btn" id="add-btn" style="margin-top: 4px;" data-theme-colors="foreground,secondary,accent">
+      <button class="dockit-action-btn" id="add-btn" style="margin-top: 0px;" data-theme-colors="foreground,secondary,accent">
          <span class="icon-plus"></span>
       </button>
 
@@ -55,14 +55,23 @@ class DockitSidebar {
 
   async loadData() {
     const data = await chrome.storage.local.get(['pinnedApps', 'temporaryApps']);
-    this._renderApps(this.element.querySelector('#pinned-section'), data.pinnedApps || [], 'pinned');
-    this._renderApps(this.element.querySelector('#temp-section'), data.temporaryApps || [], 'temp');
-    
+    const pinnedApps = data.pinnedApps || [];
+    const tempApps = data.temporaryApps || [];
+
+    const pinnedSection = this.element.querySelector('#pinned-section');
+    const tempSection = this.element.querySelector('#temp-section');
     const tempDivider = this.element.querySelector('#temp-divider');
-    if (data.temporaryApps && data.temporaryApps.length > 0) {
-      tempDivider.style.display = 'block';
-    } else {
-      tempDivider.style.display = 'none';
+    const pinnedDivider = this.element.querySelectorAll('.dockit-divider')[0];
+
+    this._renderApps(pinnedSection, pinnedApps, 'pinned');
+    this._renderApps(tempSection, tempApps, 'temp');
+    
+    if (pinnedDivider) {
+      pinnedDivider.style.display = pinnedApps.length > 0 ? 'block' : 'none';
+    }
+
+    if (tempDivider) {
+      tempDivider.style.display = tempApps.length > 0 ? 'block' : 'none';
     }
   }
 

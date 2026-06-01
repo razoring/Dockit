@@ -1,6 +1,7 @@
 /* styles.css - Dockit strict 6-color palette and layout */
 
-:host, :root {
+:host,
+:root {
   --color-background: #1e1e24;
   --color-foreground: #ffffff;
   --color-primary: #3b82f6;
@@ -34,7 +35,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4px 0 12px 0;
+  padding: 12px 0 12px 0;
   position: relative;
   z-index: 999999;
   gap: 8px;
@@ -55,7 +56,8 @@ body {
 .dockit-sidepanel-view .dockit-iframe-container {
   flex: 1;
   height: 100vh;
-  background-color: var(--color-background); /* fallback before iframe loads */
+  background-color: var(--color-background);
+  /* fallback before iframe loads */
 }
 
 .dockit-iframe {
@@ -119,7 +121,12 @@ body {
   width: 100%;
 }
 
+.dockit-section:empty {
+  display: none;
+}
+
 .dockit-sidebar.is-dragging .dockit-section:empty {
+  display: flex;
   min-height: 32px;
   width: 32px;
   border-radius: 8px;
