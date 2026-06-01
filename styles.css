@@ -81,11 +81,11 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background-color: var(--color-secondary);
+  background-color: transparent;
   color: var(--color-foreground);
   display: flex;
   justify-content: center;
-  align-items: center; 
+  align-items: center;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
   flex-shrink: 0;
@@ -122,6 +122,10 @@ body {
   margin: 0;
 }
 
+.dockit-sidebar.is-dragging .dockit-divider {
+  display: block !important;
+}
+
 /* Sections */
 .dockit-section {
   display: flex;
@@ -135,12 +139,29 @@ body {
   display: none;
 }
 
-.dockit-sidebar.is-dragging .dockit-section:empty {
-  display: flex;
-  min-height: 32px;
+.dockit-sidebar:not(.is-dragging) .dockit-section:has(.dockit-empty-placeholder) {
+  display: none;
+}
+
+.dockit-empty-placeholder {
+  display: none;
+}
+
+.dockit-sidebar.is-dragging .dockit-empty-placeholder {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
   width: 32px;
+  height: 32px;
   border-radius: 8px;
   border: 2px dashed var(--color-border);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  color: var(--color-foreground);
+}
+
+.dockit-sidebar.is-dragging #pinned-section .dockit-empty-placeholder svg {
+  transform: rotate(45deg);
 }
 
 /* Bottom Controls */
@@ -251,7 +272,9 @@ body {
 }
 
 .dockit-pin-btn svg {
-  width: 100% !important;
-  height: 100% !important;
+  width: 150% !important;
+  height: 150% !important;
   display: block;
+  stroke: currentColor !important;
+  fill-opacity: 1 !important;
 }

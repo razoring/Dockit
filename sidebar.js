@@ -73,10 +73,142 @@ class DockitSidebar {
       setBtn.addEventListener('click', () => handleSystemClick('Settings'));
     }
 
+    if (this.isSidePanel) {
+      chrome.tabs.onActivated.addListener(() => this.refreshActiveSite());
+      chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+        if (changeInfo.status === 'complete' || changeInfo.url) {
+          this.refreshActiveSite();
+        }
+      });
+    }
+
     await this.injectIcons();
     await this.loadData();
     this._setupMouseDrag();
     return this.element;
+  }
+
+  async refreshActiveSite() {
+    const contentEl = this.element.querySelector('#dockit-in-page-content');
+    const titleEl = this.element.querySelector('#dockit-in-page-title');
+    if (!contentEl || !titleEl || titleEl.textContent !== 'Edit Apps') return;
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url && !tab.url.startsWith('chrome://')) {
+        const urlObj = new URL(tab.url);
+        let displayUrl = urlObj.hostname + urlObj.pathname;
+        if (displayUrl.endsWith('/')) {
+          displayUrl = displayUrl.slice(0, -1);
+        }
+        const title = tab.title || urlObj.hostname;
+        const favIconUrl = tab.favIconUrl || `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
+        const storageData = await chrome.storage.local.get(['lucideIcons', 'pinnedApps']);
+        const pinIconSvg = (storageData.lucideIcons && storageData.lucideIcons['pin']) || 'Pin';
+        const cleanPinIcon = `<div style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); pointer-events: none; color: currentColor;">${pinIconSvg}</div>`;
+        const pinnedAppsInitial = storageData.pinnedApps || [];
+        const isCurrentlyPinned = pinnedAppsInitial.some(app => app.url === tab.url);
+
+        contentEl.innerHTML = `
+          <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: 12px; padding: 12px; gap: 12px; margin-bottom: 20px; border: 1px solid var(--color-border);">
+            <img class="dockit-active-site-favicon" src="${favIconUrl}" style="width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;" />
+            <div class="dockit-active-site-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
+              <div class="dockit-active-site-title" style="font-weight: 600; font-size: 14px; line-height: 1.15; word-break: break-word;">${title}</div>
+              <div class="dockit-active-site-url" style="font-size: 12px; opacity: 0.6; line-height: 1.15; word-break: break-all; margin-top: 1px;">${displayUrl}</div>
+            </div>
+            <button class="dockit-pin-btn" style="background: transparent; border: none; width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; transition: color 0.2s, opacity 0.2s; display: flex; align-items: center; justify-content: center; padding: 0;" title="Pin to Sidebar">
+              ${cleanPinIcon}
+            </button>
+          </div>
+          
+          <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; margin-bottom: 12px; color: var(--color-foreground);">Pinned Apps</div>
+          <div class="dockit-apps-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px; margin-bottom: 24px; padding: 4px;">
+            <!-- Pinned apps will be rendered here dynamically -->
+          </div>
+        `;
+        
+        const gridContainer = contentEl.querySelector('.dockit-apps-grid');
+        if (gridContainer) {
+          pinnedAppsInitial.forEach((app, index) => {
+            const appEl = document.createElement('div');
+            appEl.className = 'dockit-grid-app';
+            appEl.dataset.id = app.id;
+            appEl.dataset.index = index;
+            appEl.title = app.title;
+            appEl.style.cssText = 'width: 56px; height: 56px; background-color: transparent; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: grab; position: relative; transition: background-color 0.2s, box-shadow 0.2s; user-select: none;';
+            appEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.title}" style="width: 32px; height: 32px; pointer-events: none;" draggable="false" />`;
+
+            appEl.addEventListener('mouseenter', () => {
+              appEl.style.backgroundColor = 'var(--color-primary)';
+            });
+            appEl.addEventListener('mouseleave', () => {
+              appEl.style.backgroundColor = 'transparent';
+            });
+
+            appEl.addEventListener('mousedown', (e) => {
+              if (e.button !== 0) return;
+              e.preventDefault();
+              this._gridDragState = {
+                app,
+                el: appEl,
+                startY: e.clientY,
+                startX: e.clientX,
+                didMove: false,
+                ghost: null
+              };
+            });
+
+            gridContainer.appendChild(appEl);
+          });
+        }
+        
+        const pinBtn = contentEl.querySelector('.dockit-pin-btn');
+        if (pinBtn) {
+          const updatePinState = (pinned) => {
+            const svgEl = pinBtn.querySelector('svg');
+            pinBtn.style.color = 'var(--color-primary)';
+            if (pinned) {
+              pinBtn.title = 'Remove Pinned Item';
+              pinBtn.style.opacity = '0.7';
+              if (svgEl) svgEl.style.fill = 'currentColor';
+            } else {
+              pinBtn.title = 'Pin to Sidebar';
+              pinBtn.style.opacity = '1';
+              if (svgEl) svgEl.style.fill = 'none';
+            }
+          };
+
+          let activePinned = isCurrentlyPinned;
+          updatePinState(activePinned);
+
+          pinBtn.addEventListener('click', async () => {
+            const data = await chrome.storage.local.get(['pinnedApps']);
+            let pinnedList = data.pinnedApps || [];
+            if (activePinned) {
+              pinnedList = pinnedList.filter(app => app.url !== tab.url);
+              await chrome.storage.local.set({ pinnedApps: pinnedList });
+              activePinned = false;
+            } else {
+              if (!pinnedList.some(app => app.url === tab.url)) {
+                pinnedList.push({
+                  id: 'app_' + Date.now(),
+                  url: tab.url,
+                  title: title,
+                  iconUrl: favIconUrl
+                });
+                await chrome.storage.local.set({ pinnedApps: pinnedList });
+                activePinned = true;
+              }
+            }
+            updatePinState(activePinned);
+          });
+        }
+      } else {
+        contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Internal websites cannot be pinned.</div>`;
+      }
+    } catch (err) {
+      contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to Edit Apps. Open a site to pin it!</div>`;
+    }
   }
 
   async openSystemApp(name) {
@@ -88,89 +220,7 @@ class DockitSidebar {
     if (contentEl) {
       if (name === 'Edit Apps') {
         contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Loading current site...</div>`;
-        try {
-          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          if (tab && tab.url && !tab.url.startsWith('chrome://')) {
-            const urlObj = new URL(tab.url);
-            let displayUrl = urlObj.hostname + urlObj.pathname;
-            if (displayUrl.endsWith('/')) {
-              displayUrl = displayUrl.slice(0, -1);
-            }
-            const title = tab.title || urlObj.hostname;
-            const favIconUrl = tab.favIconUrl || `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
-            const storageData = await chrome.storage.local.get(['lucideIcons', 'pinnedApps']);
-            const pinIconSvg = (storageData.lucideIcons && storageData.lucideIcons['pin']) || 'Pin';
-            const cleanPinIcon = `<div style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); pointer-events: none; color: currentColor;">${pinIconSvg}</div>`;
-            const pinnedAppsInitial = storageData.pinnedApps || [];
-            const isCurrentlyPinned = pinnedAppsInitial.some(app => app.url === tab.url);
-            
-            contentEl.innerHTML = `
-              <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: 12px; padding: 12px; gap: 12px; margin-bottom: 16px;">
-                <img class="dockit-active-site-favicon" src="${favIconUrl}" style="width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;" />
-                <div class="dockit-active-site-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
-                  <div class="dockit-active-site-title" style="font-weight: 600; font-size: 14px; line-height: 1.15; word-break: break-word;">${title}</div>
-                  <div class="dockit-active-site-url" style="font-size: 12px; opacity: 0.6; line-height: 1.15; word-break: break-all; margin-top: 1px;">${displayUrl}</div>
-                </div>
-                <button class="dockit-pin-btn" style="background: transparent; border: none; width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; transition: color 0.2s, opacity 0.2s; display: flex; align-items: center; justify-content: center; padding: 0;" title="Pin to Sidebar">
-                  ${cleanPinIcon}
-                </button>
-              </div>
-            `;
-            const pinBtn = contentEl.querySelector('.dockit-pin-btn');
-            if (pinBtn) {
-              const updatePinState = (pinned) => {
-                if (pinned) {
-                  pinBtn.style.color = 'var(--color-primary)';
-                  pinBtn.title = 'Remove Pinned Item';
-                  pinBtn.style.opacity = '1';
-                } else {
-                  pinBtn.style.color = 'rgba(255, 255, 255, 0.4)';
-                  pinBtn.title = 'Pin to Sidebar';
-                  pinBtn.style.opacity = '0.7';
-                }
-              };
-
-              let activePinned = isCurrentlyPinned;
-              updatePinState(activePinned);
-
-              pinBtn.addEventListener('click', async () => {
-                const data = await chrome.storage.local.get(['pinnedApps']);
-                let pinnedList = data.pinnedApps || [];
-                if (activePinned) {
-                  pinnedList = pinnedList.filter(app => app.url !== tab.url);
-                  await chrome.storage.local.set({ pinnedApps: pinnedList });
-                  activePinned = false;
-                } else {
-                  if (!pinnedList.some(app => app.url === tab.url)) {
-                    pinnedList.push({
-                      id: 'app_' + Date.now(),
-                      url: tab.url,
-                      title: title,
-                      iconUrl: favIconUrl
-                    });
-                    await chrome.storage.local.set({ pinnedApps: pinnedList });
-                    activePinned = true;
-                  }
-                }
-                updatePinState(activePinned);
-              });
-
-              const syncListener = (changes) => {
-                if (changes.pinnedApps) {
-                  const currentList = changes.pinnedApps.newValue || [];
-                  const isStillPinned = currentList.some(app => app.url === tab.url);
-                  activePinned = isStillPinned;
-                  updatePinState(activePinned);
-                }
-              };
-              chrome.storage.onChanged.addListener(syncListener);
-            }
-          } else {
-            contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">No active website to pin. Open a web page first!</div>`;
-          }
-        } catch (err) {
-          contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to Edit Apps. Open a site to pin it!</div>`;
-        }
+        await this.refreshActiveSite();
       } else {
         contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to ${name}</div>`;
       }
@@ -230,6 +280,28 @@ class DockitSidebar {
   _renderApps(container, apps, listType) {
     if (!container) return;
     container.innerHTML = '';
+
+    if (apps.length === 0) {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'dockit-empty-placeholder';
+      chrome.storage.local.get(['lucideIcons'], (data) => {
+        if (data.lucideIcons) {
+          const iconName = listType === 'pinned' ? 'pin' : 'clock-fading';
+          const svgHtml = data.lucideIcons[iconName] || '';
+          if (svgHtml) {
+            placeholder.innerHTML = svgHtml;
+            const svg = placeholder.querySelector('svg');
+            if (svg) {
+              svg.style.width = '16px';
+              svg.style.height = '16px';
+              svg.style.display = 'block';
+            }
+          }
+        }
+      });
+      container.appendChild(placeholder);
+      return;
+    }
     apps.forEach((app, index) => {
       const el = document.createElement('div');
       el.className = 'dockit-app';
@@ -272,116 +344,184 @@ class DockitSidebar {
     const root = this.isSidePanel ? document : this.element;
 
     root.addEventListener('mousemove', (e) => {
-      if (!this._dragState) return;
-      const ds = this._dragState;
+      if (this._dragState) {
+        const ds = this._dragState;
 
-      //require 5px movement to begin the visual drag
-      if (!ds.didMove && Math.abs(e.clientY - ds.startY) < 5) return;
+        //require 5px movement to begin the visual drag
+        if (!ds.didMove && Math.abs(e.clientY - ds.startY) < 5) return;
 
-      if (!ds.didMove) {
-        ds.didMove = true;
-        ds.el.classList.add('dockit-drag-ghost');
-        this.element.classList.add('is-dragging');
+        if (!ds.didMove) {
+          ds.didMove = true;
+          ds.el.classList.add('dockit-drag-ghost');
+          this.element.classList.add('is-dragging');
 
-        //morph add button to trash
-        const addBtn = this.element.querySelector('#add-btn');
-        if (addBtn) {
-          addBtn.classList.add('trash-mode');
-          addBtn.innerHTML = this._trashIconSvg || 'Trash';
+          //morph add button to trash
+          const addBtn = this.element.querySelector('#add-btn');
+          if (addBtn) {
+            addBtn.classList.add('trash-mode');
+            addBtn.innerHTML = this._trashIconSvg || 'Trash';
+          }
+
+          //create floating ghost clone
+          const ghost = ds.el.cloneNode(true);
+          ghost.className = 'dockit-app dockit-floating-ghost';
+          ghost.style.cssText = `
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999999;
+            opacity: 0.85;
+            width: 32px;
+            height: 32px;
+          `;
+          (this.isSidePanel ? document.body : this.element).appendChild(ghost);
+          ds.ghost = ghost;
         }
 
-        //create floating ghost clone
-        const ghost = ds.el.cloneNode(true);
-        ghost.className = 'dockit-app dockit-floating-ghost';
-        ghost.style.cssText = `
-          position: fixed;
-          pointer-events: none;
-          z-index: 9999999;
-          opacity: 0.85;
-          width: 32px;
-          height: 32px;
-        `;
-        (this.isSidePanel ? document.body : this.element).appendChild(ghost);
-        ds.ghost = ghost;
-      }
+        //position ghost at cursor
+        if (ds.ghost) {
+          ds.ghost.style.left = (e.clientX - 16) + 'px';
+          ds.ghost.style.top = (e.clientY - 16) + 'px';
+        }
 
-      //position ghost at cursor
-      if (ds.ghost) {
-        ds.ghost.style.left = (e.clientX - 16) + 'px';
-        ds.ghost.style.top = (e.clientY - 16) + 'px';
-      }
-
-      //highlight drop targets
-      this._clearHighlights();
-      const target = this._getDropTarget(e.clientY);
-      if (target) {
-        if (target.type === 'app') {
-          const half = target.rect.top + target.rect.height / 2;
-          if (e.clientY < half) {
-            target.el.style.boxShadow = '0 -3px 0 0 var(--color-primary)';
-          } else {
-            target.el.style.boxShadow = '0 3px 0 0 var(--color-primary)';
+        //highlight drop targets
+        this._clearHighlights();
+        const target = this._getDropTarget(e.clientY);
+        if (target) {
+          if (target.type === 'app') {
+            const half = target.rect.top + target.rect.height / 2;
+            if (e.clientY < half) {
+              target.el.style.boxShadow = '0 -3px 0 0 var(--color-primary)';
+            } else {
+              target.el.style.boxShadow = '0 3px 0 0 var(--color-primary)';
+            }
+          } else if (target.type === 'trash') {
+            target.el.style.opacity = '1';
           }
-        } else if (target.type === 'trash') {
-          target.el.style.opacity = '1';
+        }
+      } else if (this._gridDragState) {
+        const ds = this._gridDragState;
+
+        //require 5px movement to begin the visual drag
+        if (!ds.didMove && Math.abs(e.clientY - ds.startY) < 5 && Math.abs(e.clientX - ds.startX) < 5) return;
+
+        if (!ds.didMove) {
+          ds.didMove = true;
+          ds.el.style.opacity = '0.5';
+
+          //create floating ghost clone
+          const ghost = ds.el.cloneNode(true);
+          ghost.style.cssText = `
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999999;
+            opacity: 0.85;
+            width: 56px;
+            height: 56px;
+          `;
+          document.body.appendChild(ghost);
+          ds.ghost = ghost;
+        }
+
+        //position ghost at cursor
+        if (ds.ghost) {
+          ds.ghost.style.left = (e.clientX - 28) + 'px';
+          ds.ghost.style.top = (e.clientY - 28) + 'px';
+        }
+
+        //highlight drop targets
+        this._clearGridHighlights();
+        const target = this._getGridDropTarget(e.clientX, e.clientY);
+        if (target) {
+          const half = target.rect.left + target.rect.width / 2;
+          if (e.clientX < half) {
+            target.el.style.boxShadow = '-3px 0 0 0 var(--color-primary)';
+          } else {
+            target.el.style.boxShadow = '3px 0 0 0 var(--color-primary)';
+          }
         }
       }
     });
 
     root.addEventListener('mouseup', async (e) => {
-      if (!this._dragState) return;
-      const ds = this._dragState;
+      if (this._dragState) {
+        const ds = this._dragState;
 
-      if (!ds.didMove) {
-        this._dragState = null;
-        return;
-      }
-
-      //determine drop target BEFORE cleaning up visuals (otherwise empty sections collapse to 0 height)
-      const target = this._getDropTarget(e.clientY);
-
-      //cleanup visuals
-      ds.el.classList.remove('dockit-drag-ghost');
-      this.element.classList.remove('is-dragging');
-      if (ds.ghost) ds.ghost.remove();
-      this._clearHighlights();
-
-      const addBtn = this.element.querySelector('#add-btn');
-      if (addBtn) {
-        addBtn.classList.remove('trash-mode');
-        addBtn.innerHTML = this._plusIconSvg || '+';
-      }
-
-      if (target) {
-        if (target.type === 'trash') {
-          await this._deleteApp(ds.app, ds.listType);
-        } else if (target.type === 'app') {
-          const half = target.rect.top + target.rect.height / 2;
-          let idx = parseInt(target.el.dataset.index);
-          if (e.clientY > half) idx++;
-          await this._moveApp(ds.app, ds.listType, target.el.dataset.list, idx);
-        } else if (target.type === 'section') {
-          await this._moveApp(ds.app, ds.listType, target.list, -1);
+        if (!ds.didMove) {
+          this._dragState = null;
+          return;
         }
-      }
 
-      this._dragState = null;
+        //determine drop target BEFORE cleaning up visuals (otherwise empty sections collapse to 0 height)
+        const target = this._getDropTarget(e.clientY);
+
+        //cleanup visuals
+        ds.el.classList.remove('dockit-drag-ghost');
+        this.element.classList.remove('is-dragging');
+        if (ds.ghost) ds.ghost.remove();
+        this._clearHighlights();
+
+        const addBtn = this.element.querySelector('#add-btn');
+        if (addBtn) {
+          addBtn.classList.remove('trash-mode');
+          addBtn.innerHTML = this._plusIconSvg || '+';
+        }
+
+        if (target) {
+          if (target.type === 'trash') {
+            await this._deleteApp(ds.app, ds.listType);
+          } else if (target.type === 'app') {
+            const half = target.rect.top + target.rect.height / 2;
+            let idx = parseInt(target.el.dataset.index);
+            if (e.clientY > half) idx++;
+            await this._moveApp(ds.app, ds.listType, target.el.dataset.list, idx);
+          } else if (target.type === 'section') {
+            await this._moveApp(ds.app, ds.listType, target.list, -1);
+          }
+        }
+
+        this._dragState = null;
+      } else if (this._gridDragState) {
+        const ds = this._gridDragState;
+        ds.el.style.opacity = '1';
+        if (ds.ghost) ds.ghost.remove();
+        
+        const target = this._getGridDropTarget(e.clientX, e.clientY);
+        this._clearGridHighlights();
+
+        if (target && ds.didMove) {
+          const half = target.rect.left + target.rect.width / 2;
+          let targetIndex = parseInt(target.el.dataset.index, 10);
+          if (e.clientX > half) {
+            targetIndex++;
+          }
+          await this._moveGridApp(ds.app, targetIndex);
+        }
+
+        this._gridDragState = null;
+      }
     });
 
     //cancel drag if mouse leaves the sidebar area
     root.addEventListener('mouseleave', (e) => {
-      if (!this._dragState || !this._dragState.didMove) return;
-      const ds = this._dragState;
-      ds.el.classList.remove('dockit-drag-ghost');
-      this.element.classList.remove('is-dragging');
-      if (ds.ghost) ds.ghost.remove();
-      this._clearHighlights();
-      const addBtn = this.element.querySelector('#add-btn');
-      if (addBtn) {
-        addBtn.classList.remove('trash-mode');
-        addBtn.innerHTML = this._plusIconSvg || '+';
+      if (this._dragState && this._dragState.didMove) {
+        const ds = this._dragState;
+        ds.el.classList.remove('dockit-drag-ghost');
+        this.element.classList.remove('is-dragging');
+        if (ds.ghost) ds.ghost.remove();
+        this._clearHighlights();
+        const addBtn = this.element.querySelector('#add-btn');
+        if (addBtn) {
+          addBtn.classList.remove('trash-mode');
+          addBtn.innerHTML = this._plusIconSvg || '+';
+        }
+        this._dragState = null;
+      } else if (this._gridDragState && this._gridDragState.didMove) {
+        const ds = this._gridDragState;
+        ds.el.style.opacity = '1';
+        if (ds.ghost) ds.ghost.remove();
+        this._clearGridHighlights();
+        this._gridDragState = null;
       }
-      this._dragState = null;
     });
   }
 
@@ -415,11 +555,16 @@ class DockitSidebar {
     // check empty sections
     for (const [id, list] of [['pinned-section', 'pinned'], ['temp-section', 'temp']]) {
       const sec = this.element.querySelector('#' + id);
-      // It is effectively empty if it has 0 children, or if its only child is the one being dragged
-      let isEmpty = sec && sec.children.length === 0;
-      if (sec && sec.children.length === 1 && this._dragState && sec.children[0] === this._dragState.el) {
-        isEmpty = true;
+      let hasOtherApps = false;
+      if (sec) {
+        for (const child of sec.children) {
+          if (child !== this._dragState.el && !child.classList.contains('dockit-empty-placeholder')) {
+            hasOtherApps = true;
+            break;
+          }
+        }
       }
+      const isEmpty = !hasOtherApps;
       if (isEmpty) {
         check('section', sec, { list });
       }
@@ -476,5 +621,47 @@ class DockitSidebar {
       await chrome.storage.local.set({ temporaryApps: arr });
     }
     await this.loadData();
+  }
+
+  _getGridDropTarget(clientX, clientY) {
+    let bestTarget = null;
+    let minDistance = Infinity;
+    const apps = this.element.querySelectorAll('.dockit-grid-app');
+    for (const appEl of apps) {
+      if (this._gridDragState && appEl === this._gridDragState.el) continue;
+      const r = appEl.getBoundingClientRect();
+      const centerX = r.left + r.width / 2;
+      const centerY = r.top + r.height / 2;
+      const distance = Math.sqrt(Math.pow(clientX - centerX, 2) + Math.pow(clientY - centerY, 2));
+      if (distance < minDistance) {
+        minDistance = distance;
+        bestTarget = { el: appEl, rect: r };
+      }
+    }
+    if (minDistance < 60) {
+      return bestTarget;
+    }
+    return null;
+  }
+
+  _clearGridHighlights() {
+    const apps = this.element.querySelectorAll('.dockit-grid-app');
+    apps.forEach(el => {
+      el.style.boxShadow = '';
+    });
+  }
+
+  async _moveGridApp(app, targetIndex) {
+    const data = await chrome.storage.local.get(['pinnedApps']);
+    let pinnedApps = data.pinnedApps || [];
+    const origIndex = pinnedApps.findIndex(a => a.id === app.id);
+    if (origIndex === -1) return;
+    pinnedApps.splice(origIndex, 1);
+    if (targetIndex > origIndex) {
+      targetIndex--;
+    }
+    pinnedApps.splice(targetIndex, 0, app);
+    await chrome.storage.local.set({ pinnedApps });
+    await this.refreshActiveSite();
   }
 }

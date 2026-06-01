@@ -47,6 +47,7 @@ async function init() {
     if (changes.pinnedApps || changes.temporaryApps || changes.lucideIcons) {
       if (changes.lucideIcons) sidebar.injectIcons();
       sidebar.loadData();
+      sidebar.refreshActiveSite();
     }
   });
 
