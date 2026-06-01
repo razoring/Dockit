@@ -195,21 +195,25 @@ function _constrainFixedElement(el) {
   el.dataset.dockitFixed = '1';
   const computed = getComputedStyle(el);
 
+  const hasScrollbar = document.body.scrollHeight > window.innerHeight;
+  const scrollbarGap = hasScrollbar ? 16 : 0;
+  const totalOffset = SIDEBAR_WIDTH + scrollbarGap;
+
   //offset right anchored elements
   const computedRight = parseFloat(computed.right);
-  if (!isNaN(computedRight) && computedRight < SIDEBAR_WIDTH) {
-    el.style.setProperty('right', (computedRight + SIDEBAR_WIDTH) + 'px', 'important');
+  if (!isNaN(computedRight) && computedRight < totalOffset) {
+    el.style.setProperty('right', (computedRight + totalOffset) + 'px', 'important');
   } else if (computed.right === 'auto' || isNaN(computedRight)) {
     const curRight = window.innerWidth - rect.right;
-    el.style.setProperty('right', (curRight + SIDEBAR_WIDTH) + 'px', 'important');
+    el.style.setProperty('right', (curRight + totalOffset) + 'px', 'important');
   }
 
   //constrain full width elements
   if (isFullWidth) {
-    el.style.setProperty('max-width', `calc(100vw - ${SIDEBAR_WIDTH}px)`, 'important');
+    el.style.setProperty('max-width', `calc(100vw - ${totalOffset}px)`, 'important');
     const computedLeft = parseFloat(computed.left);
     if (!isNaN(computedLeft) && computedLeft === 0) {
-      el.style.setProperty('right', `${SIDEBAR_WIDTH}px`, 'important');
+      el.style.setProperty('right', `${totalOffset}px`, 'important');
     }
   }
 }
