@@ -1,0 +1,189 @@
+/* styles.css - Dockit strict 6-color palette and layout */
+
+:host, :root {
+  --color-background: #1e1e24;
+  --color-foreground: #ffffff;
+  --color-primary: #3b82f6;
+  --color-secondary: #2a2a35;
+  --color-border: #3f3f4e;
+  --color-accent: #ef4444;
+
+  /* typography using injected font */
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+.dockit-sidebar {
+  width: 48px;
+  height: 100vh;
+  background-color: var(--color-background);
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0 12px 0;
+  position: relative;
+  z-index: 999999;
+  gap: 8px;
+}
+
+.dockit-sidepanel-view {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.dockit-sidepanel-view .dockit-sidebar {
+  border-left: 1px solid var(--color-border);
+  border-right: none;
+}
+
+.dockit-sidepanel-view .dockit-iframe-container {
+  flex: 1;
+  height: 100vh;
+  background-color: var(--color-background); /* fallback before iframe loads */
+}
+
+.dockit-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* App Items */
+.dockit-app {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: var(--color-secondary);
+  color: var(--color-foreground);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dockit-app:hover {
+  background-color: var(--color-primary);
+  color: var(--color-foreground);
+}
+
+.dockit-app.active {
+  border: 2px solid var(--color-primary);
+}
+
+.dockit-app img,
+.dockit-app svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+/* Dividers */
+.dockit-divider {
+  width: 24px;
+  height: 2px;
+  background-color: var(--color-border);
+  border-radius: 1px;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* Sections */
+.dockit-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.dockit-sidebar.is-dragging .dockit-section:empty {
+  min-height: 32px;
+  width: 32px;
+  border-radius: 8px;
+  border: 2px dashed var(--color-border);
+}
+
+/* Bottom Controls */
+.dockit-bottom-controls {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+/* Action Buttons (Add, Extension, Settings) */
+.dockit-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-foreground);
+  opacity: 0.7;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: opacity 0.2s, background-color 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  margin: 0;
+}
+
+.dockit-action-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  margin: 0;
+}
+
+.dockit-action-btn:hover {
+  opacity: 1;
+  background-color: var(--color-secondary);
+}
+
+/* Trash State */
+.dockit-action-btn.trash-mode {
+  background-color: var(--color-accent);
+  color: var(--color-foreground);
+  opacity: 1;
+}
+
+/* Dragging Helpers */
+.dockit-drag-ghost {
+  opacity: 0.5;
+}
+
+.dockit-drop-target {
+  border-top: 2px solid var(--color-primary);
+}
+
+/* Hidden Utility */
+.dockit-hidden {
+  display: none !important;
+}
