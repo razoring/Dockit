@@ -1,6 +1,7 @@
 //content.js
 
 const SIDEBAR_WIDTH = 48;
+const _isGmail = window.location.hostname.includes('mail.google.com');
 let _hostElement = null;
 let _sidebar = null;
 let _isSidebarHidden = false;
@@ -199,7 +200,7 @@ function _scanFixedElements() {
   const allElements = document.body.querySelectorAll('*');
   for (const el of allElements) {
     const computed = getComputedStyle(el);
-    if (computed.position === 'fixed' || computed.position === 'absolute') {
+    if (computed.position === 'fixed' || (_isGmail && computed.position === 'absolute')) {
       _fixedElementsSet.add(el);
       _constrainFixedElement(el);
     }
@@ -209,7 +210,7 @@ function _scanFixedElements() {
 function _checkAndConstrain(el) {
   if (el.nodeType !== Node.ELEMENT_NODE) return;
   const computed = getComputedStyle(el);
-  if (computed.position === 'fixed' || computed.position === 'absolute') {
+  if (computed.position === 'fixed' || (_isGmail && computed.position === 'absolute')) {
     _fixedElementsSet.add(el);
     _constrainFixedElement(el);
   } else {
@@ -221,7 +222,7 @@ function _checkAndConstrain(el) {
   const children = el.querySelectorAll('*');
   for (const child of children) {
     const childComputed = getComputedStyle(child);
-    if (childComputed.position === 'fixed' || childComputed.position === 'absolute') {
+    if (childComputed.position === 'fixed' || (_isGmail && childComputed.position === 'absolute')) {
       _fixedElementsSet.add(child);
       _constrainFixedElement(child);
     } else {
