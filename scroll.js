@@ -1,14 +1,21 @@
-//scroll-interceptor.js
+//scroll.js
 
 (function() {
   const _getWrapper = () => document.body;
-
   const getDesc = (obj, prop) => Object.getOwnPropertyDescriptor(obj, prop);
   
   const elScrollTop = getDesc(Element.prototype, 'scrollTop');
   const elScrollLeft = getDesc(Element.prototype, 'scrollLeft');
   const elScrollHeight = getDesc(Element.prototype, 'scrollHeight');
   const elScrollWidth = getDesc(Element.prototype, 'scrollWidth');
+
+  //bing targeted patch
+  if (window.location.hostname.includes('bing.com')) {
+    // stop resize events from triggering bing's dynamic parameter reloads
+    window.addEventListener('resize', (e) => {
+      e.stopImmediatePropagation();
+    }, true);
+  }
 
   //override scrollingelement
   Object.defineProperty(document, 'scrollingElement', {
@@ -23,6 +30,16 @@
     return 48;
   };
 
+  const _getBingCw = () => {
+    if (window.location.hostname.includes('bing.com')) {
+      const match = window.location.search.match(/[?&]cw=(\d+)/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+    return null;
+  };
+
   const winInnerWidthDesc = getDesc(window, 'innerWidth') || getDesc(Window.prototype, 'innerWidth');
   const elClientWidthDesc = getDesc(Element.prototype, 'clientWidth');
 
@@ -30,6 +47,10 @@
   if (winInnerWidthDesc) {
     Object.defineProperty(window, 'innerWidth', {
       get: () => {
+        const bingCw = _getBingCw();
+        if (bingCw !== null) {
+          return bingCw;
+        }
         const val = winInnerWidthDesc.get.call(window);
         return val - _getOffset();
       },
@@ -41,6 +62,10 @@
   if (elClientWidthDesc) {
     Object.defineProperty(document.documentElement, 'clientWidth', {
       get: () => {
+        const bingCw = _getBingCw();
+        if (bingCw !== null) {
+          return bingCw;
+        }
         const val = elClientWidthDesc.get.call(document.documentElement);
         return val - _getOffset();
       },
@@ -117,7 +142,7 @@
   });
 
   //override body scroll metrics
-  Object.defineProperty(document.body, 'scrollTop', {
+  Object.defineProperty(HTMLBodyElement.prototype, 'scrollTop', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollTop.get.call(_w) : 0;
@@ -128,7 +153,7 @@
     },
     configurable: true
   });
-  Object.defineProperty(document.body, 'scrollLeft', {
+  Object.defineProperty(HTMLBodyElement.prototype, 'scrollLeft', {
     get: () => {
       const _w = _getWrapper();
       return _w ? elScrollLeft.get.call(_w) : 0;
@@ -139,17 +164,17 @@
     },
     configurable: true
   });
-  Object.defineProperty(document.body, 'scrollHeight', {
-    get: () => {
+  Object.defineProperty(HTMLBodyElement.prototype, 'scrollHeight', {
+    get: function() {
       const _w = _getWrapper();
-      return _w ? elScrollHeight.get.call(_w) : elScrollHeight.get.call(document.body);
+      return _w ? elScrollHeight.get.call(_w) : elScrollHeight.get.call(this);
     },
     configurable: true
   });
-  Object.defineProperty(document.body, 'scrollWidth', {
-    get: () => {
+  Object.defineProperty(HTMLBodyElement.prototype, 'scrollWidth', {
+    get: function() {
       const _w = _getWrapper();
-      return _w ? elScrollWidth.get.call(_w) : elScrollWidth.get.call(document.body);
+      return _w ? elScrollWidth.get.call(_w) : elScrollWidth.get.call(this);
     },
     configurable: true
   });

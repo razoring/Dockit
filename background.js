@@ -17,9 +17,40 @@ chrome.runtime.onInstalled.addListener(async () => {
     temporaryApps: []
   });
 
+  // Register main world content script
+  await registerScrollScript();
+
   // Cache Assets
   await cacheAssets();
 });
+
+chrome.runtime.onStartup.addListener(async () => {
+  await registerScrollScript();
+});
+
+// Register main world content script dynamically to bypass CSP on sites like Bing/ChatGPT
+async function registerScrollScript() {
+  try {
+    const scripts = await chrome.scripting.getRegisteredContentScripts();
+    const exists = scripts.some(s => s.id === 'dockit-scroll-interceptor');
+    if (exists) {
+      await chrome.scripting.unregisterContentScripts({ ids: ['dockit-scroll-interceptor'] });
+    }
+    await chrome.scripting.registerContentScripts([
+      {
+        id: 'dockit-scroll-interceptor',
+        js: ['scroll.js'],
+        matches: ['<all_urls>'],
+        runAt: 'document_start',
+        world: 'MAIN',
+        allFrames: false
+      }
+    ]);
+    console.log("Main world scroll script registered successfully.");
+  } catch (err) {
+    console.error('Failed to register main world script:', err);
+  }
+}
 
 // Cache Fonts and Icons for Offline use
 async function cacheAssets() {

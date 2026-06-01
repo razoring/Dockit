@@ -9,13 +9,7 @@ let _isSidebarHidden = false;
 let _fixedObserver = null;
 const _fixedElementsSet = new Set();
 
-//inject main world scroll interception
-if (window === window.top) {
-  const _injectScript = document.createElement('script');
-  _injectScript.src = chrome.runtime.getURL('scroll.js');
-  document.documentElement.appendChild(_injectScript);
-  _injectScript.remove();
-}
+
 
 async function init() {
   if (window !== window.top) return;
