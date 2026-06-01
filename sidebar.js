@@ -105,7 +105,7 @@ class DockitSidebar {
       if (plusIcon) plusIcon.outerHTML = data.lucideIcons['plus'];
 
       const extIcon = this.element.querySelector('.icon-puzzle');
-      if (extIcon) extIcon.outerHTML = data.lucideIcons['blocks'];
+      if (extIcon) extIcon.outerHTML = data.lucideIcons['shapes'];
 
       const setIcon = this.element.querySelector('.icon-settings');
       if (setIcon) setIcon.outerHTML = data.lucideIcons['settings'];
