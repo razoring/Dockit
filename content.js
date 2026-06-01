@@ -61,7 +61,7 @@ async function init() {
       width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
       height: 100% !important;
       overflow-y: auto !important;
-      overflow-x: auto !important;
+      overflow-x: hidden !important;
       position: relative !important;
       margin: 0 !important;
       box-sizing: border-box !important;
@@ -146,6 +146,21 @@ async function init() {
     document.head.appendChild(redditStyle);
   }
 
+  //linkedin targeted patch
+  if (window.location.hostname.includes('linkedin.com')) {
+    const linkedinStyle = document.createElement('style');
+    linkedinStyle.id = 'dockit-linkedin-patch';
+    linkedinStyle.textContent = `
+      body:not(.dockit-full-width) .application-outlet__overlay-container,
+      html:not(.dockit-full-width) .application-outlet__overlay-container {
+        width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
+        max-width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
+        min-width: 0 !important;
+      }
+    `;
+    document.head.appendChild(linkedinStyle);
+  }
+
   //append sidebar host to html element
   document.documentElement.appendChild(_hostElement);
 
@@ -167,6 +182,9 @@ async function init() {
   requestAnimationFrame(() => {
     _scanFixedElements();
     _startFixedObserver();
+    //delayed re-scans for elements loaded after initial paint
+    setTimeout(() => { if (!_isSidebarHidden) _scanFixedElements(); }, 2000);
+    setTimeout(() => { if (!_isSidebarHidden) _scanFixedElements(); }, 5000);
   });
 
   //check initial sidepanel state
@@ -178,6 +196,7 @@ async function init() {
         if (data[`sidePanelOpen_${winId}`]) {
           _isSidebarHidden = true;
           _hostElement.style.display = 'none';
+          document.documentElement.classList.add('dockit-full-width');
           document.body.classList.add('dockit-full-width');
           _removeFixedConstraints();
         }
@@ -191,11 +210,13 @@ async function init() {
       if (changes[`sidePanelOpen_${currentWindowId}`].newValue) {
         _isSidebarHidden = true;
         _hostElement.style.display = 'none';
+        document.documentElement.classList.add('dockit-full-width');
         document.body.classList.add('dockit-full-width');
         _removeFixedConstraints();
       } else {
         _isSidebarHidden = false;
         _hostElement.style.display = '';
+        document.documentElement.classList.remove('dockit-full-width');
         document.body.classList.remove('dockit-full-width');
         requestAnimationFrame(() => _scanFixedElements());
         _sidebar.loadData();
@@ -209,53 +230,89 @@ async function init() {
   });
 }
 
+function _safeSetStyle(el, prop, val, priority = 'important') {
+  if (el.style.getPropertyValue(prop) !== val) {
+    el.style.setProperty(prop, val, priority);
+  }
+}
+
 //constrain fixed/absolute elements
 function _constrainFixedElement(el) {
-  if (el.dataset.dockitFixed) return;
   //skip extension elements
   if (_hostElement && (_hostElement === el || _hostElement.contains(el))) return;
   if (el.id === 'dockit-host-root') return;
   if (el.closest('#gb')) return;
 
-  const rect = el.getBoundingClientRect();
-  const isOverlappingRight = rect.right > window.innerWidth - SIDEBAR_WIDTH;
-  const isFullWidth = rect.width >= window.innerWidth - 1;
-
-  if (!isOverlappingRight && !isFullWidth) return;
-
-  el.dataset.dockitFixed = '1';
-  const computed = getComputedStyle(el);
-
   const hasScrollbar = document.body.scrollHeight > window.innerHeight;
   const scrollbarGap = hasScrollbar ? 16 : 0;
   const totalOffset = SIDEBAR_WIDTH + scrollbarGap;
+  const targetWidth = `calc(100vw - ${totalOffset}px)`;
+
+  //re-check already-constrained elements for site js overrides
+  if (el.dataset.dockitFixed) {
+    //right-only constraints don't need re-checking
+    if (!el.dataset.dockitWidth) return;
+    //if our width constraint is still intact, skip
+    if (el.style.getPropertyValue('width') === targetWidth) return;
+    //site js overwrote our width, flow down to re-apply directly
+  }
+
+  const rect = el.getBoundingClientRect();
+  const isOverlappingRight = rect.right > window.innerWidth - SIDEBAR_WIDTH;
+  const isFullWidth = rect.width >= window.innerWidth - 1;
+  const computed = getComputedStyle(el);
+  const usesVw = computed.width.includes('vw') || computed.minWidth.includes('vw');
+
+  if (!isOverlappingRight && !isFullWidth && !usesVw) return;
+
+  if (el.dataset.dockitFixed !== '1') {
+    el.dataset.dockitFixed = '1';
+  }
+
+  //clip children horizontally so vw-based descendants can't overflow
+  _safeSetStyle(el, 'overflow-x', 'clip');
+
+  //constrain vw-based widths to account for sidebar
+  if (usesVw) {
+    _safeSetStyle(el, 'width', targetWidth);
+    _safeSetStyle(el, 'max-width', targetWidth);
+    _safeSetStyle(el, 'min-width', '0');
+    if (el.dataset.dockitWidth !== '1') {
+      el.dataset.dockitWidth = '1';
+    }
+  }
 
   //offset right anchored elements
   const computedRight = parseFloat(computed.right);
   if (!isNaN(computedRight) && computedRight < totalOffset) {
-    el.style.setProperty('right', (computedRight + totalOffset) + 'px', 'important');
+    _safeSetStyle(el, 'right', (computedRight + totalOffset) + 'px');
   } else if (computed.right === 'auto' || isNaN(computedRight)) {
     const curRight = window.innerWidth - rect.right;
-    el.style.setProperty('right', (curRight + totalOffset) + 'px', 'important');
+    _safeSetStyle(el, 'right', (curRight + totalOffset) + 'px');
   }
 
   //constrain full width elements
   if (isFullWidth) {
-    el.style.setProperty('max-width', `calc(100vw - ${totalOffset}px)`, 'important');
+    _safeSetStyle(el, 'width', targetWidth);
+    _safeSetStyle(el, 'max-width', targetWidth);
+    _safeSetStyle(el, 'min-width', '0');
+    if (el.dataset.dockitWidth !== '1') {
+      el.dataset.dockitWidth = '1';
+    }
     const computedLeft = parseFloat(computed.left);
     if (!isNaN(computedLeft) && computedLeft === 0) {
-      el.style.setProperty('right', `${totalOffset}px`, 'important');
+      _safeSetStyle(el, 'right', `${totalOffset}px`);
     }
   }
 }
 
-//scan body for fixed elements
+//scan html for fixed elements
 function _scanFixedElements() {
-  const allElements = document.body.querySelectorAll('*');
+  const allElements = document.documentElement.querySelectorAll('*');
   for (const el of allElements) {
     if (_SKIPPED_TAGS.has(el.tagName.toLowerCase())) continue;
     const computed = getComputedStyle(el);
-    if (computed.position === 'fixed' || (_shouldScanAbsolute && computed.position === 'absolute')) {
+    if (computed.position === 'fixed' || computed.position === 'sticky' || (_shouldScanAbsolute && computed.position === 'absolute')) {
       _fixedElementsSet.add(el);
       _constrainFixedElement(el);
     }
@@ -268,7 +325,7 @@ function _checkAndConstrain(el) {
   if (_SKIPPED_TAGS.has(tagName)) return;
 
   const computed = getComputedStyle(el);
-  if (computed.position === 'fixed' || (_shouldScanAbsolute && computed.position === 'absolute')) {
+  if (computed.position === 'fixed' || computed.position === 'sticky' || (_shouldScanAbsolute && computed.position === 'absolute')) {
     _fixedElementsSet.add(el);
     _constrainFixedElement(el);
   } else {
@@ -281,7 +338,7 @@ function _checkAndConstrain(el) {
   for (const child of children) {
     if (_SKIPPED_TAGS.has(child.tagName.toLowerCase())) continue;
     const childComputed = getComputedStyle(child);
-    if (childComputed.position === 'fixed' || (_shouldScanAbsolute && childComputed.position === 'absolute')) {
+    if (childComputed.position === 'fixed' || childComputed.position === 'sticky' || (_shouldScanAbsolute && childComputed.position === 'absolute')) {
       _fixedElementsSet.add(child);
       _constrainFixedElement(child);
     } else {
@@ -298,7 +355,7 @@ function _queueCheckAndConstrain(node) {
   if (!_pendingTimeout) {
     _pendingTimeout = setTimeout(() => {
       for (const el of _pendingNodes) {
-        if (document.body.contains(el)) {
+        if (document.documentElement.contains(el)) {
           _checkAndConstrain(el);
         }
       }
@@ -322,7 +379,7 @@ function _startFixedObserver() {
       }
     }
   });
-  _fixedObserver.observe(document.body, {
+  _fixedObserver.observe(document.documentElement, {
     childList: true,
     subtree: true,
     attributes: true,
@@ -331,9 +388,13 @@ function _startFixedObserver() {
 }
 
 function _removeConstraint(el) {
-  el.style.removeProperty('right');
-  el.style.removeProperty('max-width');
-  delete el.dataset.dockitFixed;
+  if (el.style.getPropertyValue('right')) el.style.removeProperty('right');
+  if (el.style.getPropertyValue('max-width')) el.style.removeProperty('max-width');
+  if (el.style.getPropertyValue('min-width')) el.style.removeProperty('min-width');
+  if (el.style.getPropertyValue('width')) el.style.removeProperty('width');
+  if (el.style.getPropertyValue('overflow-x')) el.style.removeProperty('overflow-x');
+  if (el.dataset.dockitFixed) delete el.dataset.dockitFixed;
+  if (el.dataset.dockitWidth) delete el.dataset.dockitWidth;
 }
 
 //remove constraints
