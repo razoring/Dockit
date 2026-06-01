@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Dockit",
+  "name": "Dockit: Embedded Sidebar",
   "version": "1.0.0",
   "description": "A powerful sidebar and in-page application viewer.",
   "permissions": [
@@ -21,15 +21,26 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["sidebar.js", "content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "sidebar.js",
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["styles.css", "scroll.js", "_favicon/*"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "styles.css",
+        "scroll.js",
+        "_favicon/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "side_panel": {

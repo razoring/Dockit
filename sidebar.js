@@ -30,10 +30,72 @@ class DockitSidebar {
       </div>
     `;
 
+    const inPageEl = document.createElement('div');
+    inPageEl.className = 'dockit-in-page dockit-hidden';
+    inPageEl.innerHTML = `
+      <div class="dockit-in-page-header">
+        <button class="dockit-action-btn" id="dockit-in-page-close" style="padding: 0; opacity: 1; margin: 0; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; color: var(--color-foreground);">
+          <span class="icon-close"></span>
+        </button>
+        <span class="dockit-in-page-title" id="dockit-in-page-title"></span>
+      </div>
+      <div class="dockit-in-page-content" id="dockit-in-page-content"></div>
+    `;
+    this.element.appendChild(inPageEl);
+
+    const closeBtn = inPageEl.querySelector('#dockit-in-page-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.closeSystemApp());
+    }
+
+    const addBtn = this.element.querySelector('#add-btn');
+    const extBtn = this.element.querySelector('#ext-btn');
+    const setBtn = this.element.querySelector('#set-btn');
+
+    const handleSystemClick = (name) => {
+      if (this.isSidePanel) {
+        this.openSystemApp(name);
+      } else {
+        chrome.runtime.sendMessage({ type: 'OPEN_SIDEPANEL', systemApp: name });
+      }
+    };
+
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        if (addBtn.classList.contains('trash-mode')) return;
+        handleSystemClick('Edit Apps');
+      });
+    }
+    if (extBtn) {
+      extBtn.addEventListener('click', () => handleSystemClick('Customization'));
+    }
+    if (setBtn) {
+      setBtn.addEventListener('click', () => handleSystemClick('Settings'));
+    }
+
     await this.injectIcons();
     await this.loadData();
     this._setupMouseDrag();
     return this.element;
+  }
+
+  openSystemApp(name) {
+    const inPage = this.element.querySelector('.dockit-in-page');
+    if (!inPage) return;
+    const titleEl = this.element.querySelector('#dockit-in-page-title');
+    const contentEl = this.element.querySelector('#dockit-in-page-content');
+    if (titleEl) titleEl.textContent = name;
+    if (contentEl) {
+      contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to ${name}</div>`;
+    }
+    inPage.classList.remove('dockit-hidden');
+  }
+
+  closeSystemApp() {
+    const inPage = this.element.querySelector('.dockit-in-page');
+    if (inPage) {
+      inPage.classList.add('dockit-hidden');
+    }
   }
 
   async injectIcons() {
@@ -47,6 +109,9 @@ class DockitSidebar {
 
       const setIcon = this.element.querySelector('.icon-settings');
       if (setIcon) setIcon.outerHTML = data.lucideIcons['settings'];
+
+      const closeIcon = this.element.querySelector('.icon-close');
+      if (closeIcon && data.lucideIcons['x']) closeIcon.outerHTML = data.lucideIcons['x'];
 
       this._trashIconSvg = data.lucideIcons['trash-2'];
       this._plusIconSvg = data.lucideIcons['plus'];

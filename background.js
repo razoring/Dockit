@@ -56,7 +56,7 @@ async function registerScrollScript() {
 async function cacheAssets() {
   try {
     // 1. Cache specific Lucide SVGs to avoid Manifest V3 CSP dynamic code restrictions
-    const iconsToFetch = ['plus', 'puzzle', 'settings', 'trash-2', 'blocks'];
+    const iconsToFetch = ['plus', 'puzzle', 'settings', 'trash-2', 'blocks', 'x'];
     const lucideIcons = {};
     for (const icon of iconsToFetch) {
       const res = await fetch(`https://unpkg.com/lucide-static@latest/icons/${icon}.svg`);
@@ -141,11 +141,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   } else if (msg.type === 'OPEN_SIDEPANEL') {
     if (sender.tab && sender.tab.windowId) {
-      // Must be called synchronously to respect user gesture
+      if (msg.systemApp) {
+        chrome.storage.local.set({ activeSystemApp: msg.systemApp, activeApp: null });
+      } else if (msg.app) {
+        chrome.storage.local.set({ activeApp: msg.app, activeSystemApp: null });
+      }
       chrome.sidePanel.open({ windowId: sender.tab.windowId }).catch(e => console.error(e));
       setTimeout(() => {
-        chrome.runtime.sendMessage({ type: 'LOAD_APP', app: msg.app }).catch(()=>{});
-      }, 500);
+        if (msg.systemApp) {
+          chrome.runtime.sendMessage({ type: 'LOAD_SYSTEM_APP', systemApp: msg.systemApp }).catch(()=>{});
+        } else {
+          chrome.runtime.sendMessage({ type: 'LOAD_APP', app: msg.app }).catch(()=>{});
+        }
+      }, 100);
     }
   }
 });

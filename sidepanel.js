@@ -15,8 +15,15 @@ async function init() {
 
   const iframe = document.getElementById('app-frame');
 
-  // Load latest temporary app if available
-  if (storage.temporaryApps && storage.temporaryApps.length > 0) {
+  // Check if opening with a specific app or system app
+  const currentOpen = await chrome.storage.local.get(['activeSystemApp', 'activeApp']);
+  if (currentOpen.activeSystemApp) {
+    sidebar.openSystemApp(currentOpen.activeSystemApp);
+    chrome.storage.local.remove('activeSystemApp');
+  } else if (currentOpen.activeApp) {
+    iframe.src = currentOpen.activeApp.url;
+    chrome.storage.local.remove('activeApp');
+  } else if (storage.temporaryApps && storage.temporaryApps.length > 0) {
     iframe.src = storage.temporaryApps[storage.temporaryApps.length - 1].url;
   }
 
@@ -30,6 +37,8 @@ async function init() {
     if (msg.type === 'LOAD_APP') {
       iframe.src = msg.app.url;
       sidebar.loadData();
+    } else if (msg.type === 'LOAD_SYSTEM_APP') {
+      sidebar.openSystemApp(msg.systemApp);
     }
   });
 
