@@ -2,10 +2,10 @@
 
 :host,
 :root {
-  --color-background: #1e1e24;
+  --color-background: #333333;
   --color-foreground: #ffffff;
   --color-primary: #3b82f6;
-  --color-secondary: #2a2a35;
+  --color-secondary: #252525;
   --color-border: #3f3f4e;
   --color-accent: #ef4444;
 
@@ -35,7 +35,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0 12px 0;
+  padding: 8px 0 8px 0;
   position: relative;
   z-index: 999999;
   gap: 8px;
