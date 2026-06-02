@@ -22,10 +22,31 @@ chrome.runtime.onInstalled.addListener(async () => {
 
   // Cache Assets
   await cacheAssets();
+
+  // Inject content scripts into existing tabs
+  try {
+    const tabs = await chrome.tabs.query({ url: ['http://*/*', 'https://*/*'] });
+    for (const tab of tabs) {
+      if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('edge://') && !tab.url.startsWith('about:')) {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['sidebar.js', 'content.js']
+        }).catch(() => { });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to query tabs for content script injection:', err);
+  }
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   await registerScrollScript();
+  //clean up stale side panel state
+  const storage = await chrome.storage.local.get(null);
+  const keysToRemove = Object.keys(storage).filter(key => key.startsWith('sidePanelOpen_'));
+  if (keysToRemove.length > 0) {
+    await chrome.storage.local.remove(keysToRemove);
+  }
 });
 
 // Register main world content script dynamically to bypass CSP on sites like Bing/ChatGPT
@@ -127,6 +148,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'GET_WINDOW_ID') {
     if (sender.tab && sender.tab.windowId) {
       sendResponse(sender.tab.windowId);
+    }
+  } else if (msg.type === 'CHECK_SIDEPANEL_OPEN') {
+    if (msg.windowId) {
+      //check active side panel contexts
+      chrome.runtime.getContexts({ contextTypes: ['SIDE_PANEL'] })
+        .then((contexts) => {
+          const windowContexts = contexts.filter(c => c.windowId === msg.windowId);
+          sendResponse(windowContexts.length > 0);
+        })
+        .catch((err) => {
+          console.error(err);
+          sendResponse(false);
+        });
+      return true;
+    } else {
+      sendResponse(false);
     }
   } else if (msg.type === 'OPEN_SIDEPANEL') {
     if (sender.tab && sender.tab.windowId) {

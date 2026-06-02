@@ -5,6 +5,8 @@ const _shouldScanAbsolute = window.location.hostname.includes('mail.google.com')
 let _hostElement = null;
 let _sidebar = null;
 let _isSidebarHidden = false;
+let _currentTag = null;
+let _isReinstating = false;
 let _fixedObserver = null;
 const _fixedElementsSet = new Set();
 const _SKIPPED_TAGS = new Set([
@@ -24,8 +26,73 @@ let _hoverProgress = 0;
 let _autoHideCheckTimer = null;
 let _lastMouseX = 0;
 let _indicator = null;
+let _recoveryObserver = null;
+let _statusCheckInterval = null;
+let _scrollListener = null;
+let _mouseMoveListener = null;
+let _mouseLeaveListener = null;
+let _focusListener = null;
+let _visibilityListener = null;
+
+async function _createSidebar() {
+  if (!chrome.runtime?.id) {
+    _destroy();
+    return;
+  }
+  if (_isReinstating) return;
+  _isReinstating = true;
+  try {
+    const existing = document.getElementById('dockit-host-root');
+    if (existing) {
+      existing.remove();
+    }
+    _currentTag = Math.floor(Math.random() * 1000000).toString();
+    _hostElement = document.createElement('div');
+    _hostElement.id = 'dockit-host-root';
+    if (_isSidebarHidden) {
+      _hostElement.style.display = 'none';
+    } else {
+      _hostElement.style.display = '';
+    }
+    if (_isAutoHideActive) {
+      _hostElement.classList.add('dockit-autohide-hidden');
+    }
+    const shadowRoot = _hostElement.attachShadow({ mode: 'open' });
+    const tagEl = document.createElement('div');
+    tagEl.id = 'dockit-tag';
+    tagEl.dataset.value = _currentTag;
+    tagEl.style.display = 'none';
+    shadowRoot.appendChild(tagEl);
+    try {
+      const cssRes = await fetch(chrome.runtime.getURL('styles.css'));
+      const cssText = await cssRes.text();
+      const styleEl = document.createElement('style');
+      styleEl.textContent = cssText;
+      shadowRoot.appendChild(styleEl);
+    } catch (err) {
+      console.error('Failed to inject Dockit stylesheet:', err);
+    }
+    const fontStorage = await chrome.storage.local.get(['fontCss']);
+    if (fontStorage.fontCss) {
+      const fontStyle = document.createElement('style');
+      fontStyle.textContent = fontStorage.fontCss;
+      shadowRoot.appendChild(fontStyle);
+    }
+    _sidebar = new DockitSidebar(false);
+    const sidebarEl = await _sidebar.render();
+    shadowRoot.appendChild(sidebarEl);
+    document.documentElement.appendChild(_hostElement);
+  } catch (err) {
+    console.error('Error reinstating sidebar:', err);
+  } finally {
+    _isReinstating = false;
+  }
+}
 
 async function init() {
+  window.dispatchEvent(new CustomEvent('dockit-cleanup-old'));
+  window.addEventListener('dockit-cleanup-old', _destroy);
+
   if (window !== window.top) return;
 
   const storage = await chrome.storage.local.get(['dockitDisableSidebarList', 'dockitForceAutohideList', 'dockitAutoHide']);
@@ -64,36 +131,7 @@ async function init() {
   script.src = chrome.runtime.getURL('scroll.js');
   (document.head || document.documentElement).appendChild(script);
 
-  if (document.getElementById('dockit-host-root')) return;
 
-  _hostElement = document.createElement('div');
-  _hostElement.id = 'dockit-host-root';
-  if (_isAutoHideActive) {
-    _hostElement.classList.add('dockit-autohide-hidden');
-  }
-
-  const shadowRoot = _hostElement.attachShadow({ mode: 'open' });
-
-  try {
-    const cssRes = await fetch(chrome.runtime.getURL('styles.css'));
-    const cssText = await cssRes.text();
-    const styleEl = document.createElement('style');
-    styleEl.textContent = cssText;
-    shadowRoot.appendChild(styleEl);
-  } catch (err) {
-    console.error('Failed to inject Dockit stylesheet:', err);
-  }
-
-  const fontStorage = await chrome.storage.local.get(['fontCss']);
-  if (fontStorage.fontCss) {
-    const fontStyle = document.createElement('style');
-    fontStyle.textContent = fontStorage.fontCss;
-    shadowRoot.appendChild(fontStyle);
-  }
-
-  _sidebar = new DockitSidebar(false);
-  const sidebarEl = await _sidebar.render();
-  shadowRoot.appendChild(sidebarEl);
 
   const layoutStyle = document.createElement('style');
   layoutStyle.id = 'dockit-layout-styles';
@@ -101,6 +139,7 @@ async function init() {
     html:not(.dockit-autohide-active) {
       overflow: hidden !important;
       height: 100% !important;
+      scrollbar-gutter: auto !important;
     }
     html:not(.dockit-autohide-active) body {
       width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
@@ -246,26 +285,40 @@ async function init() {
     document.head.appendChild(youtubeStyle);
   }
 
-  document.documentElement.appendChild(_hostElement);
-
   _indicator = document.createElement('div');
   _indicator.id = 'dockit-autohide-indicator';
   document.documentElement.appendChild(_indicator);
 
-  const _recoveryObserver = new MutationObserver(() => {
-    if (_hostElement && !_hostElement.parentNode && document.documentElement) {
-      document.documentElement.appendChild(_hostElement);
+  _recoveryObserver = new MutationObserver(() => {
+    if (!chrome.runtime?.id) {
+      _destroy();
+      return;
     }
+    //verify tag and reinstate if mismatched or missing
+    const existing = document.getElementById('dockit-host-root');
+    if (!existing) {
+      _createSidebar();
+      return;
+    }
+    const shadow = existing.shadowRoot;
+    const tagEl = shadow ? shadow.getElementById('dockit-tag') : null;
+    const tagVal = tagEl ? tagEl.dataset.value : null;
+    if (tagVal !== _currentTag) {
+      _createSidebar();
+      return;
+    }
+
     if (_indicator && !_indicator.parentNode && document.documentElement) {
       document.documentElement.appendChild(_indicator);
     }
   });
   _recoveryObserver.observe(document.documentElement, { childList: true });
 
-  document.body.addEventListener('scroll', () => {
+  _scrollListener = () => {
     window.dispatchEvent(new Event('scroll'));
     document.dispatchEvent(new Event('scroll'));
-  });
+  };
+  document.body?.addEventListener('scroll', _scrollListener);
 
   requestAnimationFrame(() => {
     _scanFixedElements();
@@ -275,20 +328,79 @@ async function init() {
   });
 
   let currentWindowId = null;
-  chrome.runtime.sendMessage({ type: 'GET_WINDOW_ID' }, (winId) => {
-    currentWindowId = winId;
-    if (winId) {
-      chrome.storage.local.get(`sidePanelOpen_${winId}`, (data) => {
-        if (data[`sidePanelOpen_${winId}`]) {
-          _isSidebarHidden = true;
-          _hostElement.style.display = 'none';
-          document.documentElement.classList.add('dockit-full-width');
-          document.body.classList.add('dockit-full-width');
-          _removeFixedConstraints();
+  const _checkSidePanelStatus = () => {
+    if (!chrome.runtime?.id) {
+      _destroy();
+      return;
+    }
+    if (!currentWindowId) return;
+    try {
+      chrome.runtime.sendMessage({ type: 'CHECK_SIDEPANEL_OPEN', windowId: currentWindowId }, (isOpen) => {
+        if (chrome.runtime.lastError) {
+          //handle extension reload
+          return;
+        }
+        const actuallyOpen = !!isOpen;
+        if (actuallyOpen !== _isSidebarHidden) {
+          if (actuallyOpen) {
+            _isSidebarHidden = true;
+            _hostElement.style.display = 'none';
+            document.documentElement.classList.add('dockit-full-width');
+            document.body.classList.add('dockit-full-width');
+            _removeFixedConstraints();
+          } else {
+            _isSidebarHidden = false;
+            _hostElement.style.display = '';
+            document.documentElement.classList.remove('dockit-full-width');
+            document.body.classList.remove('dockit-full-width');
+            requestAnimationFrame(() => _scanFixedElements());
+            _sidebar.loadData();
+          }
+          chrome.storage.local.set({ [`sidePanelOpen_${currentWindowId}`]: actuallyOpen });
         }
       });
+    } catch (err) {
+      //handle context invalidated error
     }
-  });
+  };
+
+  //retrieve window id and panel status
+  try {
+    const winId = await new Promise((resolve) => {
+      if (!chrome.runtime?.id) {
+        resolve(null);
+        return;
+      }
+      chrome.runtime.sendMessage({ type: 'GET_WINDOW_ID' }, (res) => {
+        if (chrome.runtime.lastError) resolve(null);
+        else resolve(res);
+      });
+    });
+    currentWindowId = winId;
+    if (winId) {
+      const data = await chrome.storage.local.get(`sidePanelOpen_${winId}`);
+      if (data[`sidePanelOpen_${winId}`]) {
+        _isSidebarHidden = true;
+        document.documentElement.classList.add('dockit-full-width');
+        document.body.classList.add('dockit-full-width');
+      }
+    }
+  } catch (err) {
+    //handle context invalidation
+  }
+
+  await _createSidebar();
+  _checkSidePanelStatus();
+
+  _focusListener = _checkSidePanelStatus;
+  window.addEventListener('focus', _focusListener);
+  _visibilityListener = () => {
+    if (document.visibilityState === 'visible') {
+      _checkSidePanelStatus();
+    }
+  };
+  document.addEventListener('visibilitychange', _visibilityListener);
+  _statusCheckInterval = setInterval(_checkSidePanelStatus, 10000);
 
   chrome.storage.onChanged.addListener((changes) => {
     if (currentWindowId && changes[`sidePanelOpen_${currentWindowId}`]) {
@@ -319,6 +431,83 @@ async function init() {
   });
 
   initAutoHideTracking();
+}
+
+function _destroy() {
+  if (_recoveryObserver) {
+    _recoveryObserver.disconnect();
+    _recoveryObserver = null;
+  }
+  if (_fixedObserver) {
+    _fixedObserver.disconnect();
+    _fixedObserver = null;
+  }
+  if (_statusCheckInterval) {
+    clearInterval(_statusCheckInterval);
+    _statusCheckInterval = null;
+  }
+  if (_autoHideCheckTimer) {
+    clearInterval(_autoHideCheckTimer);
+    _autoHideCheckTimer = null;
+  }
+  if (_scrollListener) {
+    document.body?.removeEventListener('scroll', _scrollListener);
+    _scrollListener = null;
+  }
+  if (_mouseMoveListener) {
+    document.removeEventListener('mousemove', _mouseMoveListener);
+    _mouseMoveListener = null;
+  }
+  if (_mouseLeaveListener) {
+    document.removeEventListener('mouseleave', _mouseLeaveListener);
+    _mouseLeaveListener = null;
+  }
+  if (_focusListener) {
+    window.removeEventListener('focus', _focusListener);
+    _focusListener = null;
+  }
+  if (_visibilityListener) {
+    document.removeEventListener('visibilitychange', _visibilityListener);
+    _visibilityListener = null;
+  }
+  window.removeEventListener('dockit-cleanup-old', _destroy);
+
+  const existing = document.getElementById('dockit-host-root');
+  if (existing) {
+    existing.remove();
+  }
+  const indicator = document.getElementById('dockit-autohide-indicator');
+  if (indicator) {
+    indicator.remove();
+  }
+  const layoutStyles = document.getElementById('dockit-layout-styles');
+  if (layoutStyles) {
+    layoutStyles.remove();
+  }
+  const gmailStyles = document.getElementById('dockit-gmail-patch');
+  if (gmailStyles) {
+    gmailStyles.remove();
+  }
+  const appStyles = document.getElementById('dockit-app-patch');
+  if (appStyles) {
+    appStyles.remove();
+  }
+  const redditStyles = document.getElementById('dockit-reddit-patch');
+  if (redditStyles) {
+    redditStyles.remove();
+  }
+  const linkedinStyles = document.getElementById('dockit-linkedin-patch');
+  if (linkedinStyles) {
+    linkedinStyles.remove();
+  }
+  const youtubeStyles = document.getElementById('dockit-youtube-patch');
+  if (youtubeStyles) {
+    youtubeStyles.remove();
+  }
+
+  document.documentElement.classList.remove('dockit-autohide-active', 'dockit-full-width');
+  document.body?.classList.remove('dockit-full-width');
+  _removeFixedConstraints();
 }
 
 function _safeSetStyle(el, prop, val, priority = 'important') {
@@ -463,6 +652,10 @@ function _queueCheckAndConstrain(node) {
 function _startFixedObserver() {
   if (_fixedObserver) return;
   _fixedObserver = new MutationObserver((mutations) => {
+    if (!chrome.runtime?.id) {
+      _destroy();
+      return;
+    }
     if (_isSidebarHidden || _isAutoHideActive) return;
     for (const m of mutations) {
       if (m.type === 'childList') {
@@ -499,6 +692,10 @@ function _removeFixedConstraints() {
 }
 
 async function updateAutoHideState() {
+  if (!chrome.runtime?.id) {
+    _destroy();
+    return;
+  }
   const storage = await chrome.storage.local.get(['dockitAutoHide', 'dockitForceAutohideList']);
   const autoHideEnabled = !!storage.dockitAutoHide;
   const forceAutohideList = storage.dockitForceAutohideList || [];
@@ -530,7 +727,7 @@ async function updateAutoHideState() {
 }
 
 function initAutoHideTracking() {
-  document.addEventListener('mousemove', (e) => {
+  _mouseMoveListener = (e) => {
     _lastMouseX = e.clientX;
     if (!_isAutoHideActive || _isSidebarHidden) return;
 
@@ -546,9 +743,10 @@ function initAutoHideTracking() {
         hideSidebar();
       }
     }
-  });
+  };
+  document.addEventListener('mousemove', _mouseMoveListener);
 
-  document.addEventListener('mouseleave', (e) => {
+  _mouseLeaveListener = (e) => {
     if (_isAutoHideActive) {
       if (window.innerWidth - e.clientX <= 50) {
         return;
@@ -556,7 +754,8 @@ function initAutoHideTracking() {
       hideSidebar();
       stopHoverTracking();
     }
-  });
+  };
+  document.addEventListener('mouseleave', _mouseLeaveListener);
 }
 
 function startHoverTracking() {

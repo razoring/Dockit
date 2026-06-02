@@ -107,6 +107,7 @@ class DockitSidebar {
       if (this.isSidePanel) {
         this.openSystemApp(name);
       } else {
+        if (!chrome.runtime?.id) return;
         chrome.runtime.sendMessage({ type: 'OPEN_SIDEPANEL', systemApp: name });
       }
     };
@@ -698,6 +699,7 @@ class DockitSidebar {
         if (this.isSidePanel) {
           document.dispatchEvent(new CustomEvent('dockit-navigate', { detail: app.url }));
         } else {
+          if (!chrome.runtime?.id) return;
           chrome.runtime.sendMessage({ type: 'OPEN_SIDEPANEL', app: app });
         }
       });
@@ -1853,7 +1855,9 @@ class DockitSidebar {
           }
         }
         await chrome.storage.local.remove(keysToRemove);
-        chrome.runtime.sendMessage({ type: 'REFETCH_ASSETS' });
+        if (chrome.runtime?.id) {
+          chrome.runtime.sendMessage({ type: 'REFETCH_ASSETS' });
+        }
 
         setTimeout(() => {
           cacheBtn.textContent = 'Purged!';
@@ -1868,7 +1872,10 @@ class DockitSidebar {
         clearBtn.dataset.busy = '1';
         clearBtn.textContent = 'Resetting...';
         
-        await chrome.storage.local.clear();
+        //clear all except sidepanel state
+        const storage = await chrome.storage.local.get(null);
+        const keysToRemove = Object.keys(storage).filter(key => !key.startsWith('sidePanelOpen_'));
+        await chrome.storage.local.remove(keysToRemove);
         
         setTimeout(() => {
           clearBtn.textContent = 'Reset!';
