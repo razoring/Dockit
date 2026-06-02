@@ -1146,6 +1146,19 @@ class DockitSidebar {
     const forceAutohideList = storageLists.dockitForceAutohideList || [];
     const forceScrollbarInsetList = storageLists.dockitForceScrollbarInsetList || [];
 
+    let currentSitePlaceholder = 'Add domain or URL...';
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url) {
+        const u = new URL(tab.url);
+        if (u.protocol === 'chrome:' || u.protocol === 'edge:' || u.protocol === 'about:') {
+          currentSitePlaceholder = u.protocol + '//' + u.host + (u.pathname === '/' ? '' : u.pathname);
+        } else {
+          currentSitePlaceholder = u.host + (u.pathname === '/' ? '' : u.pathname);
+        }
+      }
+    } catch (e) {}
+
     //render layout
     contentEl.innerHTML = `
       <div class="dockit-settings-container">
@@ -1295,7 +1308,7 @@ class DockitSidebar {
                     <span class="dockit-settings-item-desc">Pages where the sidebar will be completely disabled.</span>
                   </div>
                   <div class="dockit-settings-list-input-container">
-                    <input class="dockit-settings-list-input" type="text" placeholder="Add domain or URL..." id="input-blocklist-disable" />
+                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-disable" />
                     <button class="dockit-settings-list-add-btn" data-target="blocklist-disable">Add</button>
                   </div>
                   <div class="dockit-settings-tags" id="tags-blocklist-disable"></div>
@@ -1309,7 +1322,7 @@ class DockitSidebar {
                     <span class="dockit-settings-item-desc">Pages that will always force auto-hide behavior.</span>
                   </div>
                   <div class="dockit-settings-list-input-container">
-                    <input class="dockit-settings-list-input" type="text" placeholder="Add domain or URL..." id="input-blocklist-autohide" />
+                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-autohide" />
                     <button class="dockit-settings-list-add-btn" data-target="blocklist-autohide">Add</button>
                   </div>
                   <div class="dockit-settings-tags" id="tags-blocklist-autohide"></div>
@@ -1323,7 +1336,7 @@ class DockitSidebar {
                     <span class="dockit-settings-item-desc">Pages that will have scrollbars inset programmatically.</span>
                   </div>
                   <div class="dockit-settings-list-input-container">
-                    <input class="dockit-settings-list-input" type="text" placeholder="Add domain or URL..." id="input-blocklist-inset" />
+                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-inset" />
                     <button class="dockit-settings-list-add-btn" data-target="blocklist-inset">Add</button>
                   </div>
                   <div class="dockit-settings-tags" id="tags-blocklist-inset"></div>
@@ -1412,8 +1425,8 @@ class DockitSidebar {
         const targetId = btn.dataset.target;
         const input = contentEl.querySelector(`#input-${targetId}`);
         if (!input) return;
-        const value = input.value.trim();
-        if (value) {
+        const value = input.value.trim() || currentSitePlaceholder;
+        if (value && value !== 'Add domain or URL...') {
           if (targetId === 'blocklist-disable') {
             disableSidebarList.push(value);
             _renderTags(`tags-${targetId}`, disableSidebarList);
@@ -1620,7 +1633,9 @@ class DockitSidebar {
       if (searchInput) searchInput.placeholder = t('search_placeholder');
 
       contentEl.querySelectorAll('.dockit-settings-list-input').forEach(input => {
-        input.placeholder = t('add_domain_placeholder');
+        if (!input.id.startsWith('input-blocklist-')) {
+          input.placeholder = t('add_domain_placeholder');
+        }
       });
 
       //buttons
