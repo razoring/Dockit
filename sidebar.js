@@ -1,5 +1,51 @@
 // sidebar.js
 
+//global i18n default dictionary
+const I18N_STRINGS_DEFAULT = {
+  'edit_apps': 'Edit Apps',
+  'customization': 'Customization',
+  'settings': 'Settings',
+  'appearance': 'Appearance',
+  'functionality': 'Functionality',
+  'blocklists': 'Blocklists',
+  'debug': 'Debug',
+  'language': 'Language',
+  'enable_taper': 'Enable Taper',
+  'enable_taper_desc': 'Enable visual sidebar edge tapering.',
+  'show_url_bar': 'Show URL Bar',
+  'show_url_bar_desc': 'Display URL and navigation controls in side panels.',
+  'auto_hide': 'Auto-hide Sidepanel',
+  'auto_hide_desc': 'Automatically hide side panels when focus is lost.',
+  'disable_sidebar': 'Disable Sidebar',
+  'disable_sidebar_desc': 'Pages where the sidebar will be completely disabled.',
+  'force_auto_hide': 'Force Auto-hide',
+  'force_auto_hide_desc': 'Pages that will always force auto-hide behavior.',
+  'force_scrollbar': 'Force Scrollbar Inset',
+  'force_scrollbar_desc': 'Pages that will have scrollbars inset programmatically.',
+  'cloud_sync': 'Cloud Sync',
+  'cloud_sync_desc': 'Force instant synchronization of configuration to the cloud.',
+  'clear_cache': 'Clear Cache',
+  'clear_cache_desc': 'Purge cached asset resources and system pre-fetches.',
+  'clear_data': 'Clear Data',
+  'clear_data_desc': 'Clear all extension storage and reset default states.',
+  'select_language': 'Select Language',
+  'select_language_desc': 'Change the interface language of settings.',
+  'search_placeholder': 'Search...',
+  'collapse_all': 'Collapse All',
+  'expand_all': 'Expand All',
+  'add_domain_placeholder': 'Add domain or URL...',
+  'add_btn': 'Add',
+  'sync_now': 'Sync Now',
+  'pinned_apps': 'Pinned Apps',
+  'search_title': 'Search',
+  'pin_to_sidebar': 'Pin to Sidebar',
+  'remove_pinned': 'Remove Pinned Item',
+  'no_pinned_apps': 'No pinned apps yet.',
+  'pin_hint': 'Use the pin icon above to pin this site!',
+  'drag_delete': 'Drag outside to delete',
+  'translating': 'Translating...'
+};
+
 class DockitSidebar {
   constructor(isSidePanel = false) {
     this.isSidePanel = isSidePanel;
@@ -9,10 +55,13 @@ class DockitSidebar {
     this._dragState = null;
     this._inMemoryUrls = [];
     this._isInPageOpen = false;
+    this._i18n = { ...I18N_STRINGS_DEFAULT };
   }
 
   async render() {
     this.element.innerHTML = `
+      <div class="dockit-taper-top"></div>
+      <div class="dockit-taper-bottom"></div>
       <div class="dockit-section" id="pinned-section"></div>
       <div class="dockit-divider" data-theme-colors="border"></div>
       <div class="dockit-section" id="temp-section"></div>
@@ -569,9 +618,15 @@ class DockitSidebar {
   }
 
   async loadData() {
-    const data = await chrome.storage.local.get(['pinnedApps', 'temporaryApps']);
+    const data = await chrome.storage.local.get(['pinnedApps', 'temporaryApps', 'dockitEnableTaper']);
     const pinnedApps = data.pinnedApps || [];
     const tempApps = data.temporaryApps || [];
+
+    if (data.dockitEnableTaper) {
+      this.element.classList.add('dockit-tapered');
+    } else {
+      this.element.classList.remove('dockit-tapered');
+    }
 
     const pinnedSection = this.element.querySelector('#pinned-section');
     const tempSection = this.element.querySelector('#temp-section');
@@ -1421,51 +1476,8 @@ class DockitSidebar {
       if (descEl) item.dataset.origDesc = descEl.textContent;
     });
 
-    // Global i18n dictionary — all translatable strings in the extension
-    const I18N_STRINGS = {
-      'edit_apps': 'Edit Apps',
-      'customization': 'Customization',
-      'settings': 'Settings',
-      'appearance': 'Appearance',
-      'functionality': 'Functionality',
-      'blocklists': 'Blocklists',
-      'debug': 'Debug',
-      'language': 'Language',
-      'enable_taper': 'Enable Taper',
-      'enable_taper_desc': 'Enable visual sidebar edge tapering.',
-      'show_url_bar': 'Show URL Bar',
-      'show_url_bar_desc': 'Display URL and navigation controls in side panels.',
-      'auto_hide': 'Auto-hide Sidepanel',
-      'auto_hide_desc': 'Automatically hide side panels when focus is lost.',
-      'disable_sidebar': 'Disable Sidebar',
-      'disable_sidebar_desc': 'Pages where the sidebar will be completely disabled.',
-      'force_auto_hide': 'Force Auto-hide',
-      'force_auto_hide_desc': 'Pages that will always force auto-hide behavior.',
-      'force_scrollbar': 'Force Scrollbar Inset',
-      'force_scrollbar_desc': 'Pages that will have scrollbars inset programmatically.',
-      'cloud_sync': 'Cloud Sync',
-      'cloud_sync_desc': 'Force instant synchronization of configuration to the cloud.',
-      'clear_cache': 'Clear Cache',
-      'clear_cache_desc': 'Purge cached asset resources and system pre-fetches.',
-      'clear_data': 'Clear Data',
-      'clear_data_desc': 'Clear all extension storage and reset default states.',
-      'select_language': 'Select Language',
-      'select_language_desc': 'Change the interface language of settings.',
-      'search_placeholder': 'Search...',
-      'collapse_all': 'Collapse All',
-      'expand_all': 'Expand All',
-      'add_domain_placeholder': 'Add domain or URL...',
-      'add_btn': 'Add',
-      'sync_now': 'Sync Now',
-      'pinned_apps': 'Pinned Apps',
-      'search_title': 'Search',
-      'pin_to_sidebar': 'Pin to Sidebar',
-      'remove_pinned': 'Remove Pinned Item',
-      'no_pinned_apps': 'No pinned apps yet.',
-      'pin_hint': 'Use the pin icon above to pin this site!',
-      'drag_delete': 'Drag outside to delete',
-      'translating': 'Translating...'
-    };
+    //global i18n dictionary
+    const I18N_STRINGS = I18N_STRINGS_DEFAULT;
 
     //store current translations (defaults to english)
     if (!this._i18n) this._i18n = { ...I18N_STRINGS };
@@ -1755,6 +1767,36 @@ class DockitSidebar {
       }
     };
     await loadSavedLang();
+
+    // initialize settings checkboxes on load
+    const loadSettingsState = async () => {
+      const storage = await chrome.storage.local.get(['dockitEnableTaper', 'dockitShowUrlBar', 'dockitAutoHide']);
+      
+      const taperCheckbox = contentEl.querySelector('#setting-appearance-taper');
+      if (taperCheckbox) {
+        taperCheckbox.checked = !!storage.dockitEnableTaper;
+        taperCheckbox.addEventListener('change', async () => {
+          await chrome.storage.local.set({ dockitEnableTaper: taperCheckbox.checked });
+        });
+      }
+
+      const urlbarCheckbox = contentEl.querySelector('#setting-appearance-urlbar');
+      if (urlbarCheckbox) {
+        urlbarCheckbox.checked = storage.dockitShowUrlBar !== false;
+        urlbarCheckbox.addEventListener('change', async () => {
+          await chrome.storage.local.set({ dockitShowUrlBar: urlbarCheckbox.checked });
+        });
+      }
+
+      const autohideCheckbox = contentEl.querySelector('#setting-functionality-autohide');
+      if (autohideCheckbox) {
+        autohideCheckbox.checked = !!storage.dockitAutoHide;
+        autohideCheckbox.addEventListener('change', async () => {
+          await chrome.storage.local.set({ dockitAutoHide: autohideCheckbox.checked });
+        });
+      }
+    };
+    await loadSettingsState();
 
     //bind debug actions
     const syncBtn = contentEl.querySelector('#btn-debug-sync');

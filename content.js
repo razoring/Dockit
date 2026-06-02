@@ -30,11 +30,16 @@ async function init() {
 
   const shadowRoot = _hostElement.attachShadow({ mode: 'open' });
 
-  //inject stylesheet via link tag to bypass csp
-  const cssLink = document.createElement('link');
-  cssLink.rel = 'stylesheet';
-  cssLink.href = chrome.runtime.getURL('styles.css');
-  shadowRoot.appendChild(cssLink);
+  //inject stylesheet via style tag by fetching content to bypass shadow DOM onload bugs
+  try {
+    const cssRes = await fetch(chrome.runtime.getURL('styles.css'));
+    const cssText = await cssRes.text();
+    const styleEl = document.createElement('style');
+    styleEl.textContent = cssText;
+    shadowRoot.appendChild(styleEl);
+  } catch (err) {
+    console.error('Failed to inject Dockit stylesheet:', err);
+  }
 
   //inject cached fonts
   const storage = await chrome.storage.local.get(['fontCss']);
@@ -65,7 +70,6 @@ async function init() {
       position: relative !important;
       margin: 0 !important;
       box-sizing: border-box !important;
-      transition: width 0.2s ease-in-out !important;
     }
     body.dockit-full-width {
       width: 100% !important;
@@ -161,6 +165,20 @@ async function init() {
     document.head.appendChild(linkedinStyle);
   }
 
+  //youtube targeted patch
+  if (window.location.hostname.includes('youtube.com')) {
+    const youtubeStyle = document.createElement('style');
+    youtubeStyle.id = 'dockit-youtube-patch';
+    youtubeStyle.textContent = `
+      body:has(ytd-guide[opened]),
+      body:has(tp-yt-app-drawer[opened]),
+      body:has(tp-yt-iron-overlay-backdrop) {
+        overflow: hidden !important;
+      }
+    `;
+    document.head.appendChild(youtubeStyle);
+  }
+
   //append sidebar host to html element
   document.documentElement.appendChild(_hostElement);
 
@@ -242,6 +260,11 @@ function _constrainFixedElement(el) {
   if (_hostElement && (_hostElement === el || _hostElement.contains(el))) return;
   if (el.id === 'dockit-host-root') return;
   if (el.closest('#gb')) return;
+
+  //skip youtube drawer and popup elements
+  if (window.location.hostname.includes('youtube.com')) {
+    if (el.closest('ytd-guide') || el.closest('tp-yt-app-drawer') || el.closest('ytd-popup-container') || el.closest('tp-yt-iron-overlay-backdrop') || el.tagName.toLowerCase().includes('iron-') || el.tagName.toLowerCase().includes('paper-')) return;
+  }
 
   const hasScrollbar = document.body.scrollHeight > window.innerHeight;
   const scrollbarGap = hasScrollbar ? 16 : 0;

@@ -1034,3 +1034,42 @@ body {
   margin-top: 4px;
   display: none;
 }
+
+/* Edge-style visual edge tapering (concave rounding transitions) */
+.dockit-taper-top {
+  display: none;
+}
+
+.dockit-taper-bottom {
+  display: none;
+}
+
+.dockit-sidebar.dockit-tapered .dockit-taper-top {
+  display: block;
+  position: absolute;
+  top: -1px;
+  right: calc(100% - 1px);
+  width: 8px;
+  height: 8px;
+  background: radial-gradient(circle at bottom left, transparent 6px, var(--color-border) 6px, var(--color-border) 7px, var(--color-background) 7px);
+  pointer-events: none;
+  z-index: 1000000;
+}
+
+.dockit-sidebar.dockit-tapered .dockit-taper-bottom {
+  display: block;
+  position: absolute;
+  bottom: -1px;
+  right: calc(100% - 1px);
+  width: 8px;
+  height: 8px;
+  background: radial-gradient(circle at top left, transparent 6px, var(--color-border) 6px, var(--color-border) 7px, var(--color-background) 7px);
+  pointer-events: none;
+  z-index: 1000000;
+}
+
+.dockit-sidebar.dockit-tapered::before {
+  top: 7px;
+  bottom: 7px;
+  height: auto;
+}
