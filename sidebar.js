@@ -22,8 +22,6 @@ const I18N_STRINGS_DEFAULT = {
   'disable_sidebar_desc': 'Pages where the sidebar will be completely disabled.',
   'force_auto_hide': 'Force Auto-hide',
   'force_auto_hide_desc': 'Pages that will always force auto-hide behavior.',
-  'force_scrollbar': 'Force Scrollbar Inset',
-  'force_scrollbar_desc': 'Pages that will have scrollbars inset programmatically.',
   'cloud_sync': 'Cloud Sync',
   'cloud_sync_desc': 'Force instant synchronization of configuration to the cloud.',
   'clear_cache': 'Clear Cache',
@@ -1139,12 +1137,10 @@ class DockitSidebar {
     //default seed lists
     const storageLists = await chrome.storage.local.get([
       'dockitDisableSidebarList',
-      'dockitForceAutohideList',
-      'dockitForceScrollbarInsetList'
+      'dockitForceAutohideList'
     ]);
     const disableSidebarList = storageLists.dockitDisableSidebarList || ['netflix.com'];
     const forceAutohideList = storageLists.dockitForceAutohideList || [];
-    const forceScrollbarInsetList = storageLists.dockitForceScrollbarInsetList || [];
 
     let currentSitePlaceholder = 'Add domain or URL...';
     try {
@@ -1328,20 +1324,6 @@ class DockitSidebar {
                   <div class="dockit-settings-tags" id="tags-blocklist-autohide"></div>
                 </div>
               </div>
-              <!-- Force Scrollbar Inset -->
-              <div class="dockit-settings-item" data-title="force scrollbar inset" data-desc="pages that will have scrollbars inset programmatically">
-                <div class="dockit-settings-list-wrapper">
-                  <div class="dockit-settings-item-info">
-                    <span class="dockit-settings-item-title">Force Scrollbar Inset</span>
-                    <span class="dockit-settings-item-desc">Pages that will have scrollbars inset programmatically.</span>
-                  </div>
-                  <div class="dockit-settings-list-input-container">
-                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-inset" />
-                    <button class="dockit-settings-list-add-btn" data-target="blocklist-inset">Add</button>
-                  </div>
-                  <div class="dockit-settings-tags" id="tags-blocklist-inset"></div>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -1405,8 +1387,6 @@ class DockitSidebar {
             await chrome.storage.local.set({ dockitDisableSidebarList: tagsArray });
           } else if (containerId === 'tags-blocklist-autohide') {
             await chrome.storage.local.set({ dockitForceAutohideList: tagsArray });
-          } else if (containerId === 'tags-blocklist-inset') {
-            await chrome.storage.local.set({ dockitForceScrollbarInsetList: tagsArray });
           }
         });
         container.appendChild(tagEl);
@@ -1416,7 +1396,6 @@ class DockitSidebar {
     //initial lists render
     _renderTags('tags-blocklist-disable', disableSidebarList);
     _renderTags('tags-blocklist-autohide', forceAutohideList);
-    _renderTags('tags-blocklist-inset', forceScrollbarInsetList);
 
     //bind list action clicks
     const listAddButtons = contentEl.querySelectorAll('.dockit-settings-list-add-btn');
@@ -1435,10 +1414,6 @@ class DockitSidebar {
             forceAutohideList.push(value);
             _renderTags(`tags-${targetId}`, forceAutohideList);
             await chrome.storage.local.set({ dockitForceAutohideList: forceAutohideList });
-          } else if (targetId === 'blocklist-inset') {
-            forceScrollbarInsetList.push(value);
-            _renderTags(`tags-${targetId}`, forceScrollbarInsetList);
-            await chrome.storage.local.set({ dockitForceScrollbarInsetList: forceScrollbarInsetList });
           }
           input.value = '';
         }
@@ -1609,7 +1584,6 @@ class DockitSidebar {
         'auto-hide sidepanel': ['auto_hide', 'auto_hide_desc'],
         'disable sidebar': ['disable_sidebar', 'disable_sidebar_desc'],
         'force auto-hide': ['force_auto_hide', 'force_auto_hide_desc'],
-        'force scrollbar inset': ['force_scrollbar', 'force_scrollbar_desc'],
         'cloud sync': ['cloud_sync', 'cloud_sync_desc'],
         'clear cache': ['clear_cache', 'clear_cache_desc'],
         'clear data': ['clear_data', 'clear_data_desc'],
@@ -1866,9 +1840,21 @@ class DockitSidebar {
 
     const cacheBtn = contentEl.querySelector('#btn-debug-cache');
     if (cacheBtn) {
-      cacheBtn.addEventListener('click', () => {
+      cacheBtn.addEventListener('click', async () => {
         cacheBtn.dataset.busy = '1';
         cacheBtn.textContent = 'Purging...';
+        
+        const storage = await chrome.storage.local.get(null);
+        const keysToRemove = ['temporaryApps', 'lucideIcons', 'fontCss'];
+        const currentLang = storage.dockitLanguage || 'en';
+        for (const key of Object.keys(storage)) {
+          if (key.startsWith('dockitTranslations_v2_') && key !== `dockitTranslations_v2_${currentLang}`) {
+            keysToRemove.push(key);
+          }
+        }
+        await chrome.storage.local.remove(keysToRemove);
+        chrome.runtime.sendMessage({ type: 'REFETCH_ASSETS' });
+
         setTimeout(() => {
           cacheBtn.textContent = 'Purged!';
           setTimeout(() => { delete cacheBtn.dataset.busy; cacheBtn.textContent = t('clear_cache'); }, 1500);
@@ -1878,12 +1864,15 @@ class DockitSidebar {
 
     const clearBtn = contentEl.querySelector('#btn-debug-clear');
     if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
+      clearBtn.addEventListener('click', async () => {
         clearBtn.dataset.busy = '1';
         clearBtn.textContent = 'Resetting...';
+        
+        await chrome.storage.local.clear();
+        
         setTimeout(() => {
           clearBtn.textContent = 'Reset!';
-          setTimeout(() => { delete clearBtn.dataset.busy; clearBtn.textContent = t('clear_data'); }, 1500);
+          setTimeout(() => { window.location.reload(); }, 500);
         }, 800);
       });
     }

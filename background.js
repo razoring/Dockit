@@ -36,19 +36,8 @@ async function registerScrollScript() {
     if (exists) {
       await chrome.scripting.unregisterContentScripts({ ids: ['dockit-scroll-interceptor'] });
     }
-    await chrome.scripting.registerContentScripts([
-      {
-        id: 'dockit-scroll-interceptor',
-        js: ['scroll.js'],
-        matches: ['<all_urls>'],
-        runAt: 'document_start',
-        world: 'MAIN',
-        allFrames: false
-      }
-    ]);
-    console.log("Main world scroll script registered successfully.");
   } catch (err) {
-    console.error('Failed to register main world script:', err);
+    console.error('Failed to unregister main world script:', err);
   }
 }
 
@@ -155,6 +144,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
       }, 100);
     }
+  } else if (msg.type === 'REFETCH_ASSETS') {
+    cacheAssets();
   } else if (msg.type === 'FETCH_SEARCH_SUGGESTIONS') {
     //fetch search suggestions from google suggest API
     fetch(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(msg.query)}`)

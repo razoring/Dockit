@@ -18,13 +18,18 @@ const _SKIPPED_TAGS = new Set([
 const _pendingNodes = new Set();
 let _pendingTimeout = null;
 
-
+let _isAutoHideActive = false;
+let _isSidebarVisible = true;
+let _hoverProgress = 0;
+let _autoHideCheckTimer = null;
+let _lastMouseX = 0;
+let _indicator = null;
 
 async function init() {
   if (window !== window.top) return;
 
-  const storageBlocklist = await chrome.storage.local.get(['dockitDisableSidebarList']);
-  const disableSidebarList = storageBlocklist.dockitDisableSidebarList || ['chrome://extensions', 'play.google.com'];
+  const storage = await chrome.storage.local.get(['dockitDisableSidebarList', 'dockitForceAutohideList', 'dockitAutoHide']);
+  const disableSidebarList = storage.dockitDisableSidebarList || ['netflix.com'];
   const currentHost = window.location.hostname.toLowerCase();
   const currentUrl = window.location.href.toLowerCase();
 
@@ -38,15 +43,37 @@ async function init() {
     return;
   }
 
+  const autoHideEnabled = !!storage.dockitAutoHide;
+  const forceAutohideList = storage.dockitForceAutohideList || [];
+  const isForceAutoHideMatched = forceAutohideList.some((item) => {
+    const cleanItem = item.toLowerCase().trim();
+    if (!cleanItem) return false;
+    return currentHost.includes(cleanItem) || currentUrl.includes(cleanItem);
+  });
+
+  _isAutoHideActive = autoHideEnabled || isForceAutoHideMatched;
+
+  if (_isAutoHideActive) {
+    document.documentElement.classList.add('dockit-autohide-active');
+    _isSidebarVisible = false;
+  } else {
+    _isSidebarVisible = true;
+  }
+
+  const script = document.createElement('script');
+  script.src = chrome.runtime.getURL('scroll.js');
+  (document.head || document.documentElement).appendChild(script);
+
   if (document.getElementById('dockit-host-root')) return;
 
-  //create host element
   _hostElement = document.createElement('div');
   _hostElement.id = 'dockit-host-root';
+  if (_isAutoHideActive) {
+    _hostElement.classList.add('dockit-autohide-hidden');
+  }
 
   const shadowRoot = _hostElement.attachShadow({ mode: 'open' });
 
-  //inject stylesheet via style tag by fetching content to bypass shadow DOM onload bugs
   try {
     const cssRes = await fetch(chrome.runtime.getURL('styles.css'));
     const cssText = await cssRes.text();
@@ -57,28 +84,25 @@ async function init() {
     console.error('Failed to inject Dockit stylesheet:', err);
   }
 
-  //inject cached fonts
-  const storage = await chrome.storage.local.get(['fontCss']);
-  if (storage.fontCss) {
+  const fontStorage = await chrome.storage.local.get(['fontCss']);
+  if (fontStorage.fontCss) {
     const fontStyle = document.createElement('style');
-    fontStyle.textContent = storage.fontCss;
+    fontStyle.textContent = fontStorage.fontCss;
     shadowRoot.appendChild(fontStyle);
   }
 
-  //render sidebar
   _sidebar = new DockitSidebar(false);
   const sidebarEl = await _sidebar.render();
   shadowRoot.appendChild(sidebarEl);
 
-  //inject layout styles
   const layoutStyle = document.createElement('style');
   layoutStyle.id = 'dockit-layout-styles';
   layoutStyle.textContent = `
-    html {
+    html:not(.dockit-autohide-active) {
       overflow: hidden !important;
       height: 100% !important;
     }
-    body {
+    html:not(.dockit-autohide-active) body {
       width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
       height: 100% !important;
       overflow-y: auto !important;
@@ -87,7 +111,8 @@ async function init() {
       margin: 0 !important;
       box-sizing: border-box !important;
     }
-    body.dockit-full-width {
+    html body.dockit-full-width,
+    html:not(.dockit-autohide-active) body.dockit-full-width {
       width: 100% !important;
     }
     #dockit-host-root {
@@ -97,6 +122,32 @@ async function init() {
       top: 0 !important;
       right: 0 !important;
       z-index: 2147483647;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    }
+    #dockit-host-root.dockit-autohide-hidden {
+      transform: translateX(${SIDEBAR_WIDTH}px) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    @keyframes dockit-pattern-move {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 400px; }
+    }
+    #dockit-autohide-indicator {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 50px;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 2147483646;
+      opacity: 0;
+      background: linear-gradient(to bottom, var(--color-primary, #3b82f6), hsl(from var(--color-primary, #3b82f6) calc(h + 50) s l), var(--color-primary, #3b82f6));
+      background-size: 100% 400px;
+      animation: dockit-pattern-move 2.5s linear infinite;
+      mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.73) 10%, rgba(0,0,0,0.51) 20%, rgba(0,0,0,0.34) 30%, rgba(0,0,0,0.22) 40%, rgba(0,0,0,0.13) 50%, rgba(0,0,0,0.06) 60%, rgba(0,0,0,0.03) 70%, rgba(0,0,0,0.01) 80%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.73) 10%, rgba(0,0,0,0.51) 20%, rgba(0,0,0,0.34) 30%, rgba(0,0,0,0.22) 40%, rgba(0,0,0,0.13) 50%, rgba(0,0,0,0.06) 60%, rgba(0,0,0,0.03) 70%, rgba(0,0,0,0.01) 80%, rgba(0,0,0,0) 100%);
+      transition: opacity 0.05s linear;
     }
   `;
   document.head.appendChild(layoutStyle);
@@ -195,33 +246,34 @@ async function init() {
     document.head.appendChild(youtubeStyle);
   }
 
-  //append sidebar host to html element
   document.documentElement.appendChild(_hostElement);
 
-  //ensure sidebar host is permanent
+  _indicator = document.createElement('div');
+  _indicator.id = 'dockit-autohide-indicator';
+  document.documentElement.appendChild(_indicator);
+
   const _recoveryObserver = new MutationObserver(() => {
     if (_hostElement && !_hostElement.parentNode && document.documentElement) {
       document.documentElement.appendChild(_hostElement);
     }
+    if (_indicator && !_indicator.parentNode && document.documentElement) {
+      document.documentElement.appendChild(_indicator);
+    }
   });
   _recoveryObserver.observe(document.documentElement, { childList: true });
 
-  //forward scroll events from body to window
   document.body.addEventListener('scroll', () => {
     window.dispatchEvent(new Event('scroll'));
     document.dispatchEvent(new Event('scroll'));
   });
 
-  //initial scan for fixed elements
   requestAnimationFrame(() => {
     _scanFixedElements();
     _startFixedObserver();
-    //delayed re-scans for elements loaded after initial paint
     setTimeout(() => { if (!_isSidebarHidden) _scanFixedElements(); }, 2000);
     setTimeout(() => { if (!_isSidebarHidden) _scanFixedElements(); }, 5000);
   });
 
-  //check initial sidepanel state
   let currentWindowId = null;
   chrome.runtime.sendMessage({ type: 'GET_WINDOW_ID' }, (winId) => {
     currentWindowId = winId;
@@ -238,7 +290,6 @@ async function init() {
     }
   });
 
-  //react to sidepanel open/close
   chrome.storage.onChanged.addListener((changes) => {
     if (currentWindowId && changes[`sidePanelOpen_${currentWindowId}`]) {
       if (changes[`sidePanelOpen_${currentWindowId}`].newValue) {
@@ -261,7 +312,13 @@ async function init() {
       if (changes.lucideIcons) _sidebar.injectIcons();
       _sidebar.loadData();
     }
+
+    if (changes.dockitAutoHide || changes.dockitForceAutohideList) {
+      updateAutoHideState();
+    }
   });
+
+  initAutoHideTracking();
 }
 
 function _safeSetStyle(el, prop, val, priority = 'important') {
@@ -343,8 +400,8 @@ function _constrainFixedElement(el) {
   }
 }
 
-//scan html for fixed elements
 function _scanFixedElements() {
+  if (_isAutoHideActive) return;
   const allElements = document.documentElement.querySelectorAll('*');
   for (const el of allElements) {
     if (_SKIPPED_TAGS.has(el.tagName.toLowerCase())) continue;
@@ -357,6 +414,7 @@ function _scanFixedElements() {
 }
 
 function _checkAndConstrain(el) {
+  if (_isAutoHideActive) return;
   if (el.nodeType !== Node.ELEMENT_NODE) return;
   const tagName = el.tagName.toLowerCase();
   if (_SKIPPED_TAGS.has(tagName)) return;
@@ -405,7 +463,7 @@ function _queueCheckAndConstrain(node) {
 function _startFixedObserver() {
   if (_fixedObserver) return;
   _fixedObserver = new MutationObserver((mutations) => {
-    if (_isSidebarHidden) return;
+    if (_isSidebarHidden || _isAutoHideActive) return;
     for (const m of mutations) {
       if (m.type === 'childList') {
         for (const node of m.addedNodes) {
@@ -434,10 +492,137 @@ function _removeConstraint(el) {
   if (el.dataset.dockitWidth) delete el.dataset.dockitWidth;
 }
 
-//remove constraints
 function _removeFixedConstraints() {
   for (const el of _fixedElementsSet) {
     _removeConstraint(el);
+  }
+}
+
+async function updateAutoHideState() {
+  const storage = await chrome.storage.local.get(['dockitAutoHide', 'dockitForceAutohideList']);
+  const autoHideEnabled = !!storage.dockitAutoHide;
+  const forceAutohideList = storage.dockitForceAutohideList || [];
+  const currentHost = window.location.hostname.toLowerCase();
+  const currentUrl = window.location.href.toLowerCase();
+
+  const isForceAutoHideMatched = forceAutohideList.some((item) => {
+    const cleanItem = item.toLowerCase().trim();
+    if (!cleanItem) return false;
+    return currentHost.includes(cleanItem) || currentUrl.includes(cleanItem);
+  });
+
+  const wasActive = _isAutoHideActive;
+  _isAutoHideActive = autoHideEnabled || isForceAutoHideMatched;
+
+  if (_isAutoHideActive) {
+    document.documentElement.classList.add('dockit-autohide-active');
+    _removeFixedConstraints();
+    if (!wasActive) {
+      hideSidebar();
+    }
+  } else {
+    document.documentElement.classList.remove('dockit-autohide-active');
+    if (wasActive) {
+      showSidebar();
+      _scanFixedElements();
+    }
+  }
+}
+
+function initAutoHideTracking() {
+  document.addEventListener('mousemove', (e) => {
+    _lastMouseX = e.clientX;
+    if (!_isAutoHideActive || _isSidebarHidden) return;
+
+    const distance = window.innerWidth - e.clientX;
+    if (!_isSidebarVisible) {
+      if (distance <= 50 && distance >= 0) {
+        startHoverTracking();
+      } else {
+        stopHoverTracking();
+      }
+    } else {
+      if (distance > 48) {
+        hideSidebar();
+      }
+    }
+  });
+
+  document.addEventListener('mouseleave', (e) => {
+    if (_isAutoHideActive) {
+      if (window.innerWidth - e.clientX <= 50) {
+        return;
+      }
+      hideSidebar();
+      stopHoverTracking();
+    }
+  });
+}
+
+function startHoverTracking() {
+  if (!_autoHideCheckTimer) {
+    _hoverProgress = 0;
+    _autoHideCheckTimer = setInterval(() => {
+      if (_isSidebarVisible || !_isAutoHideActive || _isSidebarHidden) {
+        stopHoverTracking();
+        return;
+      }
+
+      const distance = window.innerWidth - _lastMouseX;
+      if (distance > 50 || distance < 0) {
+        stopHoverTracking();
+        return;
+      }
+
+      const requiredDelay = 500 * Math.pow(60, distance / 50);
+      _hoverProgress += 50 / requiredDelay;
+
+      if (_indicator) {
+        const progress = Math.min(_hoverProgress, 1);
+        _indicator.style.opacity = Math.pow(progress, 4).toString();
+      }
+
+      if (_hoverProgress >= 1.0) {
+        showSidebar();
+        stopHoverTracking();
+      }
+    }, 50);
+  }
+}
+
+function stopHoverTracking() {
+  _hoverProgress = 0;
+  if (_indicator && !_isSidebarVisible) {
+    _indicator.style.opacity = '0';
+  }
+  if (_autoHideCheckTimer) {
+    clearInterval(_autoHideCheckTimer);
+    _autoHideCheckTimer = null;
+  }
+}
+
+function showSidebar() {
+  if (!_isSidebarVisible) {
+    _isSidebarVisible = true;
+    if (_hostElement) {
+      _hostElement.classList.remove('dockit-autohide-hidden');
+    }
+    if (_indicator) {
+      setTimeout(() => {
+        if (_isSidebarVisible && _indicator) {
+          _indicator.style.opacity = '0';
+        }
+      }, 250);
+    }
+  }
+}
+
+function hideSidebar() {
+  if (_isSidebarVisible) {
+    _isSidebarVisible = false;
+    if (_hostElement) {
+      _hostElement.classList.add('dockit-autohide-hidden');
+    }
   }
 }
 
