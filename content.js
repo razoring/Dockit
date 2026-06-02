@@ -282,9 +282,7 @@ function _constrainFixedElement(el) {
     if (el.closest('ytd-guide') || el.closest('tp-yt-app-drawer') || el.closest('ytd-popup-container') || el.closest('tp-yt-iron-overlay-backdrop') || el.tagName.toLowerCase().includes('iron-') || el.tagName.toLowerCase().includes('paper-')) return;
   }
 
-  const hasScrollbar = document.body.scrollHeight > window.innerHeight;
-  const scrollbarGap = hasScrollbar ? 16 : 0;
-  const totalOffset = SIDEBAR_WIDTH + scrollbarGap;
+  const totalOffset = SIDEBAR_WIDTH;
   const targetWidth = `calc(100vw - ${totalOffset}px)`;
 
   //re-check already-constrained elements for site js overrides

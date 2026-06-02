@@ -1157,7 +1157,7 @@ class DockitSidebar {
           currentSitePlaceholder = u.host + (u.pathname === '/' ? '' : u.pathname);
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     //render layout
     contentEl.innerHTML = `
@@ -1232,10 +1232,10 @@ class DockitSidebar {
               <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
             </div>
             <div class="dockit-settings-category-content">
-              <div class="dockit-settings-item" data-title="enable taper" data-desc="enable visual sidebar edge tapering">
+              <div class="dockit-settings-item" data-title="enable taper" data-desc="enable rounded edges along the sidebar">
                 <div class="dockit-settings-item-info">
                   <span class="dockit-settings-item-title">Enable Taper</span>
-                  <span class="dockit-settings-item-desc">Enable visual sidebar edge tapering.</span>
+                  <span class="dockit-settings-item-desc">Enable rounded edges along the sidebar.</span>
                 </div>
                 <div class="dockit-settings-item-control">
                   <label class="dockit-ios-switch">
