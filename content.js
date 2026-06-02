@@ -22,6 +22,22 @@ let _pendingTimeout = null;
 
 async function init() {
   if (window !== window.top) return;
+
+  const storageBlocklist = await chrome.storage.local.get(['dockitDisableSidebarList']);
+  const disableSidebarList = storageBlocklist.dockitDisableSidebarList || ['chrome://extensions', 'play.google.com'];
+  const currentHost = window.location.hostname.toLowerCase();
+  const currentUrl = window.location.href.toLowerCase();
+
+  const isBlocked = disableSidebarList.some((item) => {
+    const cleanItem = item.toLowerCase().trim();
+    if (!cleanItem) return false;
+    return currentHost.includes(cleanItem) || currentUrl.includes(cleanItem);
+  });
+
+  if (isBlocked) {
+    return;
+  }
+
   if (document.getElementById('dockit-host-root')) return;
 
   //create host element

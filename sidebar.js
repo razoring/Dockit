@@ -1137,9 +1137,14 @@ class DockitSidebar {
     const xIconSvg = (storageData.lucideIcons && storageData.lucideIcons['x']) || `<svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
 
     //default seed lists
-    const disableSidebarList = ['chrome://extensions', 'play.google.com'];
-    const forceAutohideList = ['netflix.com', 'hulu.com'];
-    const forceScrollbarInsetList = ['github.com', 'stackoverflow.com'];
+    const storageLists = await chrome.storage.local.get([
+      'dockitDisableSidebarList',
+      'dockitForceAutohideList',
+      'dockitForceScrollbarInsetList'
+    ]);
+    const disableSidebarList = storageLists.dockitDisableSidebarList || ['netflix.com'];
+    const forceAutohideList = storageLists.dockitForceAutohideList || [];
+    const forceScrollbarInsetList = storageLists.dockitForceScrollbarInsetList || [];
 
     //render layout
     contentEl.innerHTML = `
@@ -1380,9 +1385,16 @@ class DockitSidebar {
           <span>${tag}</span>
           <span class="dockit-settings-tag-remove" data-index="${idx}">${xIconSvg}</span>
         `;
-        tagEl.querySelector('.dockit-settings-tag-remove').addEventListener('click', () => {
+        tagEl.querySelector('.dockit-settings-tag-remove').addEventListener('click', async () => {
           tagsArray.splice(idx, 1);
           _renderTags(containerId, tagsArray);
+          if (containerId === 'tags-blocklist-disable') {
+            await chrome.storage.local.set({ dockitDisableSidebarList: tagsArray });
+          } else if (containerId === 'tags-blocklist-autohide') {
+            await chrome.storage.local.set({ dockitForceAutohideList: tagsArray });
+          } else if (containerId === 'tags-blocklist-inset') {
+            await chrome.storage.local.set({ dockitForceScrollbarInsetList: tagsArray });
+          }
         });
         container.appendChild(tagEl);
       });
@@ -1396,7 +1408,7 @@ class DockitSidebar {
     //bind list action clicks
     const listAddButtons = contentEl.querySelectorAll('.dockit-settings-list-add-btn');
     listAddButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const targetId = btn.dataset.target;
         const input = contentEl.querySelector(`#input-${targetId}`);
         if (!input) return;
@@ -1405,12 +1417,15 @@ class DockitSidebar {
           if (targetId === 'blocklist-disable') {
             disableSidebarList.push(value);
             _renderTags(`tags-${targetId}`, disableSidebarList);
+            await chrome.storage.local.set({ dockitDisableSidebarList: disableSidebarList });
           } else if (targetId === 'blocklist-autohide') {
             forceAutohideList.push(value);
             _renderTags(`tags-${targetId}`, forceAutohideList);
+            await chrome.storage.local.set({ dockitForceAutohideList: forceAutohideList });
           } else if (targetId === 'blocklist-inset') {
             forceScrollbarInsetList.push(value);
             _renderTags(`tags-${targetId}`, forceScrollbarInsetList);
+            await chrome.storage.local.set({ dockitForceScrollbarInsetList: forceScrollbarInsetList });
           }
           input.value = '';
         }
