@@ -14,6 +14,8 @@ const I18N_STRINGS_DEFAULT = {
   'enable_taper_desc': 'Enable visual sidebar edge tapering.',
   'show_url_bar': 'Show URL Bar',
   'show_url_bar_desc': 'Display URL and navigation controls in side panels.',
+  'mobile_default_view': 'Mobile Default View',
+  'mobile_default_view_desc': 'Open apps using the mobile site by default.',
   'auto_hide': 'Auto-hide Sidepanel',
   'auto_hide_desc': 'Automatically hide side panels when focus is lost.',
   'disable_sidebar': 'Disable Sidebar',
@@ -1236,6 +1238,18 @@ class DockitSidebar {
                   </label>
                 </div>
               </div>
+              <div class="dockit-settings-item" data-title="mobile default view" data-desc="open apps using the mobile site by default">
+                <div class="dockit-settings-item-info">
+                  <span class="dockit-settings-item-title">Mobile Default View</span>
+                  <span class="dockit-settings-item-desc">Open apps using the mobile site by default.</span>
+                </div>
+                <div class="dockit-settings-item-control">
+                  <label class="dockit-ios-switch">
+                    <input type="checkbox" id="setting-appearance-mobiledefault" checked />
+                    <span class="dockit-ios-slider"></span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1563,6 +1577,7 @@ class DockitSidebar {
       const itemMap = {
         'enable taper': ['enable_taper', 'enable_taper_desc'],
         'show url bar': ['show_url_bar', 'show_url_bar_desc'],
+        'mobile default view': ['mobile_default_view', 'mobile_default_view_desc'],
         'auto-hide sidepanel': ['auto_hide', 'auto_hide_desc'],
         'disable sidebar': ['disable_sidebar', 'disable_sidebar_desc'],
         'force auto-hide': ['force_auto_hide', 'force_auto_hide_desc'],
@@ -1770,7 +1785,7 @@ class DockitSidebar {
 
     // initialize settings checkboxes on load
     const loadSettingsState = async () => {
-      const storage = await chrome.storage.local.get(['dockitEnableTaper', 'dockitShowUrlBar', 'dockitAutoHide']);
+      const storage = await chrome.storage.local.get(['dockitEnableTaper', 'dockitShowUrlBar', 'dockitAutoHide', 'dockitMobileDefault']);
 
       const taperCheckbox = contentEl.querySelector('#setting-appearance-taper');
       if (taperCheckbox) {
@@ -1785,6 +1800,14 @@ class DockitSidebar {
         urlbarCheckbox.checked = storage.dockitShowUrlBar !== false;
         urlbarCheckbox.addEventListener('change', async () => {
           await chrome.storage.local.set({ dockitShowUrlBar: urlbarCheckbox.checked });
+        });
+      }
+
+      const mobiledefaultCheckbox = contentEl.querySelector('#setting-appearance-mobiledefault');
+      if (mobiledefaultCheckbox) {
+        mobiledefaultCheckbox.checked = storage.dockitMobileDefault !== false;
+        mobiledefaultCheckbox.addEventListener('change', async () => {
+          await chrome.storage.local.set({ dockitMobileDefault: mobiledefaultCheckbox.checked });
         });
       }
 

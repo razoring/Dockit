@@ -1,7 +1,7 @@
 // sidepanel.js
 async function init() {
   // Inject Cached Fonts
-  const storage = await chrome.storage.local.get(['fontCss', 'temporaryApps']);
+  const storage = await chrome.storage.local.get(['fontCss', 'temporaryApps', 'dockitMobileDefault']);
   if (storage.fontCss) {
     const fontStyle = document.createElement('style');
     fontStyle.textContent = storage.fontCss;
@@ -18,8 +18,9 @@ async function init() {
   controlBar.className = 'dockit-control-bar';
   controlBar.style.display = 'none';
 
+  const isMobileDefault = storage.dockitMobileDefault !== false;
   const viewportWrapper = document.createElement('div');
-  viewportWrapper.className = 'dockit-iframe-viewport-wrapper desktop-mode';
+  viewportWrapper.className = `dockit-iframe-viewport-wrapper ${isMobileDefault ? 'mobile-mode' : 'desktop-mode'}`;
 
   if (iframeContainer) {
     iframeContainer.innerHTML = '';
@@ -133,6 +134,10 @@ async function init() {
   //toggle mobile view mode click handler
   const deviceBtn = controlBar.querySelector('#dockit-btn-device');
   if (deviceBtn) {
+    const isMobileInitial = viewportWrapper.classList.contains('mobile-mode');
+    deviceBtn.innerHTML = isMobileInitial ? monitorSvg : smartphoneSvg;
+    deviceBtn.title = isMobileInitial ? 'Toggle Desktop View' : 'Toggle Mobile View';
+
     deviceBtn.addEventListener('click', () => {
       const isMobile = viewportWrapper.classList.contains('mobile-mode');
       if (isMobile) {
@@ -257,9 +262,13 @@ async function init() {
       //update dynamic user agent rules depending on current view mode
       const isMobile = viewportWrapper.classList.contains('mobile-mode');
       if (isMobile) {
-        chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: true, url: targetUrl });
+        await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: true, url: targetUrl }, resolve);
+        });
       } else {
-        chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: false });
+        await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: false }, resolve);
+        });
       }
 
       let frame = _iframes.get(targetUrl);
@@ -349,6 +358,38 @@ async function init() {
         controlBar.style.display = 'flex';
       } else {
         controlBar.style.display = 'none';
+      }
+    }
+
+    if (changes.dockitMobileDefault) {
+      const isMobileDefault = changes.dockitMobileDefault.newValue !== false;
+      const deviceBtn = controlBar.querySelector('#dockit-btn-device');
+      if (isMobileDefault) {
+        viewportWrapper.classList.remove('desktop-mode');
+        viewportWrapper.classList.add('mobile-mode');
+        if (deviceBtn) {
+          deviceBtn.innerHTML = monitorSvg;
+          deviceBtn.title = 'Toggle Desktop View';
+        }
+        chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: true, url: _activeUrl }, () => {
+          if (_activeUrl) {
+            const frame = _iframes.get(_activeUrl);
+            if (frame) frame.src = _activeUrl;
+          }
+        });
+      } else {
+        viewportWrapper.classList.remove('mobile-mode');
+        viewportWrapper.classList.add('desktop-mode');
+        if (deviceBtn) {
+          deviceBtn.innerHTML = smartphoneSvg;
+          deviceBtn.title = 'Toggle Mobile View';
+        }
+        chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: false }, () => {
+          if (_activeUrl) {
+            const frame = _iframes.get(_activeUrl);
+            if (frame) frame.src = _activeUrl;
+          }
+        });
       }
     }
 
