@@ -241,7 +241,7 @@ async function init() {
   });
 
   //helper to set active iframe reactively and update loaded indicators
-  const _setIframeSrc = (url) => {
+  const _setIframeSrc = async (url) => {
     const targetUrl = url || '';
     _activeUrl = targetUrl;
     
@@ -297,7 +297,13 @@ async function init() {
           lockIcon.innerHTML = lockOpenSvg;
         }
       }
-      controlBar.style.display = 'flex';
+      
+      const storage = await chrome.storage.local.get(['dockitShowUrlBar']);
+      if (storage.dockitShowUrlBar !== false) {
+        controlBar.style.display = 'flex';
+      } else {
+        controlBar.style.display = 'none';
+      }
     } else {
       controlBar.style.display = 'none';
     }
@@ -337,6 +343,15 @@ async function init() {
 
   // Re-render when storage changes
   chrome.storage.onChanged.addListener((changes) => {
+    if (changes.dockitShowUrlBar) {
+      const show = changes.dockitShowUrlBar.newValue !== false;
+      if (_activeUrl && show) {
+        controlBar.style.display = 'flex';
+      } else {
+        controlBar.style.display = 'none';
+      }
+    }
+
     if (changes.pinnedApps || changes.temporaryApps || changes.lucideIcons) {
       if (changes.lucideIcons) sidebar.injectIcons();
       sidebar.loadData();

@@ -1248,7 +1248,7 @@ class DockitSidebar {
             <div class="dockit-settings-category-content">
               <div class="dockit-settings-item" data-title="auto-hide sidepanel" data-desc="automatically hide side panels when focus is lost">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Auto-hide Sidepanel</span>
+                  <span class="dockit-settings-item-title">Auto-hide Sidebar</span>
                   <span class="dockit-settings-item-desc">Automatically hide side panels when focus is lost.</span>
                 </div>
                 <div class="dockit-settings-item-control">
@@ -1426,7 +1426,7 @@ class DockitSidebar {
       if (!toggleAllCheckbox || !toggleAllText) return;
       const total = categories.length;
       const collapsedCount = contentEl.querySelectorAll('.dockit-settings-category.is-collapsed').length;
-      
+
       if (collapsedCount === total) {
         toggleAllCheckbox.checked = false;
         toggleAllText.textContent = t('expand_all');
@@ -1453,7 +1453,7 @@ class DockitSidebar {
       toggleAllCheckbox.addEventListener('change', () => {
         const shouldExpand = toggleAllCheckbox.checked;
         toggleAllText.textContent = shouldExpand ? t('collapse_all') : t('expand_all');
-        
+
         categories.forEach(cat => {
           const chevron = cat.querySelector('.dockit-settings-category-chevron');
           if (shouldExpand) {
@@ -1492,7 +1492,7 @@ class DockitSidebar {
       const keys = Object.keys(I18N_STRINGS);
       const values = Object.values(I18N_STRINGS);
       const result = {};
-      
+
       //split into batches that fit under 500 chars
       let batch = [];
       let batchKeys = [];
@@ -1588,7 +1588,7 @@ class DockitSidebar {
       //placeholders
       const searchInput = contentEl.querySelector('#dockit-settings-search');
       if (searchInput) searchInput.placeholder = t('search_placeholder');
-      
+
       contentEl.querySelectorAll('.dockit-settings-list-input').forEach(input => {
         input.placeholder = t('add_domain_placeholder');
       });
@@ -1640,32 +1640,32 @@ class DockitSidebar {
     if (searchInput) {
       searchInput.addEventListener('input', () => {
         const query = searchInput.value.toLowerCase().trim();
-        
+
         categories.forEach(cat => {
           const catTitleEl = cat.querySelector('.dockit-settings-category-title');
           const catTitle = catTitleEl ? catTitleEl.textContent.toLowerCase() : '';
           const items = cat.querySelectorAll('.dockit-settings-item');
           let catHasMatches = catTitle.includes(query);
-          
+
           items.forEach(item => {
             const origTitle = item.dataset.origTitle || '';
             const origDesc = item.dataset.origDesc || '';
             const titleToSearch = item.dataset.translatedTitle || origTitle;
             const descToSearch = item.dataset.translatedDesc || origDesc;
             const matches = titleToSearch.toLowerCase().includes(query) || descToSearch.toLowerCase().includes(query);
-            
+
             const titleEl = item.querySelector('.dockit-settings-item-title');
             const descEl = item.querySelector('.dockit-settings-item-desc');
 
             if (matches && query !== '') {
               item.classList.remove('is-filtered-out');
               catHasMatches = true;
-              
+
               const highlight = (text, q) => {
                 const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})`, 'gi');
                 return text.replace(regex, '<mark>$1</mark>');
               };
-              
+
               if (titleEl) titleEl.innerHTML = highlight(titleToSearch, query);
               if (descEl) descEl.innerHTML = highlight(descToSearch, query);
             } else {
@@ -1674,7 +1674,7 @@ class DockitSidebar {
               if (descEl) descEl.textContent = descToSearch;
             }
           });
-          
+
           const chevron = cat.querySelector('.dockit-settings-category-chevron');
           if (query === '') {
             cat.style.display = 'flex';
@@ -1692,22 +1692,22 @@ class DockitSidebar {
             cat.style.display = 'flex';
             cat.classList.remove('is-collapsed');
             if (chevron) chevron.innerHTML = chevronUpSvg;
-            
+
             // Highlight category title if it matches
             if (catTitleEl) {
               const currentCatTitle = catTitleEl.textContent;
               if (currentCatTitle.toLowerCase().includes(query)) {
-                 const escapedQuery = query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
-                 const regex = new RegExp(`(${escapedQuery})`, 'gi');
-                 catTitleEl.innerHTML = currentCatTitle.replace(regex, '<mark>$1</mark>');
+                const escapedQuery = query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
+                const regex = new RegExp(`(${escapedQuery})`, 'gi');
+                catTitleEl.innerHTML = currentCatTitle.replace(regex, '<mark>$1</mark>');
               } else {
-                 catTitleEl.innerHTML = currentCatTitle;
+                catTitleEl.innerHTML = currentCatTitle;
               }
             }
           } else {
             cat.style.display = 'none';
           }
-          
+
           // Reset category title highlight if query is empty
           if (query === '' && catTitleEl) {
             catTitleEl.innerHTML = catTitleEl.textContent;
@@ -1721,29 +1721,29 @@ class DockitSidebar {
     const selectedEl = picker.querySelector('.dockit-language-selected');
     const dropdown = picker.querySelector('.dockit-language-dropdown');
     const options = picker.querySelectorAll('.dockit-language-option');
-    
+
     selectedEl.addEventListener('click', (e) => {
       e.stopPropagation();
       picker.classList.toggle('is-open');
     });
-    
+
     document.addEventListener('click', () => {
       picker.classList.remove('is-open');
     });
-    
+
     options.forEach(opt => {
       opt.addEventListener('click', async (e) => {
         e.stopPropagation();
         const selectedLang = opt.dataset.lang;
-        
+
         options.forEach(o => o.classList.remove('is-selected'));
         opt.classList.add('is-selected');
-        
+
         selectedEl.querySelector('img').src = opt.querySelector('img').src;
         selectedEl.querySelector('span').textContent = opt.querySelector('span').textContent;
-        
+
         picker.classList.remove('is-open');
-        
+
         await chrome.storage.local.set({ dockitLanguage: selectedLang });
         await translatePage(selectedLang);
       });
@@ -1753,14 +1753,14 @@ class DockitSidebar {
     const loadSavedLang = async () => {
       const storage = await chrome.storage.local.get(['dockitLanguage']);
       const savedLang = storage.dockitLanguage || 'en';
-      
+
       const opt = Array.from(options).find(o => o.dataset.lang === savedLang);
       if (opt) {
         options.forEach(o => o.classList.remove('is-selected'));
         opt.classList.add('is-selected');
         selectedEl.querySelector('img').src = opt.querySelector('img').src;
         selectedEl.querySelector('span').textContent = opt.querySelector('span').textContent;
-        
+
         if (savedLang !== 'en') {
           await translatePage(savedLang);
         }
@@ -1771,7 +1771,7 @@ class DockitSidebar {
     // initialize settings checkboxes on load
     const loadSettingsState = async () => {
       const storage = await chrome.storage.local.get(['dockitEnableTaper', 'dockitShowUrlBar', 'dockitAutoHide']);
-      
+
       const taperCheckbox = contentEl.querySelector('#setting-appearance-taper');
       if (taperCheckbox) {
         taperCheckbox.checked = !!storage.dockitEnableTaper;
