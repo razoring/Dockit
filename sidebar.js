@@ -7,6 +7,8 @@ class DockitSidebar {
     this.element.className = 'dockit-sidebar';
     this.element.dataset.themeColors = 'background,border';
     this._dragState = null;
+    this._inMemoryUrls = [];
+    this._isInPageOpen = false;
   }
 
   async render() {
@@ -101,10 +103,45 @@ class DockitSidebar {
         if (displayUrl.endsWith('/')) {
           displayUrl = displayUrl.slice(0, -1);
         }
-        const title = tab.title || urlObj.hostname;
+        const _getCleanTitleFromUrl = (urlStr) => {
+          try {
+            const u = new URL(urlStr);
+            const host = u.hostname.replace('www.', '');
+            const mappings = {
+              'youtube.com': 'YouTube',
+              'google.com': 'Google',
+              'github.com': 'GitHub',
+              'wikipedia.org': 'Wikipedia',
+              'reddit.com': 'Reddit',
+              'amazon.com': 'Amazon',
+              'twitter.com': 'Twitter',
+              'netflix.com': 'Netflix',
+              'chatgpt.com': 'ChatGPT',
+              'stackoverflow.com': 'Stack Overflow',
+              'linkedin.com': 'LinkedIn',
+              'microsoft.com': 'Microsoft',
+              'gmail.com': 'Gmail'
+            };
+            if (mappings[host.toLowerCase()]) {
+              return mappings[host.toLowerCase()];
+            }
+            const parts = host.split('.');
+            if (parts.length > 0) {
+              const main = parts[0];
+              return main.charAt(0).toUpperCase() + main.slice(1);
+            }
+            return host;
+          } catch (e) {
+            return 'Webpage';
+          }
+        };
+        const title = _getCleanTitleFromUrl(tab.url);
         const favIconUrl = tab.favIconUrl || `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
         const storageData = await chrome.storage.local.get(['lucideIcons', 'pinnedApps']);
         const pinIconSvg = (storageData.lucideIcons && storageData.lucideIcons['pin']) || 'Pin';
+        const searchIconSvg = (storageData.lucideIcons && storageData.lucideIcons['search']) || `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
+        const plusIconSvg = (storageData.lucideIcons && storageData.lucideIcons['plus']) || `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+        const trashIconSvg = (storageData.lucideIcons && storageData.lucideIcons['trash-2']) || `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
         const cleanPinIcon = `<div style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); pointer-events: none; color: currentColor;">${pinIconSvg}</div>`;
         const pinnedAppsInitial = storageData.pinnedApps || [];
         const isCurrentlyPinned = pinnedAppsInitial.some(app => app.url === tab.url);
@@ -121,47 +158,78 @@ class DockitSidebar {
             </button>
           </div>
           
-          <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; margin-bottom: 12px; color: var(--color-foreground);">Pinned Apps</div>
-          <div class="dockit-apps-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px; margin-bottom: 24px; padding: 4px;">
-            <!-- Pinned apps will be rendered here dynamically -->
+          <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
+            <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">Pinned Apps</div>
+            <div class="dockit-apps-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px;">
+              <!-- Pinned apps will be rendered here dynamically -->
+            </div>
+          </div>
+
+          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;">
+            <div class="dockit-search-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">Search</div>
+            <div class="dockit-search-bar-container" style="display: flex; align-items: center; background-color: rgba(255, 255, 255, 0.05); border: 1px solid var(--color-border); border-radius: 8px; padding: 6px 10px; gap: 8px; position: relative;">
+              <div class="dockit-search-icon" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; opacity: 0.6; color: var(--color-foreground); flex-shrink: 0;">
+                ${searchIconSvg}
+              </div>
+              <input class="dockit-search-input" type="text" placeholder="Search or enter URL to pin..." style="flex: 1; background: transparent; border: none; outline: none; color: var(--color-foreground); font-size: 13px; font-family: inherit; min-width: 0;" />
+            </div>
+            <div class="dockit-suggestions-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background-color: var(--color-secondary); border: 1px solid var(--color-border); border-radius: 8px; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); max-height: 250px; overflow-y: auto; padding: 6px 0;"></div>
+          </div>
+
+          <!-- drag-to-delete trash overlay -->
+          <div class="dockit-trash-overlay" id="dockit-grid-trash-overlay">
+            <div class="dockit-trash-overlay-icon">
+              ${trashIconSvg}
+            </div>
+            <div class="dockit-trash-overlay-text">Drag outside to delete</div>
           </div>
         `;
-        
+
         const gridContainer = contentEl.querySelector('.dockit-apps-grid');
         if (gridContainer) {
-          pinnedAppsInitial.forEach((app, index) => {
-            const appEl = document.createElement('div');
-            appEl.className = 'dockit-grid-app';
-            appEl.dataset.id = app.id;
-            appEl.dataset.index = index;
-            appEl.title = app.title;
-            appEl.style.cssText = 'width: 56px; height: 56px; background-color: transparent; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: grab; position: relative; transition: background-color 0.2s, box-shadow 0.2s; user-select: none;';
-            appEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.title}" style="width: 32px; height: 32px; pointer-events: none;" draggable="false" />`;
+          if (pinnedAppsInitial.length === 0) {
+            gridContainer.style.display = 'block';
+            gridContainer.innerHTML = `
+              <div style="font-size: 13px; opacity: 0.5; text-align: center; padding: 20px 10px; line-height: 1.4; border: 1.5px dashed var(--color-border); border-radius: 8px;">
+                No pinned apps yet.<br/>Use the pin icon above to pin this site!
+              </div>
+            `;
+          } else {
+            gridContainer.style.display = 'grid';
+            pinnedAppsInitial.forEach((app, index) => {
+              const appEl = document.createElement('div');
+              appEl.className = 'dockit-grid-app';
+              appEl.dataset.id = app.id;
+              appEl.dataset.index = index;
+              appEl.title = app.title;
+              appEl.style.cssText = 'width: 56px; height: 56px; background-color: transparent; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: grab; position: relative; transition: background-color 0.2s, box-shadow 0.2s; user-select: none;';
+              appEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.title}" style="width: 32px; height: 32px; pointer-events: none;" draggable="false" />`;
 
-            appEl.addEventListener('mouseenter', () => {
-              appEl.style.backgroundColor = 'var(--color-primary)';
-            });
-            appEl.addEventListener('mouseleave', () => {
-              appEl.style.backgroundColor = 'transparent';
-            });
+              appEl.addEventListener('mouseenter', () => {
+                appEl.style.backgroundColor = 'var(--color-primary)';
+              });
+              appEl.addEventListener('mouseleave', () => {
+                appEl.style.backgroundColor = 'transparent';
+              });
 
-            appEl.addEventListener('mousedown', (e) => {
-              if (e.button !== 0) return;
-              e.preventDefault();
-              this._gridDragState = {
-                app,
-                el: appEl,
-                startY: e.clientY,
-                startX: e.clientX,
-                didMove: false,
-                ghost: null
-              };
-            });
+              appEl.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                this._gridDragState = {
+                  app,
+                  el: appEl,
+                  startY: e.clientY,
+                  startX: e.clientX,
+                  didMove: false,
+                  ghost: null
+                };
+              });
 
-            gridContainer.appendChild(appEl);
-          });
+              gridContainer.appendChild(appEl);
+            });
+          }
         }
-        
+
         const pinBtn = contentEl.querySelector('.dockit-pin-btn');
         if (pinBtn) {
           const updatePinState = (pinned) => {
@@ -201,6 +269,231 @@ class DockitSidebar {
               }
             }
             updatePinState(activePinned);
+          });
+        }
+
+        const searchInput = contentEl.querySelector('.dockit-search-input');
+        const dropdown = contentEl.querySelector('.dockit-suggestions-dropdown');
+
+        if (searchInput && dropdown) {
+          //helper to format URL cleanly
+          const _formatUrl = (urlStr) => {
+            try {
+              const u = new URL(urlStr);
+              return u.hostname + u.pathname + u.search;
+            } catch (e) {
+              return urlStr;
+            }
+          };
+
+          //helper to pin a URL and update UI
+          const _pinApp = async (title, url, iconUrl) => {
+            const data = await chrome.storage.local.get(['pinnedApps']);
+            let pinnedList = data.pinnedApps || [];
+            if (!pinnedList.some(app => app.url === url)) {
+              pinnedList.push({
+                id: 'app_' + Date.now(),
+                url: url,
+                title: title,
+                iconUrl: iconUrl
+              });
+              await chrome.storage.local.set({ pinnedApps: pinnedList });
+            }
+            searchInput.value = '';
+            dropdown.style.display = 'none';
+          };
+
+          //helper to get most visited sites
+          const _getTopSites = () => {
+            return new Promise((resolve) => {
+              if (chrome.topSites && chrome.topSites.get) {
+                chrome.topSites.get((sites) => {
+                  resolve(sites || []);
+                });
+              } else {
+                resolve([]);
+              }
+            });
+          };
+
+          //render suggestions array
+          const _renderSuggestions = (items) => {
+            if (items.length === 0) {
+              dropdown.style.display = 'none';
+              return;
+            }
+            dropdown.innerHTML = '';
+            items.forEach(item => {
+              const row = document.createElement('div');
+              row.className = 'dockit-suggestion-row';
+              row.style.cssText = 'display: flex; align-items: center; padding: 8px 12px; gap: 10px; cursor: pointer; transition: background-color 0.15s; min-height: 48px;';
+
+              row.innerHTML = `
+                <img src="${item.iconUrl}" style="width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0;" onerror="this.src='https://www.google.com/s2/favicons?domain=google.com&sz=32'" />
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
+                  <div style="font-weight: 500; font-size: 13px; color: var(--color-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">${item.title}</div>
+                  <div style="font-size: 11px; color: var(--color-foreground); opacity: 0.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">${_formatUrl(item.url)}</div>
+                </div>
+                <div class="dockit-suggestion-plus" style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;">
+                  ${plusIconSvg}
+                </div>
+              `;
+
+              row.addEventListener('mouseenter', () => {
+                row.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+              });
+              row.addEventListener('mouseleave', () => {
+                row.style.backgroundColor = 'transparent';
+              });
+
+              row.addEventListener('click', () => {
+                _pinApp(item.title, item.url, item.iconUrl);
+              });
+
+              dropdown.appendChild(row);
+            });
+            dropdown.style.display = 'block';
+          };
+
+          //update suggestions based on input
+          const _updateSuggestions = async () => {
+            const query = searchInput.value.trim();
+            const suggestions = [];
+
+            //1. add current site suggestion
+            const currentTabUrl = tab.url;
+            const currentTabTitle = tab.title || new URL(currentTabUrl).hostname;
+            const currentTabIcon = tab.favIconUrl || `https://www.google.com/s2/favicons?domain=${new URL(currentTabUrl).hostname}&sz=32`;
+
+            if (!query) {
+              //add current site as the first option without label
+              suggestions.push({
+                title: currentTabTitle,
+                url: currentTabUrl,
+                iconUrl: currentTabIcon
+              });
+
+              //add top sites
+              const topSitesList = await _getTopSites();
+              topSitesList.slice(0, 5).forEach(site => {
+                suggestions.push({
+                  title: site.title || new URL(site.url).hostname,
+                  url: site.url,
+                  iconUrl: `https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=32`
+                });
+              });
+
+              _renderSuggestions(suggestions);
+            } else {
+              //if query is a valid URL or looks like one
+              const isUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?(\?.*)?$/.test(query);
+              if (isUrl) {
+                let cleanUrl = query;
+                if (!/^https?:\/\//i.test(query)) {
+                  cleanUrl = 'https://' + query;
+                }
+                try {
+                  const urlHost = new URL(cleanUrl).hostname;
+                  suggestions.push({
+                    title: urlHost,
+                    url: cleanUrl,
+                    iconUrl: `https://www.google.com/s2/favicons?domain=${urlHost}&sz=32`
+                  });
+                } catch (e) { }
+              }
+
+              //generate direct website suggestion from the query itself
+              const lowerQuery = query.toLowerCase();
+              if (!isUrl && !lowerQuery.includes(' ')) {
+                const directTitle = query.charAt(0).toUpperCase() + query.slice(1);
+                const directUrl = `https://www.${lowerQuery}.com`;
+                suggestions.push({
+                  title: directTitle,
+                  url: directUrl,
+                  iconUrl: `https://www.google.com/s2/favicons?domain=${lowerQuery}.com&sz=32`
+                });
+              }
+
+              //match topSites against query
+              const topSitesList = await _getTopSites();
+              topSitesList.forEach(site => {
+                const siteTitle = site.title || '';
+                const siteUrl = site.url || '';
+                if (siteTitle.toLowerCase().includes(lowerQuery) || siteUrl.toLowerCase().includes(lowerQuery)) {
+                  if (!suggestions.some(s => s.url === site.url)) {
+                    suggestions.push({
+                      title: site.title || new URL(site.url).hostname,
+                      url: site.url,
+                      iconUrl: `https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=32`
+                    });
+                  }
+                }
+              });
+
+              //match popular sites list
+              const POPULAR_SITES = [
+                { title: 'Google', url: 'https://www.google.com' },
+                { title: 'YouTube', url: 'https://www.youtube.com' },
+                { title: 'Facebook', url: 'https://www.facebook.com' },
+                { title: 'Wikipedia', url: 'https://www.wikipedia.org' },
+                { title: 'GitHub', url: 'https://github.com' },
+                { title: 'Reddit', url: 'https://www.reddit.com' },
+                { title: 'Amazon', url: 'https://www.amazon.com' },
+                { title: 'Twitter', url: 'https://twitter.com' },
+                { title: 'Netflix', url: 'https://www.netflix.com' },
+                { title: 'ChatGPT', url: 'https://chatgpt.com' },
+                { title: 'Stack Overflow', url: 'https://stackoverflow.com' },
+                { title: 'LinkedIn', url: 'https://www.linkedin.com' },
+                { title: 'Microsoft', url: 'https://www.microsoft.com' },
+                { title: 'Google Drive', url: 'https://drive.google.com' },
+                { title: 'Gmail', url: 'https://mail.google.com' }
+              ];
+
+              POPULAR_SITES.forEach(site => {
+                if (site.title.toLowerCase().includes(lowerQuery) || site.url.toLowerCase().includes(lowerQuery)) {
+                  if (!suggestions.some(s => s.url === site.url)) {
+                    suggestions.push({
+                      title: site.title,
+                      url: site.url,
+                      iconUrl: `https://www.google.com/s2/favicons?domain=${new URL(site.url).hostname}&sz=32`
+                    });
+                  }
+                }
+              });
+
+              _renderSuggestions(suggestions.slice(0, 8));
+            }
+          };
+
+          searchInput.addEventListener('focus', _updateSuggestions);
+          searchInput.addEventListener('input', _updateSuggestions);
+
+          //handle Enter key directly in input
+          searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              const val = searchInput.value.trim();
+              if (val) {
+                let targetUrl = val;
+                if (!/^https?:\/\//i.test(val)) {
+                  targetUrl = 'https://' + val;
+                }
+                try {
+                  const urlObj = new URL(targetUrl);
+                  _pinApp(urlObj.hostname, targetUrl, `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`);
+                } catch (err) {
+                  //fallback if not a valid url, pin as google search query
+                  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}`;
+                  _pinApp(val, searchUrl, 'https://www.google.com/s2/favicons?domain=google.com&sz=32');
+                }
+              }
+            }
+          });
+
+          //close dropdown when clicking outside
+          document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+              dropdown.style.display = 'none';
+            }
           });
         }
       } else {
@@ -309,8 +602,20 @@ class DockitSidebar {
       el.dataset.id = app.id;
       el.dataset.list = listType;
       el.dataset.index = index;
+      el.dataset.url = app.url;
       el.title = app.title;
       el.innerHTML = `<img src="${app.iconUrl}" alt="${app.title}" draggable="false" />`;
+
+      //apply reactive loaded vs unloaded opacities based on in-page memory indicators
+      if (this._isInPageOpen) {
+        if (this._inMemoryUrls && this._inMemoryUrls.includes(app.url)) {
+          el.style.opacity = '1';
+        } else {
+          el.style.opacity = '0.7';
+        }
+      } else {
+        el.style.opacity = '1';
+      }
 
       //click to navigate
       el.addEventListener('click', (e) => {
@@ -337,6 +642,24 @@ class DockitSidebar {
       });
 
       container.appendChild(el);
+    });
+  }
+
+  setInMemoryUrls(urls, isInPageOpen) {
+    this._inMemoryUrls = urls || [];
+    this._isInPageOpen = isInPageOpen || false;
+    const apps = this.element.querySelectorAll('.dockit-app');
+    apps.forEach(el => {
+      const url = el.dataset.url;
+      if (this._isInPageOpen) {
+        if (this._inMemoryUrls.includes(url)) {
+          el.style.opacity = '1';
+        } else {
+          el.style.opacity = '0.7';
+        }
+      } else {
+        el.style.opacity = '1';
+      }
     });
   }
 
@@ -401,7 +724,7 @@ class DockitSidebar {
       } else if (this._gridDragState) {
         const ds = this._gridDragState;
 
-        //require 5px movement to begin the visual drag
+        //require 5px movement to begin drag
         if (!ds.didMove && Math.abs(e.clientY - ds.startY) < 5 && Math.abs(e.clientX - ds.startX) < 5) return;
 
         if (!ds.didMove) {
@@ -428,15 +751,39 @@ class DockitSidebar {
           ds.ghost.style.top = (e.clientY - 28) + 'px';
         }
 
-        //highlight drop targets
-        this._clearGridHighlights();
-        const target = this._getGridDropTarget(e.clientX, e.clientY);
-        if (target) {
-          const half = target.rect.left + target.rect.width / 2;
-          if (e.clientX < half) {
-            target.el.style.boxShadow = '-3px 0 0 0 var(--color-primary)';
+        //check boundary and toggle overlay
+        const gridCard = this.element.querySelector('.dockit-grid-card');
+        let isOutside = false;
+        if (gridCard) {
+          const rect = gridCard.getBoundingClientRect();
+          isOutside = (
+            e.clientX < rect.left ||
+            e.clientX > rect.right ||
+            e.clientY < rect.top ||
+            e.clientY > rect.bottom
+          );
+        }
+
+        const trashOverlay = this.element.querySelector('#dockit-grid-trash-overlay');
+        if (trashOverlay) {
+          if (isOutside) {
+            trashOverlay.classList.add('is-active');
           } else {
-            target.el.style.boxShadow = '3px 0 0 0 var(--color-primary)';
+            trashOverlay.classList.remove('is-active');
+          }
+        }
+
+        //highlight drop targets only when inside
+        this._clearGridHighlights();
+        if (!isOutside) {
+          const target = this._getGridDropTarget(e.clientX, e.clientY);
+          if (target) {
+            const half = target.rect.left + target.rect.width / 2;
+            if (e.clientX < half) {
+              target.el.style.boxShadow = '-3px 0 0 0 var(--color-primary)';
+            } else {
+              target.el.style.boxShadow = '3px 0 0 0 var(--color-primary)';
+            }
           }
         }
       }
@@ -451,7 +798,7 @@ class DockitSidebar {
           return;
         }
 
-        //determine drop target BEFORE cleaning up visuals (otherwise empty sections collapse to 0 height)
+        //determine drop target before cleaning up visuals
         const target = this._getDropTarget(e.clientY);
 
         //cleanup visuals
@@ -484,24 +831,46 @@ class DockitSidebar {
         const ds = this._gridDragState;
         ds.el.style.opacity = '1';
         if (ds.ghost) ds.ghost.remove();
-        
-        const target = this._getGridDropTarget(e.clientX, e.clientY);
-        this._clearGridHighlights();
 
-        if (target && ds.didMove) {
-          const half = target.rect.left + target.rect.width / 2;
-          let targetIndex = parseInt(target.el.dataset.index, 10);
-          if (e.clientX > half) {
-            targetIndex++;
+        const trashOverlay = this.element.querySelector('#dockit-grid-trash-overlay');
+        if (trashOverlay) {
+          trashOverlay.classList.remove('is-active');
+        }
+
+        //check boundary for deleting pinned app
+        const gridCard = this.element.querySelector('.dockit-grid-card');
+        let isOutside = false;
+        if (gridCard) {
+          const rect = gridCard.getBoundingClientRect();
+          isOutside = (
+            e.clientX < rect.left ||
+            e.clientX > rect.right ||
+            e.clientY < rect.top ||
+            e.clientY > rect.bottom
+          );
+        }
+
+        if (isOutside && ds.didMove) {
+          await this._deleteGridApp(ds.app);
+        } else {
+          const target = this._getGridDropTarget(e.clientX, e.clientY);
+          this._clearGridHighlights();
+
+          if (target && ds.didMove) {
+            const half = target.rect.left + target.rect.width / 2;
+            let targetIndex = parseInt(target.el.dataset.index, 10);
+            if (e.clientX > half) {
+              targetIndex++;
+            }
+            await this._moveGridApp(ds.app, targetIndex);
           }
-          await this._moveGridApp(ds.app, targetIndex);
         }
 
         this._gridDragState = null;
       }
     });
 
-    //cancel drag if mouse leaves the sidebar area
+    //cancel drag if mouse leaves sidebar
     root.addEventListener('mouseleave', (e) => {
       if (this._dragState && this._dragState.didMove) {
         const ds = this._dragState;
@@ -520,6 +889,10 @@ class DockitSidebar {
         ds.el.style.opacity = '1';
         if (ds.ghost) ds.ghost.remove();
         this._clearGridHighlights();
+        const trashOverlay = this.element.querySelector('#dockit-grid-trash-overlay');
+        if (trashOverlay) {
+          trashOverlay.classList.remove('is-active');
+        }
         this._gridDragState = null;
       }
     });
@@ -651,6 +1024,15 @@ class DockitSidebar {
     });
   }
 
+  async _deleteGridApp(app) {
+    const data = await chrome.storage.local.get(['pinnedApps']);
+    let pinnedApps = data.pinnedApps || [];
+    pinnedApps = pinnedApps.filter(a => a.id !== app.id);
+    await chrome.storage.local.set({ pinnedApps });
+    await this.refreshActiveSite();
+    await this.loadData();
+  }
+
   async _moveGridApp(app, targetIndex) {
     const data = await chrome.storage.local.get(['pinnedApps']);
     let pinnedApps = data.pinnedApps || [];
@@ -663,5 +1045,6 @@ class DockitSidebar {
     pinnedApps.splice(targetIndex, 0, app);
     await chrome.storage.local.set({ pinnedApps });
     await this.refreshActiveSite();
+    await this.loadData();
   }
 }

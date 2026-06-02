@@ -11,7 +11,9 @@
     "sidePanel",
     "favicon",
     "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess"
+    "declarativeNetRequestWithHostAccess",
+    "topSites",
+    "cookies"
   ],
   "host_permissions": [
     "<all_urls>"

@@ -56,7 +56,7 @@ async function registerScrollScript() {
 async function cacheAssets() {
   try {
     // 1. Cache specific Lucide SVGs to avoid Manifest V3 CSP dynamic code restrictions
-    const iconsToFetch = ['plus', 'shapes', 'settings', 'trash-2', 'x', 'pin', 'clock-fading'];
+    const iconsToFetch = ['plus', 'shapes', 'settings', 'trash-2', 'x', 'pin', 'clock-fading', 'search', 'rotate-cw', 'external-link', 'smartphone', 'monitor', 'lock', 'cookie', 'copy', 'lock-open'];
     const lucideIcons = {};
     for (const icon of iconsToFetch) {
       const res = await fetch(`https://unpkg.com/lucide-static@latest/icons/${icon}.svg`);
@@ -155,6 +155,58 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
       }, 100);
     }
+  } else if (msg.type === 'FETCH_SEARCH_SUGGESTIONS') {
+    //fetch search suggestions from google suggest API
+    fetch(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(msg.query)}`)
+      .then(r => r.json())
+      .then(data => sendResponse(data[1] || []))
+      .catch(err => {
+        console.error(err);
+        sendResponse([]);
+      });
+    return true; //asynchronous response
+  } else if (msg.type === 'SET_MOBILE_USER_AGENT') {
+    const ruleId = 9999;
+    if (msg.enabled && msg.url) {
+      try {
+        const urlObj = new URL(msg.url);
+        const domain = urlObj.hostname;
+        const rule = {
+          id: ruleId,
+          priority: 1,
+          action: {
+            type: 'modifyHeaders',
+            requestHeaders: [
+              {
+                header: 'user-agent',
+                operation: 'set',
+                value: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36'
+              }
+            ]
+          },
+          condition: {
+            urlFilter: `*://${domain}/*`,
+            resourceTypes: ['main_frame', 'sub_frame', 'xmlhttprequest', 'script', 'stylesheet', 'image']
+          }
+        };
+
+        chrome.declarativeNetRequest.updateDynamicRules({
+          removeRuleIds: [ruleId],
+          addRules: [rule]
+        }, () => {
+          sendResponse({ success: true });
+        });
+      } catch (e) {
+        sendResponse({ success: false });
+      }
+    } else {
+      chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [ruleId]
+      }, () => {
+        sendResponse({ success: true });
+      });
+    }
+    return true; //asynchronous response
   }
 });
 
