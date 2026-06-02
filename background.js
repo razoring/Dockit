@@ -55,8 +55,8 @@ async function registerScrollScript() {
 // Cache Fonts and Icons for Offline use
 async function cacheAssets() {
   try {
-    // 1. Cache specific Lucide SVGs to avoid Manifest V3 CSP dynamic code restrictions
-    const iconsToFetch = ['plus', 'shapes', 'settings', 'trash-2', 'x', 'pin', 'clock-fading', 'search', 'rotate-cw', 'external-link', 'smartphone', 'monitor', 'lock', 'cookie', 'copy', 'lock-open'];
+    //cache specific lucide svgs for offline use
+    const iconsToFetch = ['plus', 'shapes', 'settings', 'trash-2', 'x', 'pin', 'clock-fading', 'search', 'rotate-cw', 'external-link', 'smartphone', 'monitor', 'lock', 'cookie', 'copy', 'lock-open', 'chevron-down', 'chevron-up'];
     const lucideIcons = {};
     for (const icon of iconsToFetch) {
       const res = await fetch(`https://unpkg.com/lucide-static@latest/icons/${icon}.svg`);

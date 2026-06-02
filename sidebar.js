@@ -93,7 +93,7 @@ class DockitSidebar {
   async refreshActiveSite() {
     const contentEl = this.element.querySelector('#dockit-in-page-content');
     const titleEl = this.element.querySelector('#dockit-in-page-title');
-    if (!contentEl || !titleEl || titleEl.textContent !== 'Edit Apps') return;
+    if (!contentEl || !titleEl || titleEl.dataset.appName !== 'Edit Apps') return;
 
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -138,6 +138,9 @@ class DockitSidebar {
         const title = _getCleanTitleFromUrl(tab.url);
         const favIconUrl = tab.favIconUrl || `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
         const storageData = await chrome.storage.local.get(['lucideIcons', 'pinnedApps']);
+
+        //i18n helper for edit-apps panel
+        const _t = (key) => (this._i18n && this._i18n[key]) || key;
         const pinIconSvg = (storageData.lucideIcons && storageData.lucideIcons['pin']) || 'Pin';
         const searchIconSvg = (storageData.lucideIcons && storageData.lucideIcons['search']) || `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
         const plusIconSvg = (storageData.lucideIcons && storageData.lucideIcons['plus']) || `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
@@ -159,19 +162,17 @@ class DockitSidebar {
           </div>
           
           <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
-            <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">Pinned Apps</div>
+            <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">${_t('pinned_apps')}</div>
             <div class="dockit-apps-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px;">
               <!-- Pinned apps will be rendered here dynamically -->
             </div>
           </div>
 
-          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;">
-            <div class="dockit-search-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">Search</div>
-            <div class="dockit-search-bar-container" style="display: flex; align-items: center; background-color: rgba(255, 255, 255, 0.05); border: 1px solid var(--color-border); border-radius: 8px; padding: 6px 10px; gap: 8px; position: relative;">
-              <div class="dockit-search-icon" style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; opacity: 0.6; color: var(--color-foreground); flex-shrink: 0;">
-                ${searchIconSvg}
-              </div>
-              <input class="dockit-search-input" type="text" placeholder="Search or enter URL to pin..." style="flex: 1; background: transparent; border: none; outline: none; color: var(--color-foreground); font-size: 13px; font-family: inherit; min-width: 0;" />
+          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-background); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;">
+            <div class="dockit-search-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">${_t('search_title')}</div>
+            <div class="dockit-settings-search-wrapper dockit-search-bar-container">
+              ${searchIconSvg}
+              <input class="dockit-settings-search-input dockit-search-input" type="text" placeholder="${_t('search_placeholder')}" />
             </div>
             <div class="dockit-suggestions-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background-color: var(--color-secondary); border: 1px solid var(--color-border); border-radius: 8px; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); max-height: 250px; overflow-y: auto; padding: 6px 0;"></div>
           </div>
@@ -181,7 +182,7 @@ class DockitSidebar {
             <div class="dockit-trash-overlay-icon">
               ${trashIconSvg}
             </div>
-            <div class="dockit-trash-overlay-text">Drag outside to delete</div>
+            <div class="dockit-trash-overlay-text">${_t('drag_delete')}</div>
           </div>
         `;
 
@@ -191,7 +192,7 @@ class DockitSidebar {
             gridContainer.style.display = 'block';
             gridContainer.innerHTML = `
               <div style="font-size: 13px; opacity: 0.5; text-align: center; padding: 20px 10px; line-height: 1.4; border: 1.5px dashed var(--color-border); border-radius: 8px;">
-                No pinned apps yet.<br/>Use the pin icon above to pin this site!
+                ${_t('no_pinned_apps')}<br/>${_t('pin_hint')}
               </div>
             `;
           } else {
@@ -236,11 +237,11 @@ class DockitSidebar {
             const svgEl = pinBtn.querySelector('svg');
             pinBtn.style.color = 'var(--color-primary)';
             if (pinned) {
-              pinBtn.title = 'Remove Pinned Item';
+              pinBtn.title = _t('remove_pinned');
               pinBtn.style.opacity = '0.7';
               if (svgEl) svgEl.style.fill = 'currentColor';
             } else {
-              pinBtn.title = 'Pin to Sidebar';
+              pinBtn.title = _t('pin_to_sidebar');
               pinBtn.style.opacity = '1';
               if (svgEl) svgEl.style.fill = 'none';
             }
@@ -504,16 +505,35 @@ class DockitSidebar {
     }
   }
 
+  _getTranslatedAppName(name) {
+    const defaultStrings = {
+      'edit_apps': 'Edit Apps',
+      'customization': 'Customization',
+      'settings': 'Settings'
+    };
+    const t = (key) => (this._i18n && this._i18n[key]) || defaultStrings[key] || key;
+    if (name === 'Edit Apps') return t('edit_apps');
+    if (name === 'Customization') return t('customization');
+    if (name === 'Settings') return t('settings');
+    return name;
+  }
+
   async openSystemApp(name) {
     const inPage = this.element.querySelector('.dockit-in-page');
     if (!inPage) return;
     const titleEl = this.element.querySelector('#dockit-in-page-title');
     const contentEl = this.element.querySelector('#dockit-in-page-content');
-    if (titleEl) titleEl.textContent = name;
+    if (titleEl) {
+      titleEl.dataset.appName = name;
+      titleEl.textContent = this._getTranslatedAppName(name);
+    }
     if (contentEl) {
       if (name === 'Edit Apps') {
         contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Loading current site...</div>`;
         await this.refreshActiveSite();
+      } else if (name === 'Settings') {
+        contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Loading settings...</div>`;
+        await this._renderSettings();
       } else {
         contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to ${name}</div>`;
       }
@@ -1046,5 +1066,731 @@ class DockitSidebar {
     await chrome.storage.local.set({ pinnedApps });
     await this.refreshActiveSite();
     await this.loadData();
+  }
+
+  async _renderSettings() {
+    const contentEl = this.element.querySelector('#dockit-in-page-content');
+    if (!contentEl) return;
+
+    //retrieve icons
+    const storageData = await chrome.storage.local.get(['lucideIcons']);
+    const searchIconSvg = (storageData.lucideIcons && storageData.lucideIcons['search']) || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
+    const chevronDownSvg = (storageData.lucideIcons && storageData.lucideIcons['chevron-down']) || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+    const chevronUpSvg = (storageData.lucideIcons && storageData.lucideIcons['chevron-up']) || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="18 15 12 9 6 15"></polyline></svg>`;
+    const xIconSvg = (storageData.lucideIcons && storageData.lucideIcons['x']) || `<svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+
+    //default seed lists
+    const disableSidebarList = ['chrome://extensions', 'play.google.com'];
+    const forceAutohideList = ['netflix.com', 'hulu.com'];
+    const forceScrollbarInsetList = ['github.com', 'stackoverflow.com'];
+
+    //render layout
+    contentEl.innerHTML = `
+      <div class="dockit-settings-container">
+        <div class="dockit-settings-toolbar">
+          <div class="dockit-settings-search-wrapper">
+            ${searchIconSvg}
+            <input class="dockit-settings-search-input" id="dockit-settings-search" type="text" placeholder="Search..." />
+          </div>
+          <label class="dockit-settings-expand-all-wrapper" id="dockit-settings-toggle-all-label">
+            <input class="dockit-settings-expand-all-input" id="dockit-settings-toggle-all" type="checkbox" checked />
+            <span class="dockit-settings-expand-all-label" id="dockit-settings-toggle-all-text">Collapse All</span>
+          </label>
+        </div>
+
+        <div class="dockit-settings-list">
+          <!-- Language Category -->
+          <div class="dockit-settings-category" data-category="language">
+            <div class="dockit-settings-category-header">
+              <span class="dockit-settings-category-title">Language</span>
+              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+            </div>
+            <div class="dockit-settings-category-content">
+              <div class="dockit-settings-item" data-title="select language" data-desc="change the interface language of settings">
+                <div class="dockit-settings-item-info">
+                  <span class="dockit-settings-item-title">Select Language</span>
+                  <span class="dockit-settings-item-desc">Change the interface language of settings.</span>
+                </div>
+                <div class="dockit-settings-item-control" style="width: 140px; position: relative;">
+                  <div class="dockit-settings-language-picker" id="dockit-lang-picker">
+                    <div class="dockit-language-selected">
+                      <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1fa-1f1f8.svg" />
+                      <span>English</span>
+                    </div>
+                    <div class="dockit-language-dropdown">
+                      <div class="dockit-language-option is-selected" data-lang="en">
+                        <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1fa-1f1f8.svg" />
+                        <span>English</span>
+                      </div>
+                      <div class="dockit-language-option" data-lang="es">
+                        <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ea-1f1f8.svg" />
+                        <span>Español</span>
+                      </div>
+                      <div class="dockit-language-option" data-lang="fr">
+                        <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1eb-1f1f7.svg" />
+                        <span>Français</span>
+                      </div>
+                      <div class="dockit-language-option" data-lang="de">
+                        <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1e9-1f1ea.svg" />
+                        <span>Deutsch</span>
+                      </div>
+                      <div class="dockit-language-option" data-lang="ja">
+                        <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ef-1f1f5.svg" />
+                        <span>日本語</span>
+                      </div>
+                      <div class="dockit-language-option" data-lang="zh">
+                        <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1e8-1f1f3.svg" />
+                        <span>中文</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="dockit-translation-loading" id="dockit-translation-status">Translating...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Appearance Category -->
+          <div class="dockit-settings-category" data-category="appearance">
+            <div class="dockit-settings-category-header">
+              <span class="dockit-settings-category-title">Appearance</span>
+              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+            </div>
+            <div class="dockit-settings-category-content">
+              <div class="dockit-settings-item" data-title="enable taper" data-desc="enable visual sidebar edge tapering">
+                <div class="dockit-settings-item-info">
+                  <span class="dockit-settings-item-title">Enable Taper</span>
+                  <span class="dockit-settings-item-desc">Enable visual sidebar edge tapering.</span>
+                </div>
+                <div class="dockit-settings-item-control">
+                  <label class="dockit-ios-switch">
+                    <input type="checkbox" id="setting-appearance-taper" />
+                    <span class="dockit-ios-slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="dockit-settings-item" data-title="show url bar" data-desc="display url and navigation controls in side panels">
+                <div class="dockit-settings-item-info">
+                  <span class="dockit-settings-item-title">Show URL Bar</span>
+                  <span class="dockit-settings-item-desc">Display URL and navigation controls in side panels.</span>
+                </div>
+                <div class="dockit-settings-item-control">
+                  <label class="dockit-ios-switch">
+                    <input type="checkbox" id="setting-appearance-urlbar" checked />
+                    <span class="dockit-ios-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Functionality Category -->
+          <div class="dockit-settings-category" data-category="functionality">
+            <div class="dockit-settings-category-header">
+              <span class="dockit-settings-category-title">Functionality</span>
+              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+            </div>
+            <div class="dockit-settings-category-content">
+              <div class="dockit-settings-item" data-title="auto-hide sidepanel" data-desc="automatically hide side panels when focus is lost">
+                <div class="dockit-settings-item-info">
+                  <span class="dockit-settings-item-title">Auto-hide Sidepanel</span>
+                  <span class="dockit-settings-item-desc">Automatically hide side panels when focus is lost.</span>
+                </div>
+                <div class="dockit-settings-item-control">
+                  <label class="dockit-ios-switch">
+                    <input type="checkbox" id="setting-functionality-autohide" />
+                    <span class="dockit-ios-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Blocklists Category -->
+          <div class="dockit-settings-category" data-category="blocklists">
+            <div class="dockit-settings-category-header">
+              <span class="dockit-settings-category-title">Blocklists</span>
+              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+            </div>
+            <div class="dockit-settings-category-content">
+              <!-- Disable Sidebar -->
+              <div class="dockit-settings-item" data-title="disable sidebar" data-desc="pages where the sidebar will be completely disabled">
+                <div class="dockit-settings-list-wrapper">
+                  <div class="dockit-settings-item-info">
+                    <span class="dockit-settings-item-title">Disable Sidebar</span>
+                    <span class="dockit-settings-item-desc">Pages where the sidebar will be completely disabled.</span>
+                  </div>
+                  <div class="dockit-settings-list-input-container">
+                    <input class="dockit-settings-list-input" type="text" placeholder="Add domain or URL..." id="input-blocklist-disable" />
+                    <button class="dockit-settings-list-add-btn" data-target="blocklist-disable">Add</button>
+                  </div>
+                  <div class="dockit-settings-tags" id="tags-blocklist-disable"></div>
+                </div>
+              </div>
+              <!-- Force Auto-hide -->
+              <div class="dockit-settings-item" data-title="force auto-hide" data-desc="pages that will always force auto-hide behavior">
+                <div class="dockit-settings-list-wrapper">
+                  <div class="dockit-settings-item-info">
+                    <span class="dockit-settings-item-title">Force Auto-hide</span>
+                    <span class="dockit-settings-item-desc">Pages that will always force auto-hide behavior.</span>
+                  </div>
+                  <div class="dockit-settings-list-input-container">
+                    <input class="dockit-settings-list-input" type="text" placeholder="Add domain or URL..." id="input-blocklist-autohide" />
+                    <button class="dockit-settings-list-add-btn" data-target="blocklist-autohide">Add</button>
+                  </div>
+                  <div class="dockit-settings-tags" id="tags-blocklist-autohide"></div>
+                </div>
+              </div>
+              <!-- Force Scrollbar Inset -->
+              <div class="dockit-settings-item" data-title="force scrollbar inset" data-desc="pages that will have scrollbars inset programmatically">
+                <div class="dockit-settings-list-wrapper">
+                  <div class="dockit-settings-item-info">
+                    <span class="dockit-settings-item-title">Force Scrollbar Inset</span>
+                    <span class="dockit-settings-item-desc">Pages that will have scrollbars inset programmatically.</span>
+                  </div>
+                  <div class="dockit-settings-list-input-container">
+                    <input class="dockit-settings-list-input" type="text" placeholder="Add domain or URL..." id="input-blocklist-inset" />
+                    <button class="dockit-settings-list-add-btn" data-target="blocklist-inset">Add</button>
+                  </div>
+                  <div class="dockit-settings-tags" id="tags-blocklist-inset"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Debug Category -->
+          <div class="dockit-settings-category" data-category="debug">
+            <div class="dockit-settings-category-header">
+              <span class="dockit-settings-category-title">Debug</span>
+              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+            </div>
+            <div class="dockit-settings-category-content">
+              <div class="dockit-settings-item" data-title="cloud sync" data-desc="force instant synchronization of configuration to the cloud">
+                <div class="dockit-settings-item-info">
+                  <span class="dockit-settings-item-title">Cloud Sync</span>
+                  <span class="dockit-settings-item-desc">Force instant synchronization of configuration to the cloud.</span>
+                </div>
+                <div class="dockit-settings-item-control" style="width: 100px;">
+                  <button class="dockit-settings-btn" id="btn-debug-sync">Sync Now</button>
+                </div>
+              </div>
+              <div class="dockit-settings-item" data-title="clear cache" data-desc="purge cached asset resources and system pre-fetches">
+                <div class="dockit-settings-item-info">
+                  <span class="dockit-settings-item-title">Clear Cache</span>
+                  <span class="dockit-settings-item-desc">Purge cached asset resources and system pre-fetches.</span>
+                </div>
+                <div class="dockit-settings-item-control" style="width: 100px;">
+                  <button class="dockit-settings-btn" id="btn-debug-cache">Clear Cache</button>
+                </div>
+              </div>
+              <div class="dockit-settings-item" data-title="clear data" data-desc="clear all extension storage and reset default states">
+                <div class="dockit-settings-item-info">
+                  <span class="dockit-settings-item-title">Clear Data</span>
+                  <span class="dockit-settings-item-desc">Clear all extension storage and reset default states.</span>
+                </div>
+                <div class="dockit-settings-item-control" style="width: 100px;">
+                  <button class="dockit-settings-btn accent" id="btn-debug-clear">Clear Data</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    //helper to render tags list
+    const _renderTags = (containerId, tagsArray) => {
+      const container = contentEl.querySelector(`#${containerId}`);
+      if (!container) return;
+      container.innerHTML = '';
+      tagsArray.forEach((tag, idx) => {
+        const tagEl = document.createElement('div');
+        tagEl.className = 'dockit-settings-tag';
+        tagEl.innerHTML = `
+          <span>${tag}</span>
+          <span class="dockit-settings-tag-remove" data-index="${idx}">${xIconSvg}</span>
+        `;
+        tagEl.querySelector('.dockit-settings-tag-remove').addEventListener('click', () => {
+          tagsArray.splice(idx, 1);
+          _renderTags(containerId, tagsArray);
+        });
+        container.appendChild(tagEl);
+      });
+    };
+
+    //initial lists render
+    _renderTags('tags-blocklist-disable', disableSidebarList);
+    _renderTags('tags-blocklist-autohide', forceAutohideList);
+    _renderTags('tags-blocklist-inset', forceScrollbarInsetList);
+
+    //bind list action clicks
+    const listAddButtons = contentEl.querySelectorAll('.dockit-settings-list-add-btn');
+    listAddButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const input = contentEl.querySelector(`#input-${targetId}`);
+        if (!input) return;
+        const value = input.value.trim();
+        if (value) {
+          if (targetId === 'blocklist-disable') {
+            disableSidebarList.push(value);
+            _renderTags(`tags-${targetId}`, disableSidebarList);
+          } else if (targetId === 'blocklist-autohide') {
+            forceAutohideList.push(value);
+            _renderTags(`tags-${targetId}`, forceAutohideList);
+          } else if (targetId === 'blocklist-inset') {
+            forceScrollbarInsetList.push(value);
+            _renderTags(`tags-${targetId}`, forceScrollbarInsetList);
+          }
+          input.value = '';
+        }
+      });
+    });
+
+    //bind inputs keydown listeners
+    const listInputs = contentEl.querySelectorAll('.dockit-settings-list-input');
+    listInputs.forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const btn = input.nextElementSibling;
+          if (btn && btn.classList.contains('dockit-settings-list-add-btn')) {
+            btn.click();
+          }
+        }
+      });
+    });
+
+    //bind collapsing handlers
+    const categories = contentEl.querySelectorAll('.dockit-settings-category');
+    const toggleAllCheckbox = contentEl.querySelector('#dockit-settings-toggle-all');
+    const toggleAllText = contentEl.querySelector('#dockit-settings-toggle-all-text');
+
+    const _updateToggleAllState = () => {
+      if (!toggleAllCheckbox || !toggleAllText) return;
+      const total = categories.length;
+      const collapsedCount = contentEl.querySelectorAll('.dockit-settings-category.is-collapsed').length;
+      
+      if (collapsedCount === total) {
+        toggleAllCheckbox.checked = false;
+        toggleAllText.textContent = t('expand_all');
+      } else if (collapsedCount === 0) {
+        toggleAllCheckbox.checked = true;
+        toggleAllText.textContent = t('collapse_all');
+      }
+    };
+
+    categories.forEach(cat => {
+      const header = cat.querySelector('.dockit-settings-category-header');
+      const chevron = cat.querySelector('.dockit-settings-category-chevron');
+      if (header && chevron) {
+        header.addEventListener('click', () => {
+          const isCollapsed = cat.classList.toggle('is-collapsed');
+          chevron.innerHTML = isCollapsed ? chevronDownSvg : chevronUpSvg;
+          _updateToggleAllState();
+        });
+      }
+    });
+
+    //bind toggle all states
+    if (toggleAllCheckbox) {
+      toggleAllCheckbox.addEventListener('change', () => {
+        const shouldExpand = toggleAllCheckbox.checked;
+        toggleAllText.textContent = shouldExpand ? t('collapse_all') : t('expand_all');
+        
+        categories.forEach(cat => {
+          const chevron = cat.querySelector('.dockit-settings-category-chevron');
+          if (shouldExpand) {
+            cat.classList.remove('is-collapsed');
+            if (chevron) chevron.innerHTML = chevronUpSvg;
+          } else {
+            cat.classList.add('is-collapsed');
+            if (chevron) chevron.innerHTML = chevronDownSvg;
+          }
+        });
+      });
+    }
+
+    //store original text for highlighting
+    const allItems = contentEl.querySelectorAll('.dockit-settings-item');
+    allItems.forEach(item => {
+      const titleEl = item.querySelector('.dockit-settings-item-title');
+      const descEl = item.querySelector('.dockit-settings-item-desc');
+      if (titleEl) item.dataset.origTitle = titleEl.textContent;
+      if (descEl) item.dataset.origDesc = descEl.textContent;
+    });
+
+    // Global i18n dictionary — all translatable strings in the extension
+    const I18N_STRINGS = {
+      'edit_apps': 'Edit Apps',
+      'customization': 'Customization',
+      'settings': 'Settings',
+      'appearance': 'Appearance',
+      'functionality': 'Functionality',
+      'blocklists': 'Blocklists',
+      'debug': 'Debug',
+      'language': 'Language',
+      'enable_taper': 'Enable Taper',
+      'enable_taper_desc': 'Enable visual sidebar edge tapering.',
+      'show_url_bar': 'Show URL Bar',
+      'show_url_bar_desc': 'Display URL and navigation controls in side panels.',
+      'auto_hide': 'Auto-hide Sidepanel',
+      'auto_hide_desc': 'Automatically hide side panels when focus is lost.',
+      'disable_sidebar': 'Disable Sidebar',
+      'disable_sidebar_desc': 'Pages where the sidebar will be completely disabled.',
+      'force_auto_hide': 'Force Auto-hide',
+      'force_auto_hide_desc': 'Pages that will always force auto-hide behavior.',
+      'force_scrollbar': 'Force Scrollbar Inset',
+      'force_scrollbar_desc': 'Pages that will have scrollbars inset programmatically.',
+      'cloud_sync': 'Cloud Sync',
+      'cloud_sync_desc': 'Force instant synchronization of configuration to the cloud.',
+      'clear_cache': 'Clear Cache',
+      'clear_cache_desc': 'Purge cached asset resources and system pre-fetches.',
+      'clear_data': 'Clear Data',
+      'clear_data_desc': 'Clear all extension storage and reset default states.',
+      'select_language': 'Select Language',
+      'select_language_desc': 'Change the interface language of settings.',
+      'search_placeholder': 'Search...',
+      'collapse_all': 'Collapse All',
+      'expand_all': 'Expand All',
+      'add_domain_placeholder': 'Add domain or URL...',
+      'add_btn': 'Add',
+      'sync_now': 'Sync Now',
+      'pinned_apps': 'Pinned Apps',
+      'search_title': 'Search',
+      'pin_to_sidebar': 'Pin to Sidebar',
+      'remove_pinned': 'Remove Pinned Item',
+      'no_pinned_apps': 'No pinned apps yet.',
+      'pin_hint': 'Use the pin icon above to pin this site!',
+      'drag_delete': 'Drag outside to delete',
+      'translating': 'Translating...'
+    };
+
+    //store current translations (defaults to english)
+    if (!this._i18n) this._i18n = { ...I18N_STRINGS };
+    const t = (key) => this._i18n[key] || I18N_STRINGS[key] || key;
+
+    //batched translation via MyMemory API (500 char limit per request)
+    const _batchTranslate = async (lang) => {
+      const cacheKey = `dockitTranslations_v2_${lang}`;
+      const cached = await chrome.storage.local.get([cacheKey]);
+      if (cached[cacheKey]) return cached[cacheKey];
+
+      const keys = Object.keys(I18N_STRINGS);
+      const values = Object.values(I18N_STRINGS);
+      const result = {};
+      
+      //split into batches that fit under 500 chars
+      let batch = [];
+      let batchKeys = [];
+      let currentLen = 0;
+
+      const _flushBatch = async () => {
+        if (batch.length === 0) return;
+        const joined = batch.join(' ||| ');
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(joined)}&langpair=en|${lang}`;
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.responseData && data.responseData.translatedText) {
+            let parts = data.responseData.translatedText.split('|||').map(s => s.trim());
+            if (parts.length !== batch.length) {
+              parts = data.responseData.translatedText.split(' ||| ').map(s => s.trim());
+            }
+            if (parts.length === batch.length) {
+              batchKeys.forEach((key, i) => { result[key] = parts[i]; });
+            }
+          }
+        } catch (e) {
+          console.error('Translation batch error', e);
+        }
+        batch = [];
+        batchKeys = [];
+        currentLen = 0;
+      };
+
+      for (let i = 0; i < values.length; i++) {
+        const text = values[i];
+        const separator = batch.length > 0 ? ' ||| ' : '';
+        const addLen = separator.length + text.length;
+
+        if (currentLen + addLen > 450) {
+          await _flushBatch();
+        }
+
+        if (batch.length > 0) currentLen += 5; //separator length
+        batch.push(text);
+        batchKeys.push(keys[i]);
+        currentLen += text.length;
+      }
+      await _flushBatch();
+
+      if (Object.keys(result).length > 0) {
+        await chrome.storage.local.set({ [cacheKey]: result });
+      }
+      return result;
+    };
+
+    //apply translations to all visible elements
+    const _applyTranslations = () => {
+      //header title
+      const headerTitleEl = this.element.querySelector('#dockit-in-page-title');
+      if (headerTitleEl && headerTitleEl.dataset.appName) {
+        headerTitleEl.textContent = this._getTranslatedAppName(headerTitleEl.dataset.appName);
+      }
+
+      //category titles
+      const catMap = { appearance: 'appearance', functionality: 'functionality', blocklists: 'blocklists', debug: 'debug', language: 'language' };
+      Object.entries(catMap).forEach(([cat, key]) => {
+        const el = contentEl.querySelector(`.dockit-settings-category[data-category="${cat}"] .dockit-settings-category-title`);
+        if (el) el.textContent = t(key);
+      });
+
+      //settings item titles and descriptions
+      const itemMap = {
+        'enable taper': ['enable_taper', 'enable_taper_desc'],
+        'show url bar': ['show_url_bar', 'show_url_bar_desc'],
+        'auto-hide sidepanel': ['auto_hide', 'auto_hide_desc'],
+        'disable sidebar': ['disable_sidebar', 'disable_sidebar_desc'],
+        'force auto-hide': ['force_auto_hide', 'force_auto_hide_desc'],
+        'force scrollbar inset': ['force_scrollbar', 'force_scrollbar_desc'],
+        'cloud sync': ['cloud_sync', 'cloud_sync_desc'],
+        'clear cache': ['clear_cache', 'clear_cache_desc'],
+        'clear data': ['clear_data', 'clear_data_desc'],
+        'select language': ['select_language', 'select_language_desc']
+      };
+
+      Object.entries(itemMap).forEach(([dataTitle, [titleKey, descKey]]) => {
+        const item = contentEl.querySelector(`.dockit-settings-item[data-title="${dataTitle}"]`);
+        if (!item) return;
+        const titleEl = item.querySelector('.dockit-settings-item-title');
+        const descEl = item.querySelector('.dockit-settings-item-desc');
+        if (titleEl) titleEl.textContent = t(titleKey);
+        if (descEl) descEl.textContent = t(descKey);
+        //update search data attributes
+        item.dataset.translatedTitle = t(titleKey);
+        item.dataset.translatedDesc = t(descKey);
+      });
+
+      //placeholders
+      const searchInput = contentEl.querySelector('#dockit-settings-search');
+      if (searchInput) searchInput.placeholder = t('search_placeholder');
+      
+      contentEl.querySelectorAll('.dockit-settings-list-input').forEach(input => {
+        input.placeholder = t('add_domain_placeholder');
+      });
+
+      //buttons
+      contentEl.querySelectorAll('.dockit-settings-list-add-btn').forEach(btn => {
+        btn.textContent = t('add_btn');
+      });
+
+      const syncBtn = contentEl.querySelector('#btn-debug-sync');
+      if (syncBtn && !syncBtn.dataset.busy) syncBtn.textContent = t('sync_now');
+      const cacheBtn = contentEl.querySelector('#btn-debug-cache');
+      if (cacheBtn && !cacheBtn.dataset.busy) cacheBtn.textContent = t('clear_cache');
+      const clearBtn = contentEl.querySelector('#btn-debug-clear');
+      if (clearBtn && !clearBtn.dataset.busy) clearBtn.textContent = t('clear_data');
+
+      //toggle all text
+      if (toggleAllText) {
+        const collapsedCount = contentEl.querySelectorAll('.dockit-settings-category.is-collapsed').length;
+        toggleAllText.textContent = collapsedCount === categories.length ? t('expand_all') : t('collapse_all');
+      }
+
+      //loading label
+      const loadingEl = contentEl.querySelector('#dockit-translation-status');
+      if (loadingEl) loadingEl.textContent = t('translating');
+    };
+
+    const translatePage = async (lang) => {
+      const loadingEl = contentEl.querySelector('#dockit-translation-status');
+      if (loadingEl) loadingEl.style.display = 'block';
+
+      if (lang === 'en') {
+        this._i18n = { ...I18N_STRINGS };
+        _applyTranslations();
+        if (loadingEl) loadingEl.style.display = 'none';
+        return;
+      }
+
+      const translated = await _batchTranslate(lang);
+      if (translated && Object.keys(translated).length > 0) {
+        this._i18n = { ...I18N_STRINGS, ...translated };
+      }
+      _applyTranslations();
+      if (loadingEl) loadingEl.style.display = 'none';
+    };
+
+    //bind search input filter handler
+    const searchInput = contentEl.querySelector('#dockit-settings-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase().trim();
+        
+        categories.forEach(cat => {
+          const catTitleEl = cat.querySelector('.dockit-settings-category-title');
+          const catTitle = catTitleEl ? catTitleEl.textContent.toLowerCase() : '';
+          const items = cat.querySelectorAll('.dockit-settings-item');
+          let catHasMatches = catTitle.includes(query);
+          
+          items.forEach(item => {
+            const origTitle = item.dataset.origTitle || '';
+            const origDesc = item.dataset.origDesc || '';
+            const titleToSearch = item.dataset.translatedTitle || origTitle;
+            const descToSearch = item.dataset.translatedDesc || origDesc;
+            const matches = titleToSearch.toLowerCase().includes(query) || descToSearch.toLowerCase().includes(query);
+            
+            const titleEl = item.querySelector('.dockit-settings-item-title');
+            const descEl = item.querySelector('.dockit-settings-item-desc');
+
+            if (matches && query !== '') {
+              item.classList.remove('is-filtered-out');
+              catHasMatches = true;
+              
+              const highlight = (text, q) => {
+                const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})`, 'gi');
+                return text.replace(regex, '<mark>$1</mark>');
+              };
+              
+              if (titleEl) titleEl.innerHTML = highlight(titleToSearch, query);
+              if (descEl) descEl.innerHTML = highlight(descToSearch, query);
+            } else {
+              item.classList.add('is-filtered-out');
+              if (titleEl) titleEl.textContent = titleToSearch;
+              if (descEl) descEl.textContent = descToSearch;
+            }
+          });
+          
+          const chevron = cat.querySelector('.dockit-settings-category-chevron');
+          if (query === '') {
+            cat.style.display = 'flex';
+            items.forEach(item => {
+              item.classList.remove('is-filtered-out');
+              const titleEl = item.querySelector('.dockit-settings-item-title');
+              const descEl = item.querySelector('.dockit-settings-item-desc');
+              const titleToSearch = item.dataset.translatedTitle || item.dataset.origTitle || '';
+              const descToSearch = item.dataset.translatedDesc || item.dataset.origDesc || '';
+              if (titleEl) titleEl.textContent = titleToSearch;
+              if (descEl) descEl.textContent = descToSearch;
+            });
+            _updateToggleAllState();
+          } else if (catHasMatches) {
+            cat.style.display = 'flex';
+            cat.classList.remove('is-collapsed');
+            if (chevron) chevron.innerHTML = chevronUpSvg;
+            
+            // Highlight category title if it matches
+            if (catTitleEl) {
+              const currentCatTitle = catTitleEl.textContent;
+              if (currentCatTitle.toLowerCase().includes(query)) {
+                 const escapedQuery = query.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
+                 const regex = new RegExp(`(${escapedQuery})`, 'gi');
+                 catTitleEl.innerHTML = currentCatTitle.replace(regex, '<mark>$1</mark>');
+              } else {
+                 catTitleEl.innerHTML = currentCatTitle;
+              }
+            }
+          } else {
+            cat.style.display = 'none';
+          }
+          
+          // Reset category title highlight if query is empty
+          if (query === '' && catTitleEl) {
+            catTitleEl.innerHTML = catTitleEl.textContent;
+          }
+        });
+      });
+    }
+
+    //bind custom language picker
+    const picker = contentEl.querySelector('#dockit-lang-picker');
+    const selectedEl = picker.querySelector('.dockit-language-selected');
+    const dropdown = picker.querySelector('.dockit-language-dropdown');
+    const options = picker.querySelectorAll('.dockit-language-option');
+    
+    selectedEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      picker.classList.toggle('is-open');
+    });
+    
+    document.addEventListener('click', () => {
+      picker.classList.remove('is-open');
+    });
+    
+    options.forEach(opt => {
+      opt.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const selectedLang = opt.dataset.lang;
+        
+        options.forEach(o => o.classList.remove('is-selected'));
+        opt.classList.add('is-selected');
+        
+        selectedEl.querySelector('img').src = opt.querySelector('img').src;
+        selectedEl.querySelector('span').textContent = opt.querySelector('span').textContent;
+        
+        picker.classList.remove('is-open');
+        
+        await chrome.storage.local.set({ dockitLanguage: selectedLang });
+        await translatePage(selectedLang);
+      });
+    });
+
+    // initialize language select state on load
+    const loadSavedLang = async () => {
+      const storage = await chrome.storage.local.get(['dockitLanguage']);
+      const savedLang = storage.dockitLanguage || 'en';
+      
+      const opt = Array.from(options).find(o => o.dataset.lang === savedLang);
+      if (opt) {
+        options.forEach(o => o.classList.remove('is-selected'));
+        opt.classList.add('is-selected');
+        selectedEl.querySelector('img').src = opt.querySelector('img').src;
+        selectedEl.querySelector('span').textContent = opt.querySelector('span').textContent;
+        
+        if (savedLang !== 'en') {
+          await translatePage(savedLang);
+        }
+      }
+    };
+    await loadSavedLang();
+
+    //bind debug actions
+    const syncBtn = contentEl.querySelector('#btn-debug-sync');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', () => {
+        syncBtn.dataset.busy = '1';
+        syncBtn.textContent = 'Syncing...';
+        setTimeout(() => {
+          syncBtn.textContent = 'Synced!';
+          setTimeout(() => { delete syncBtn.dataset.busy; syncBtn.textContent = t('sync_now'); }, 1500);
+        }, 800);
+      });
+    }
+
+    const cacheBtn = contentEl.querySelector('#btn-debug-cache');
+    if (cacheBtn) {
+      cacheBtn.addEventListener('click', () => {
+        cacheBtn.dataset.busy = '1';
+        cacheBtn.textContent = 'Purging...';
+        setTimeout(() => {
+          cacheBtn.textContent = 'Purged!';
+          setTimeout(() => { delete cacheBtn.dataset.busy; cacheBtn.textContent = t('clear_cache'); }, 1500);
+        }, 800);
+      });
+    }
+
+    const clearBtn = contentEl.querySelector('#btn-debug-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        clearBtn.dataset.busy = '1';
+        clearBtn.textContent = 'Resetting...';
+        setTimeout(() => {
+          clearBtn.textContent = 'Reset!';
+          setTimeout(() => { delete clearBtn.dataset.busy; clearBtn.textContent = t('clear_data'); }, 1500);
+        }, 800);
+      });
+    }
   }
 }
