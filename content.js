@@ -64,11 +64,10 @@ async function _createSidebar() {
     tagEl.style.display = 'none';
     shadowRoot.appendChild(tagEl);
     try {
-      const cssRes = await fetch(chrome.runtime.getURL('styles.css'));
-      const cssText = await cssRes.text();
-      const styleEl = document.createElement('style');
-      styleEl.textContent = cssText;
-      shadowRoot.appendChild(styleEl);
+      const styleLink = document.createElement('link');
+      styleLink.rel = 'stylesheet';
+      styleLink.href = chrome.runtime.getURL('styles.css');
+      shadowRoot.appendChild(styleLink);
     } catch (err) {
       console.error('Failed to inject Dockit stylesheet:', err);
     }

@@ -340,7 +340,11 @@ async function init() {
         const forceViewList = storageLists.dockitForceViewList || ['instagram.com', 'twitter.com', 'x.com'];
         const isMobileDefault = storageLists.dockitMobileDefault !== false;
         
-        const isForcedOpposite = forceViewList.some(d => hostname === d || hostname.endsWith('.' + d));
+        const isForcedOpposite = forceViewList.some(d => {
+          const cleanItem = d.toLowerCase().trim();
+          if (!cleanItem) return false;
+          return hostname.includes(cleanItem) || targetUrl.toLowerCase().includes(cleanItem);
+        });
 
         // update dynamic user agent rules depending on current view mode
         let isMobile = viewportWrapper.classList.contains('mobile-mode');

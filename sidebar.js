@@ -614,11 +614,11 @@ class DockitSidebar {
           if (u.protocol === 'chrome:' || u.protocol === 'edge:' || u.protocol === 'about:') {
             newPlaceholder = u.protocol + '//' + u.host + (u.pathname === '/' ? '' : u.pathname);
           } else {
-            newPlaceholder = u.host.replace(/^www\./, '');
+            newPlaceholder = u.host.replace(/^www\./, '') + (u.pathname === '/' ? '' : u.pathname);
           }
         }
       } else {
-        newPlaceholder = window.location.host.replace(/^www\./, '');
+        newPlaceholder = window.location.host.replace(/^www\./, '') + (window.location.pathname === '/' ? '' : window.location.pathname);
       }
     } catch (e) { }
 
@@ -1189,7 +1189,7 @@ class DockitSidebar {
       'dockitForceViewList',
       'dockitMobileDefault'
     ]);
-    const disableSidebarList = storageLists.dockitDisableSidebarList || [];
+    const disableSidebarList = storageLists.dockitDisableSidebarList || ['bing.com/images/'];
     const forceAutohideList = storageLists.dockitForceAutohideList || [];
     const forceViewList = storageLists.dockitForceViewList || ['docs.google.com'];
     const isMobileDefault = storageLists.dockitMobileDefault !== false;
@@ -1205,11 +1205,11 @@ class DockitSidebar {
           if (u.protocol === 'chrome:' || u.protocol === 'edge:' || u.protocol === 'about:') {
             currentSitePlaceholder = u.protocol + '//' + u.host + (u.pathname === '/' ? '' : u.pathname);
           } else {
-            currentSitePlaceholder = u.host.replace(/^www\./, '');
+            currentSitePlaceholder = u.host.replace(/^www\./, '') + (u.pathname === '/' ? '' : u.pathname);
           }
         }
       } else {
-        currentSitePlaceholder = window.location.host.replace(/^www\./, '');
+        currentSitePlaceholder = window.location.host.replace(/^www\./, '') + (window.location.pathname === '/' ? '' : window.location.pathname);
       }
     } catch (e) { }
 
