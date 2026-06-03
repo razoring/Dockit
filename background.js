@@ -1,5 +1,6 @@
 // background.js
 
+const SESSION_ID = Date.now().toString();
 chrome.runtime.onInstalled.addListener(async () => {
   // Create context menu
   chrome.contextMenus.create({
@@ -30,7 +31,18 @@ chrome.runtime.onInstalled.addListener(async () => {
       if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('edge://') && !tab.url.startsWith('about:')) {
         chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          files: ['sidebar.js', 'content.js']
+          func: (sessionId) => {
+            if (window.DOCKIT_INJECTED === true) return true;
+            window.DOCKIT_SESSION_ID = sessionId;
+            return false;
+          },
+          args: [SESSION_ID]
+        }).then((results) => {
+          if (results && results[0] && results[0].result === true) return;
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['defaults.js', 'sidebar.js', 'content.js']
+          }).catch(() => { });
         }).catch(() => { });
       }
     }
@@ -111,8 +123,13 @@ async function cacheAssets() {
       fontCss = fontCss.replace(font.url, font.dataUri);
     });
 
+    // 3. Cache Main Stylesheet
+    const stylesCssRes = await fetch(chrome.runtime.getURL('styles.css'));
+    const dockitStyles = await stylesCssRes.text();
+
     await chrome.storage.local.set({
-      fontCss: fontCss
+      fontCss: fontCss,
+      dockitStyles: dockitStyles
     });
 
     console.log("Assets cached successfully.");
@@ -149,7 +166,10 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === 'GET_WINDOW_ID') {
+  if (msg.type === 'GET_SESSION_ID') {
+    sendResponse(SESSION_ID);
+    return false;
+  } else if (msg.type === 'GET_WINDOW_ID') {
     if (sender.tab && sender.tab.windowId) {
       sendResponse(sender.tab.windowId);
     }
@@ -285,4 +305,27 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       chrome.runtime.sendMessage({ type: 'LOAD_APP', app: appData }).catch(() => { });
     }, 500);
   }
+});
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('edge://') && !tab.url.startsWith('about:')) {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (sessionId) => {
+          if (window.DOCKIT_INJECTED === true) return true;
+          window.DOCKIT_SESSION_ID = sessionId;
+          return false;
+        },
+        args: [SESSION_ID]
+      }).then((results) => {
+        if (results && results[0] && results[0].result === true) return;
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['defaults.js', 'sidebar.js', 'content.js']
+        }).catch(() => { });
+      }).catch(() => { });
+    }
+  } catch (err) {}
 });

@@ -1,5 +1,5 @@
 //content.js
-
+window.DOCKIT_INJECTED = true;
 const SIDEBAR_WIDTH = 48;
 const _shouldScanAbsolute = window.location.hostname.includes('mail.google.com') || window.location.hostname.includes('stitch.withgoogle.com');
 let _hostElement = null;
@@ -47,6 +47,10 @@ async function _createSidebar() {
       existing.remove();
     }
     _currentTag = Math.floor(Math.random() * 1000000).toString();
+    try {
+      const sid = await chrome.runtime.sendMessage({ type: 'GET_SESSION_ID' });
+      if (sid) _currentTag = sid;
+    } catch (e) {}
     _hostElement = document.createElement('div');
     _hostElement.id = 'dockit-host-root';
     if (_isSidebarHidden) {
@@ -63,18 +67,22 @@ async function _createSidebar() {
     tagEl.dataset.value = _currentTag;
     tagEl.style.display = 'none';
     shadowRoot.appendChild(tagEl);
-    try {
+    const styleStorage = await chrome.storage.local.get(['fontCss', 'dockitStyles']);
+    if (styleStorage.dockitStyles) {
+      const mainStyle = document.createElement('style');
+      mainStyle.textContent = styleStorage.dockitStyles;
+      shadowRoot.appendChild(mainStyle);
+    } else {
+      // Fallback if cache is missing
       const styleLink = document.createElement('link');
       styleLink.rel = 'stylesheet';
       styleLink.href = chrome.runtime.getURL('styles.css');
       shadowRoot.appendChild(styleLink);
-    } catch (err) {
-      console.error('Failed to inject Dockit stylesheet:', err);
     }
-    const fontStorage = await chrome.storage.local.get(['fontCss']);
-    if (fontStorage.fontCss) {
+
+    if (styleStorage.fontCss) {
       const fontStyle = document.createElement('style');
-      fontStyle.textContent = fontStorage.fontCss;
+      fontStyle.textContent = styleStorage.fontCss;
       shadowRoot.appendChild(fontStyle);
     }
     _sidebar = new DockitSidebar(false);

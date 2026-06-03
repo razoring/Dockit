@@ -727,7 +727,7 @@ class DockitSidebar {
       el.innerHTML = `<img src="${app.iconUrl}" alt="${app.title}" draggable="false" />`;
 
       //apply reactive loaded vs unloaded opacities based on in-page memory indicators
-      if (this._isInPageOpen) {
+      if (this.isSidePanel) {
         if (this._inMemoryUrls && this._inMemoryUrls.includes(app.url)) {
           el.style.opacity = '1';
         } else {
@@ -774,7 +774,7 @@ class DockitSidebar {
     const apps = this.element.querySelectorAll('.dockit-app');
     apps.forEach(el => {
       const url = el.dataset.url;
-      if (this._isInPageOpen) {
+      if (this.isSidePanel) {
         if (this._inMemoryUrls.includes(url)) {
           el.style.opacity = '1';
         } else {
