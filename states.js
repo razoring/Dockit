@@ -13,6 +13,17 @@ async function init() {
   const sidebarEl = await sidebar.render();
   document.getElementById('sidebar-container').appendChild(sidebarEl);
 
+  await chrome.storage.local.set({ dockitSidepanelHovered: false });
+  const sidepanelView = document.querySelector('.dockit-sidepanel-view');
+  if (sidepanelView) {
+    sidepanelView.addEventListener('mouseenter', () => {
+      chrome.storage.local.set({ dockitSidepanelHovered: true });
+    });
+    sidepanelView.addEventListener('mouseleave', () => {
+      chrome.storage.local.set({ dockitSidepanelHovered: false });
+    });
+  }
+
   const iframeContainer = document.querySelector('.dockit-iframe-container');
   const controlBar = document.createElement('div');
   controlBar.className = 'dockit-control-bar';
@@ -587,6 +598,10 @@ async function init() {
         port.postMessage({ type: 'PING' });
       } catch(e) {}
     }, 20000);
+  });
+
+  window.addEventListener('beforeunload', () => {
+    chrome.storage.local.set({ dockitSidepanelHovered: false });
   });
 }
 

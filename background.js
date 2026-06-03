@@ -158,7 +158,8 @@ chrome.runtime.onConnect.addListener((port) => {
         connectedSidePanels.delete(panelWindowId);
         chrome.storage.local.set({
           [`sidePanelOpen_${panelWindowId}`]: false,
-          temporaryApps: []
+          temporaryApps: [],
+          dockitSidepanelHovered: false
         });
       }
     });

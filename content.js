@@ -346,12 +346,20 @@ async function init() {
     }
     if (!currentWindowId) return;
     try {
-      chrome.runtime.sendMessage({ type: 'CHECK_SIDEPANEL_OPEN', windowId: currentWindowId }, (isOpen) => {
+      chrome.runtime.sendMessage({ type: 'CHECK_SIDEPANEL_OPEN', windowId: currentWindowId }, async (isOpen) => {
         if (chrome.runtime.lastError) {
           //handle extension reload
           return;
         }
-        const actuallyOpen = !!isOpen;
+        let actuallyOpen = !!isOpen;
+        if (!actuallyOpen) {
+          try {
+            const hoverState = await chrome.storage.local.get(['dockitSidepanelHovered']);
+            if (hoverState.dockitSidepanelHovered) {
+              actuallyOpen = true;
+            }
+          } catch (e) {}
+        }
         try { sessionStorage.setItem('dockit-sidepanel-open', actuallyOpen ? '1' : '0'); } catch (e) { }
         if (actuallyOpen !== _isSidebarHidden) {
           if (actuallyOpen) {
