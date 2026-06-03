@@ -184,7 +184,7 @@ async function init() {
           if (existingPopup) existingPopup.remove();
 
           const storage = await chrome.storage.local.get(['dockitForceViewList']);
-          const forceViewList = storage.dockitForceViewList || ['instagram.com', 'twitter.com', 'x.com'];
+          const forceViewList = storage.dockitForceViewList || DOCKIT_DEFAULTS.forceViewList;
           
           if (!forceViewList.includes(hostname)) {
             const popup = document.createElement('div');
@@ -337,8 +337,8 @@ async function init() {
       } else {
         // 2. Force Opposite View (User Blocklist)
         const storageLists = await chrome.storage.local.get(['dockitForceViewList', 'dockitMobileDefault']);
-        const forceViewList = storageLists.dockitForceViewList || ['instagram.com', 'twitter.com', 'x.com'];
-        const isMobileDefault = storageLists.dockitMobileDefault !== false;
+        const forceViewList = storageLists.dockitForceViewList || DOCKIT_DEFAULTS.forceViewList;
+        const isMobileDefault = storageLists.dockitMobileDefault !== undefined ? storageLists.dockitMobileDefault : DOCKIT_DEFAULTS.mobileDefault;
         
         const isForcedOpposite = forceViewList.some(d => {
           const cleanItem = d.toLowerCase().trim();

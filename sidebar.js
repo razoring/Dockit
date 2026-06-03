@@ -1189,10 +1189,10 @@ class DockitSidebar {
       'dockitForceViewList',
       'dockitMobileDefault'
     ]);
-    const disableSidebarList = storageLists.dockitDisableSidebarList || ['bing.com/images/search'];
-    const forceAutohideList = storageLists.dockitForceAutohideList || [];
-    const forceViewList = storageLists.dockitForceViewList || ['docs.google.com'];
-    const isMobileDefault = storageLists.dockitMobileDefault !== false;
+    const disableSidebarList = storageLists.dockitDisableSidebarList || DOCKIT_DEFAULTS.disableSidebarList;
+    const forceAutohideList = storageLists.dockitForceAutohideList || DOCKIT_DEFAULTS.forceAutohideList;
+    const forceViewList = storageLists.dockitForceViewList || DOCKIT_DEFAULTS.forceViewList;
+    const isMobileDefault = storageLists.dockitMobileDefault !== undefined ? storageLists.dockitMobileDefault : DOCKIT_DEFAULTS.mobileDefault;
     const forceViewTitle = isMobileDefault ? 'Force Desktop View' : 'Force Mobile View';
     const forceViewDesc = isMobileDefault ? 'Pages that will always force desktop view.' : 'Pages that will always force mobile view.';
 
