@@ -340,6 +340,7 @@ async function init() {
 
   let currentWindowId = null;
   const _checkSidePanelStatus = () => {
+    if (document.visibilityState === 'hidden') return;
     if (!chrome.runtime?.id) {
       _destroy();
       return;

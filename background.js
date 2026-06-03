@@ -140,19 +140,32 @@ async function cacheAssets() {
 
 const connectedSidePanels = new Set();
 
-chrome.sidePanel.onOpened.addListener((panel) => {
-  if (panel && panel.windowId) {
-    connectedSidePanels.add(panel.windowId);
-    chrome.storage.local.set({ [`sidePanelOpen_${panel.windowId}`]: true });
-  }
-});
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'sidepanel') {
+    let panelWindowId = null;
+    port.onMessage.addListener((msg) => {
+      if (msg.type === 'INIT' && msg.windowId) {
+        panelWindowId = msg.windowId;
+        connectedSidePanels.add(panelWindowId);
+        chrome.storage.local.set({ [`sidePanelOpen_${panelWindowId}`]: true });
+      } else if (msg.type === 'PING') {
+        // Prevent Service Worker suspension
+      }
+    });
 
-chrome.sidePanel.onClosed.addListener((panel) => {
-  if (panel && panel.windowId) {
-    connectedSidePanels.delete(panel.windowId);
-    chrome.storage.local.set({
-      [`sidePanelOpen_${panel.windowId}`]: false,
-      temporaryApps: []
+    port.onDisconnect.addListener(async () => {
+      if (panelWindowId) {
+        connectedSidePanels.delete(panelWindowId);
+        try {
+          const contexts = await chrome.runtime.getContexts({ contextTypes: ['SIDE_PANEL'] });
+          const hasContext = contexts.some(c => c.windowId === panelWindowId);
+          if (hasContext) return;
+        } catch (e) {}
+        chrome.storage.local.set({
+          [`sidePanelOpen_${panelWindowId}`]: false,
+          temporaryApps: []
+        });
+      }
     });
   }
 });

@@ -573,7 +573,41 @@ async function init() {
     }
   });
 
-  // Connection state is now tracked natively via chrome.sidePanel.onOpened and onClosed in the background script.
+  // Notify Background of Connection for state tracking with automatic reconnection
+  const connectPort = (windowId) => {
+    try {
+      const port = chrome.runtime.connect({ name: 'sidepanel' });
+      port.postMessage({ type: 'INIT', windowId });
+      window._dockitPort = port;
+      
+      port.onDisconnect.addListener(() => {
+        setTimeout(() => {
+          if (chrome.runtime?.id) {
+            connectPort(windowId);
+          }
+        }, 1000);
+      });
+    } catch (e) {
+      setTimeout(() => {
+        if (chrome.runtime?.id) {
+          connectPort(windowId);
+        }
+      }, 5000);
+    }
+  };
+
+  chrome.windows.getCurrent((win) => {
+    connectPort(win.id);
+    
+    // Ping to keep the Service Worker awake while the panel is open
+    setInterval(() => {
+      try {
+        if (window._dockitPort) {
+          window._dockitPort.postMessage({ type: 'PING' });
+        }
+      } catch(e) {}
+    }, 20000);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);
