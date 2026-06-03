@@ -1189,7 +1189,7 @@ class DockitSidebar {
       'dockitForceViewList',
       'dockitMobileDefault'
     ]);
-    const disableSidebarList = storageLists.dockitDisableSidebarList || ['netflix.com'];
+    const disableSidebarList = storageLists.dockitDisableSidebarList || [];
     const forceAutohideList = storageLists.dockitForceAutohideList || [];
     const forceViewList = storageLists.dockitForceViewList || ['docs.google.com'];
     const isMobileDefault = storageLists.dockitMobileDefault !== false;

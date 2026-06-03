@@ -345,6 +345,7 @@ async function init() {
           return;
         }
         const actuallyOpen = !!isOpen;
+        try { sessionStorage.setItem('dockit-sidepanel-open', actuallyOpen ? '1' : '0'); } catch (e) {}
         if (actuallyOpen !== _isSidebarHidden) {
           if (actuallyOpen) {
             _isSidebarHidden = true;
@@ -383,7 +384,9 @@ async function init() {
     currentWindowId = winId;
     if (winId) {
       const data = await chrome.storage.local.get(`sidePanelOpen_${winId}`);
-      if (data[`sidePanelOpen_${winId}`]) {
+      const isOpen = !!data[`sidePanelOpen_${winId}`];
+      try { sessionStorage.setItem('dockit-sidepanel-open', isOpen ? '1' : '0'); } catch (e) {}
+      if (isOpen) {
         _isSidebarHidden = true;
         document.documentElement.classList.add('dockit-full-width');
         document.body.classList.add('dockit-full-width');
@@ -408,7 +411,9 @@ async function init() {
 
   chrome.storage.onChanged.addListener((changes) => {
     if (currentWindowId && changes[`sidePanelOpen_${currentWindowId}`]) {
-      if (changes[`sidePanelOpen_${currentWindowId}`].newValue) {
+      const isOpen = !!changes[`sidePanelOpen_${currentWindowId}`].newValue;
+      try { sessionStorage.setItem('dockit-sidepanel-open', isOpen ? '1' : '0'); } catch (e) {}
+      if (isOpen) {
         _isSidebarHidden = true;
         _hostElement.style.display = 'none';
         document.documentElement.classList.add('dockit-full-width');

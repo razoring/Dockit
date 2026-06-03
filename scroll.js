@@ -36,20 +36,16 @@
   });
 
   const _getOffset = () => {
-    if (document.body && document.body.classList.contains('dockit-full-width')) {
-      return 0;
-    }
-    return 48;
-  };
-
-  const _getBingCw = () => {
-    if (window.location.hostname.includes('bing.com')) {
-      const match = window.location.search.match(/[?&]cw=(\d+)/);
-      if (match) {
-        return parseInt(match[1], 10);
+    let isFullWidth = false;
+    try {
+      if (window.sessionStorage.getItem('dockit-sidepanel-open') === '1') {
+        isFullWidth = true;
       }
+    } catch (e) {}
+    if (!isFullWidth && document.body && document.body.classList.contains('dockit-full-width')) {
+      isFullWidth = true;
     }
-    return null;
+    return isFullWidth ? 0 : 48;
   };
 
   const winInnerWidthDesc = getDesc(window, 'innerWidth') || getDesc(Window.prototype, 'innerWidth');
@@ -59,10 +55,6 @@
   if (winInnerWidthDesc) {
     safeDefine(window, 'innerWidth', {
       get: () => {
-        const bingCw = _getBingCw();
-        if (bingCw !== null) {
-          return bingCw;
-        }
         const val = winInnerWidthDesc.get.call(window);
         return val - _getOffset();
       },
@@ -74,10 +66,6 @@
   if (elClientWidthDesc) {
     safeDefine(document.documentElement, 'clientWidth', {
       get: () => {
-        const bingCw = _getBingCw();
-        if (bingCw !== null) {
-          return bingCw;
-        }
         const val = elClientWidthDesc.get.call(document.documentElement);
         return val - _getOffset();
       },
