@@ -99,7 +99,7 @@ async function init() {
   if (window !== window.top) return;
 
   const storage = await chrome.storage.local.get(['dockitDisableSidebarList', 'dockitForceAutohideList', 'dockitAutoHide']);
-  const disableSidebarList = storage.dockitDisableSidebarList || ['netflix.com'];
+  const disableSidebarList = storage.dockitDisableSidebarList || DOCKIT_DEFAULTS.disableSidebarList;
   const currentHost = window.location.hostname.toLowerCase();
   const currentUrl = window.location.href.toLowerCase();
 
@@ -114,7 +114,7 @@ async function init() {
   }
 
   const autoHideEnabled = !!storage.dockitAutoHide;
-  const forceAutohideList = storage.dockitForceAutohideList || [];
+  const forceAutohideList = storage.dockitForceAutohideList || DOCKIT_DEFAULTS.forceAutohideList;
   const isForceAutoHideMatched = forceAutohideList.some((item) => {
     const cleanItem = item.toLowerCase().trim();
     if (!cleanItem) return false;
@@ -344,7 +344,7 @@ async function init() {
           return;
         }
         const actuallyOpen = !!isOpen;
-        try { sessionStorage.setItem('dockit-sidepanel-open', actuallyOpen ? '1' : '0'); } catch (e) {}
+        try { sessionStorage.setItem('dockit-sidepanel-open', actuallyOpen ? '1' : '0'); } catch (e) { }
         if (actuallyOpen !== _isSidebarHidden) {
           if (actuallyOpen) {
             _isSidebarHidden = true;
@@ -384,7 +384,7 @@ async function init() {
     if (winId) {
       const data = await chrome.storage.local.get(`sidePanelOpen_${winId}`);
       const isOpen = !!data[`sidePanelOpen_${winId}`];
-      try { sessionStorage.setItem('dockit-sidepanel-open', isOpen ? '1' : '0'); } catch (e) {}
+      try { sessionStorage.setItem('dockit-sidepanel-open', isOpen ? '1' : '0'); } catch (e) { }
       if (isOpen) {
         _isSidebarHidden = true;
         document.documentElement.classList.add('dockit-full-width');
@@ -411,7 +411,7 @@ async function init() {
   chrome.storage.onChanged.addListener((changes) => {
     if (currentWindowId && changes[`sidePanelOpen_${currentWindowId}`]) {
       const isOpen = !!changes[`sidePanelOpen_${currentWindowId}`].newValue;
-      try { sessionStorage.setItem('dockit-sidepanel-open', isOpen ? '1' : '0'); } catch (e) {}
+      try { sessionStorage.setItem('dockit-sidepanel-open', isOpen ? '1' : '0'); } catch (e) { }
       if (isOpen) {
         _isSidebarHidden = true;
         _hostElement.style.display = 'none';
