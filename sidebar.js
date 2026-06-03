@@ -1155,21 +1155,31 @@ class DockitSidebar {
     //default seed lists
     const storageLists = await chrome.storage.local.get([
       'dockitDisableSidebarList',
-      'dockitForceAutohideList'
+      'dockitForceAutohideList',
+      'dockitForceViewList',
+      'dockitMobileDefault'
     ]);
     const disableSidebarList = storageLists.dockitDisableSidebarList || ['netflix.com'];
     const forceAutohideList = storageLists.dockitForceAutohideList || [];
+    const forceViewList = storageLists.dockitForceViewList || ['instagram.com', 'twitter.com', 'x.com'];
+    const isMobileDefault = storageLists.dockitMobileDefault !== false;
+    const forceViewTitle = isMobileDefault ? 'Force Desktop View' : 'Force Mobile View';
+    const forceViewDesc = isMobileDefault ? 'Pages that will always force desktop view.' : 'Pages that will always force mobile view.';
 
     let currentSitePlaceholder = 'Add domain or URL...';
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url) {
-        const u = new URL(tab.url);
-        if (u.protocol === 'chrome:' || u.protocol === 'edge:' || u.protocol === 'about:') {
-          currentSitePlaceholder = u.protocol + '//' + u.host + (u.pathname === '/' ? '' : u.pathname);
-        } else {
-          currentSitePlaceholder = u.host + (u.pathname === '/' ? '' : u.pathname);
+      if (this.isSidePanel) {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab && tab.url) {
+          const u = new URL(tab.url);
+          if (u.protocol === 'chrome:' || u.protocol === 'edge:' || u.protocol === 'about:') {
+            currentSitePlaceholder = u.protocol + '//' + u.host + (u.pathname === '/' ? '' : u.pathname);
+          } else {
+            currentSitePlaceholder = u.host.replace(/^www\./, '');
+          }
         }
+      } else {
+        currentSitePlaceholder = window.location.host.replace(/^www\./, '');
       }
     } catch (e) { }
 
@@ -1277,7 +1287,7 @@ class DockitSidebar {
                 </div>
                 <div class="dockit-settings-item-control">
                   <label class="dockit-ios-switch">
-                    <input type="checkbox" id="setting-appearance-mobiledefault" checked />
+                    <input type="checkbox" id="dockit-settings-mobiledefault" checked />
                     <span class="dockit-ios-slider"></span>
                   </label>
                 </div>
@@ -1342,6 +1352,20 @@ class DockitSidebar {
                   <div class="dockit-settings-tags" id="tags-blocklist-autohide"></div>
                 </div>
               </div>
+              <!-- Force View -->
+              <div class="dockit-settings-item" data-title="force opposite view" data-desc="pages that will force the opposite of the default view">
+                <div class="dockit-settings-list-wrapper">
+                  <div class="dockit-settings-item-info">
+                    <span class="dockit-settings-item-title" id="title-blocklist-forceview">${forceViewTitle}</span>
+                    <span class="dockit-settings-item-desc" id="desc-blocklist-forceview">${forceViewDesc}</span>
+                  </div>
+                  <div class="dockit-settings-list-input-container">
+                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-forceview" />
+                    <button class="dockit-settings-list-add-btn" data-target="blocklist-forceview">Add</button>
+                  </div>
+                  <div class="dockit-settings-tags" id="tags-blocklist-forceview"></div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1399,13 +1423,21 @@ class DockitSidebar {
           <span class="dockit-settings-tag-remove" data-index="${idx}">${xIconSvg}</span>
         `;
         tagEl.querySelector('.dockit-settings-tag-remove').addEventListener('click', async () => {
-          tagsArray.splice(idx, 1);
-          _renderTags(containerId, tagsArray);
+          let tagsArray = [];
           if (containerId === 'tags-blocklist-disable') {
+            disableSidebarList.splice(idx, 1);
+            tagsArray = disableSidebarList;
             await chrome.storage.local.set({ dockitDisableSidebarList: tagsArray });
           } else if (containerId === 'tags-blocklist-autohide') {
+            forceAutohideList.splice(idx, 1);
+            tagsArray = forceAutohideList;
             await chrome.storage.local.set({ dockitForceAutohideList: tagsArray });
+          } else if (containerId === 'tags-blocklist-forceview') {
+            forceViewList.splice(idx, 1);
+            tagsArray = forceViewList;
+            await chrome.storage.local.set({ dockitForceViewList: tagsArray });
           }
+          _renderTags(containerId, tagsArray);
         });
         container.appendChild(tagEl);
       });
@@ -1414,6 +1446,7 @@ class DockitSidebar {
     //initial lists render
     _renderTags('tags-blocklist-disable', disableSidebarList);
     _renderTags('tags-blocklist-autohide', forceAutohideList);
+    _renderTags('tags-blocklist-forceview', forceViewList);
 
     //bind list action clicks
     const listAddButtons = contentEl.querySelectorAll('.dockit-settings-list-add-btn');
@@ -1425,13 +1458,23 @@ class DockitSidebar {
         const value = input.value.trim() || currentSitePlaceholder;
         if (value && value !== 'Add domain or URL...') {
           if (targetId === 'blocklist-disable') {
-            disableSidebarList.push(value);
-            _renderTags(`tags-${targetId}`, disableSidebarList);
-            await chrome.storage.local.set({ dockitDisableSidebarList: disableSidebarList });
+            if (!disableSidebarList.includes(value)) {
+              disableSidebarList.push(value);
+              _renderTags(`tags-${targetId}`, disableSidebarList);
+              await chrome.storage.local.set({ dockitDisableSidebarList: disableSidebarList });
+            }
           } else if (targetId === 'blocklist-autohide') {
-            forceAutohideList.push(value);
-            _renderTags(`tags-${targetId}`, forceAutohideList);
-            await chrome.storage.local.set({ dockitForceAutohideList: forceAutohideList });
+            if (!forceAutohideList.includes(value)) {
+              forceAutohideList.push(value);
+              _renderTags(`tags-${targetId}`, forceAutohideList);
+              await chrome.storage.local.set({ dockitForceAutohideList: forceAutohideList });
+            }
+          } else if (targetId === 'blocklist-forceview') {
+            if (!forceViewList.includes(value)) {
+              forceViewList.push(value);
+              _renderTags(`tags-${targetId}`, forceViewList);
+              await chrome.storage.local.set({ dockitForceViewList: forceViewList });
+            }
           }
           input.value = '';
         }
@@ -1825,11 +1868,17 @@ class DockitSidebar {
         });
       }
 
-      const mobiledefaultCheckbox = contentEl.querySelector('#setting-appearance-mobiledefault');
+      const mobiledefaultCheckbox = contentEl.querySelector('#dockit-settings-mobiledefault');
       if (mobiledefaultCheckbox) {
         mobiledefaultCheckbox.checked = storage.dockitMobileDefault !== false;
         mobiledefaultCheckbox.addEventListener('change', async () => {
           await chrome.storage.local.set({ dockitMobileDefault: mobiledefaultCheckbox.checked });
+          
+          // Update the Force View blocklist title and description dynamically
+          const forceViewTitleEl = contentEl.querySelector('#title-blocklist-forceview');
+          const forceViewDescEl = contentEl.querySelector('#desc-blocklist-forceview');
+          if (forceViewTitleEl) forceViewTitleEl.textContent = mobiledefaultCheckbox.checked ? 'Force Desktop View' : 'Force Mobile View';
+          if (forceViewDescEl) forceViewDescEl.textContent = mobiledefaultCheckbox.checked ? 'Pages that will always force desktop view.' : 'Pages that will always force mobile view.';
         });
       }
 

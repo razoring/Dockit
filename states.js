@@ -40,6 +40,7 @@ async function init() {
   const lockOpenSvg = (storageData.lucideIcons && storageData.lucideIcons['lock-open']) || '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
   const cookieSvg = (storageData.lucideIcons && storageData.lucideIcons['cookie']) || '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5Z"></path><path d="M12 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm-4 5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm8 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Z"></path></svg>';
   const copySvg = (storageData.lucideIcons && storageData.lucideIcons['copy']) || '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+  const xIconSvg = (storageData.lucideIcons && storageData.lucideIcons['x']) || '<svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
 
   controlBar.style.position = 'relative';
   controlBar.innerHTML = `
@@ -138,8 +139,9 @@ async function init() {
     deviceBtn.innerHTML = isMobileInitial ? monitorSvg : smartphoneSvg;
     deviceBtn.title = isMobileInitial ? 'Toggle Desktop View' : 'Toggle Mobile View';
 
-    deviceBtn.addEventListener('click', () => {
+    deviceBtn.addEventListener('click', async () => {
       const isMobile = viewportWrapper.classList.contains('mobile-mode');
+      const newViewMode = isMobile ? 'desktop' : 'mobile';
       if (isMobile) {
         viewportWrapper.classList.remove('mobile-mode');
         viewportWrapper.classList.add('desktop-mode');
@@ -166,6 +168,48 @@ async function init() {
             if (frame) frame.src = _activeUrl;
           }
         });
+      }
+
+      // Spawn contextual popup prompt to add to blocklist
+      if (_activeUrl) {
+        let hostname = '';
+        try {
+          hostname = new URL(_activeUrl).hostname.toLowerCase().replace(/^www\./, '');
+        } catch(e) {}
+        
+        if (hostname) {
+          // Remove any existing popup
+          const existingPopup = controlBar.querySelector('.dockit-forceview-popup');
+          if (existingPopup) existingPopup.remove();
+
+          const storage = await chrome.storage.local.get(['dockitForceViewList']);
+          const forceViewList = storage.dockitForceViewList || ['instagram.com', 'twitter.com', 'x.com'];
+          
+          if (!forceViewList.includes(hostname)) {
+            const popup = document.createElement('div');
+            popup.className = 'dockit-forceview-popup';
+            popup.style.cssText = 'position: absolute; right: 10px; top: 40px; background: var(--color-background); border: 1px solid var(--color-border); border-radius: 6px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 8px; z-index: 100; min-width: 200px;';
+            
+            popup.innerHTML = `
+              <div style="display: flex; justify-content: space-between; align-items: center; color: var(--color-foreground);">
+                <span style="font-weight: 500; font-size: 13px;">Force ${newViewMode} view?</span>
+                <span class="dockit-forceview-close" style="cursor: pointer; opacity: 0.7;">${xIconSvg}</span>
+              </div>
+              <div style="font-size: 11px; opacity: 0.7; color: var(--color-foreground);">Always use ${newViewMode} view for ${hostname}</div>
+              <button class="dockit-btn" style="background: var(--color-foreground); color: var(--color-background); border: none; padding: 6px; border-radius: 4px; font-weight: 500; cursor: pointer; margin-top: 4px;">Yes, force view</button>
+            `;
+
+            popup.querySelector('.dockit-forceview-close').addEventListener('click', () => popup.remove());
+            popup.querySelector('button').addEventListener('click', async () => {
+              forceViewList.push(hostname);
+              await chrome.storage.local.set({ dockitForceViewList: forceViewList });
+              popup.innerHTML = `<div style="font-size: 12px; color: var(--color-foreground); text-align: center; padding: 4px;">Added to blocklist!</div>`;
+              setTimeout(() => popup.remove(), 1500);
+            });
+
+            controlBar.appendChild(popup);
+          }
+        }
       }
     });
   }
@@ -245,7 +289,7 @@ async function init() {
     }
   });
 
-  //helper to set active iframe reactively and update loaded indicators
+  // helper to set active iframe reactively and update loaded indicators
   const _setIframeSrc = async (url) => {
     const targetUrl = url || '';
     _activeUrl = targetUrl;
@@ -257,33 +301,94 @@ async function init() {
     _iframes.forEach((frame) => {
       frame.style.display = 'none';
     });
+    
+    // Remove any existing fallback UI
+    const existingFallback = viewportWrapper.querySelector('.dockit-fallback-ui');
+    if (existingFallback) existingFallback.remove();
 
     if (targetUrl) {
-      //update dynamic user agent rules depending on current view mode
-      const isMobile = viewportWrapper.classList.contains('mobile-mode');
-      if (isMobile) {
-        await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: true, url: targetUrl }, resolve);
-        });
+      let hostname = '';
+      try {
+        hostname = new URL(targetUrl).hostname.toLowerCase();
+      } catch(e) {}
+
+      // 1. Graceful Degradation (Blocklist)
+      const strictDomains = ['mail.google.com', 'accounts.google.com', 'github.com'];
+      const isStrict = strictDomains.some(d => hostname === d || hostname.endsWith('.' + d));
+
+      if (isStrict) {
+        const fallback = document.createElement('div');
+        fallback.className = 'dockit-fallback-ui';
+        fallback.style.cssText = 'display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px; color: var(--color-foreground);';
+        
+        fallback.innerHTML = `
+          <div style="opacity: 0.5; margin-bottom: 12px;">${lockSvg}</div>
+          <div style="font-weight: 500; margin-bottom: 8px;">Restricted Access</div>
+          <div style="font-size: 13px; opacity: 0.7; margin-bottom: 16px;">This site restricts embedding for security reasons and cannot be displayed in the sidebar.</div>
+          <button class="dockit-btn" style="padding: 8px 16px; background: var(--color-foreground); color: var(--color-background); border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Open in New Tab</button>
+        `;
+        
+        const btn = fallback.querySelector('button');
+        btn.addEventListener('click', () => window.open(targetUrl, '_blank'));
+        
+        viewportWrapper.appendChild(fallback);
       } else {
-        await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: false }, resolve);
-        });
+        // 2. Force Opposite View (User Blocklist)
+        const storageLists = await chrome.storage.local.get(['dockitForceViewList', 'dockitMobileDefault']);
+        const forceViewList = storageLists.dockitForceViewList || ['instagram.com', 'twitter.com', 'x.com'];
+        const isMobileDefault = storageLists.dockitMobileDefault !== false;
+        
+        const isForcedOpposite = forceViewList.some(d => hostname === d || hostname.endsWith('.' + d));
+
+        // update dynamic user agent rules depending on current view mode
+        let isMobile = viewportWrapper.classList.contains('mobile-mode');
+        
+        // Only apply force logic if we are rendering for the first time (not when user just clicked the toggle)
+        // Wait, if _setIframeSrc is called, it reloads the frame. We should force the wrapper state if it's forced.
+        if (isForcedOpposite) {
+          isMobile = !isMobileDefault;
+          if (isMobile) {
+            viewportWrapper.classList.add('mobile-mode');
+            viewportWrapper.classList.remove('desktop-mode');
+            if (deviceBtn) {
+              deviceBtn.innerHTML = monitorSvg;
+              deviceBtn.title = 'Toggle Desktop View';
+            }
+          } else {
+            viewportWrapper.classList.add('desktop-mode');
+            viewportWrapper.classList.remove('mobile-mode');
+            if (deviceBtn) {
+              deviceBtn.innerHTML = smartphoneSvg;
+              deviceBtn.title = 'Toggle Mobile View';
+            }
+          }
+        }
+        
+        if (isMobile) {
+          await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: true, url: targetUrl }, resolve);
+          });
+        } else {
+          await new Promise((resolve) => {
+            chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: false }, resolve);
+          });
+        }
+
+        let frame = _iframes.get(targetUrl);
+        if (!frame) {
+          frame = document.createElement('iframe');
+          frame.className = 'dockit-iframe';
+          frame.src = targetUrl;
+          frame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms');
+          frame.style.cssText = 'width: 100%; height: 100%; border: none; display: none;';
+          if (viewportWrapper) {
+            viewportWrapper.appendChild(frame);
+          }
+          _iframes.set(targetUrl, frame);
+        }
+        frame.style.display = 'block';
       }
 
-      let frame = _iframes.get(targetUrl);
-      if (!frame) {
-        frame = document.createElement('iframe');
-        frame.className = 'dockit-iframe';
-        frame.src = targetUrl;
-        frame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms');
-        frame.style.cssText = 'width: 100%; height: 100%; border: none; display: none;';
-        if (viewportWrapper) {
-          viewportWrapper.appendChild(frame);
-        }
-        _iframes.set(targetUrl, frame);
-      }
-      frame.style.display = 'block';
       
       //display url cleanly and toggle lock icon state
       try {
