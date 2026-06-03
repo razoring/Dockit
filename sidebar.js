@@ -598,7 +598,37 @@ class DockitSidebar {
       inPage.classList.add('dockit-hidden');
       this._updateSidebarVisibility();
     }
+    if (this.isSidePanel && this._updatePlaceholders) {
+      chrome.tabs.onActivated.removeListener(this._updatePlaceholders);
+      chrome.tabs.onUpdated.removeListener(this._updatePlaceholders);
+    }
   }
+
+  _updatePlaceholders = async () => {
+    let newPlaceholder = 'Add domain or URL...';
+    try {
+      if (this.isSidePanel) {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab && tab.url) {
+          const u = new URL(tab.url);
+          if (u.protocol === 'chrome:' || u.protocol === 'edge:' || u.protocol === 'about:') {
+            newPlaceholder = u.protocol + '//' + u.host + (u.pathname === '/' ? '' : u.pathname);
+          } else {
+            newPlaceholder = u.host.replace(/^www\./, '');
+          }
+        }
+      } else {
+        newPlaceholder = window.location.host.replace(/^www\./, '');
+      }
+    } catch(e) {}
+    
+    if (this.element) {
+      const inputs = this.element.querySelectorAll('.dockit-settings-list-input');
+      inputs.forEach(input => {
+        if (!input.value) input.placeholder = newPlaceholder;
+      });
+    }
+  };
 
   _updateSidebarVisibility() {
     const inPage = this.element.querySelector('.dockit-in-page');
@@ -1182,6 +1212,11 @@ class DockitSidebar {
         currentSitePlaceholder = window.location.host.replace(/^www\./, '');
       }
     } catch (e) { }
+
+    if (this.isSidePanel) {
+      chrome.tabs.onActivated.addListener(this._updatePlaceholders);
+      chrome.tabs.onUpdated.addListener(this._updatePlaceholders);
+    }
 
     //render layout
     contentEl.innerHTML = `

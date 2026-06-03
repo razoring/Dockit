@@ -83,7 +83,11 @@ async function _createSidebar() {
     shadowRoot.appendChild(sidebarEl);
     document.documentElement.appendChild(_hostElement);
   } catch (err) {
-    console.error('Error reinstating sidebar:', err);
+    if (err.message && err.message.includes('Extension context invalidated')) {
+      _destroy();
+    } else {
+      console.error('Error reinstating sidebar:', err);
+    }
   } finally {
     _isReinstating = false;
   }

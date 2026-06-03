@@ -91,6 +91,7 @@ async function init() {
 
   const _iframes = new Map();
   let _activeUrl = '';
+  let _currentDisplayUrl = '';
 
   //helper to update sidebar opacity indicators based on in-page and in-memory status
   const _updateInMemoryIndicator = (isInPageOpen) => {
@@ -117,7 +118,7 @@ async function init() {
     reloadBtn.addEventListener('click', () => {
       if (_activeUrl) {
         const frame = _iframes.get(_activeUrl);
-        if (frame) frame.src = _activeUrl;
+        if (frame) frame.src = _currentDisplayUrl || _activeUrl;
       }
     });
   }
@@ -126,8 +127,8 @@ async function init() {
   const externalBtn = controlBar.querySelector('#dockit-btn-external');
   if (externalBtn) {
     externalBtn.addEventListener('click', () => {
-      if (_activeUrl) {
-        window.open(_activeUrl, '_blank');
+      if (_currentDisplayUrl || _activeUrl) {
+        window.open(_currentDisplayUrl || _activeUrl, '_blank');
       }
     });
   }
@@ -289,10 +290,11 @@ async function init() {
     }
   });
 
-  // helper to set active iframe reactively and update loaded indicators
+  //helper to set active iframe reactively and update loaded indicators
   const _setIframeSrc = async (url) => {
     const targetUrl = url || '';
     _activeUrl = targetUrl;
+    _currentDisplayUrl = targetUrl;
     
     if (dropdown) {
       dropdown.style.display = 'none';
@@ -379,7 +381,6 @@ async function init() {
           frame = document.createElement('iframe');
           frame.className = 'dockit-iframe';
           frame.src = targetUrl;
-          frame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms');
           frame.style.cssText = 'width: 100%; height: 100%; border: none; display: none;';
           if (viewportWrapper) {
             viewportWrapper.appendChild(frame);
@@ -394,7 +395,7 @@ async function init() {
       try {
         const u = new URL(targetUrl);
         const urlText = controlBar.querySelector('#dockit-url-text');
-        if (urlText) urlText.textContent = u.hostname + u.pathname;
+        if (urlText) urlText.textContent = u.hostname + (u.pathname === '/' ? '' : u.pathname) + u.search + u.hash;
         
         const isSecure = targetUrl.startsWith('https://');
         const lockIcon = controlBar.querySelector('#dockit-lock-container');
@@ -539,6 +540,31 @@ async function init() {
         const inPage = document.querySelector('.dockit-in-page');
         const isSystemOpen = inPage && !inPage.classList.contains('dockit-hidden');
         _updateInMemoryIndicator(isSystemOpen);
+      }
+    }
+  });
+
+  // Listen for iframe URL updates
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'DOCKIT_IFRAME_URL') {
+      const activeFrame = _iframes.get(_activeUrl);
+      if (activeFrame && e.source === activeFrame.contentWindow) {
+        const newUrl = e.data.url;
+        _currentDisplayUrl = newUrl;
+
+        // update url cleanly
+        try {
+          const u = new URL(newUrl);
+          const urlText = controlBar.querySelector('#dockit-url-text');
+          if (urlText) urlText.textContent = u.hostname + (u.pathname === '/' ? '' : u.pathname) + u.search + u.hash;
+          
+          const isSecure = newUrl.startsWith('https://');
+          const lockIcon = controlBar.querySelector('#dockit-lock-container');
+          if (lockIcon) {
+            lockIcon.style.display = 'flex';
+            lockIcon.innerHTML = isSecure ? lockSvg : lockOpenSvg;
+          }
+        } catch(err) {}
       }
     }
   });

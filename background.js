@@ -223,7 +223,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           },
           condition: {
             urlFilter: `*://${domain}/*`,
-            resourceTypes: ['main_frame', 'sub_frame', 'xmlhttprequest', 'script', 'stylesheet', 'image']
+            resourceTypes: ['sub_frame', 'xmlhttprequest', 'script', 'stylesheet', 'image']
           }
         };
 
@@ -251,7 +251,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "send-to-sidebar") {
     // Open the side panel IMMEDIATELY to preserve the user gesture context
-    if (tab && tab.windowId) {
+    if (tab && tab.windowId && tab.windowId !== -1) {
       chrome.sidePanel.open({ windowId: tab.windowId }).catch(e => console.error(e));
     }
 
