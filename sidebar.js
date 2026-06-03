@@ -1977,6 +1977,10 @@ class DockitSidebar {
         const keysToRemove = Object.keys(storage).filter(key => !key.startsWith('sidePanelOpen_'));
         await chrome.storage.local.remove(keysToRemove);
 
+        if (chrome.runtime?.id) {
+          chrome.runtime.sendMessage({ type: 'REFETCH_ASSETS' });
+        }
+
         setTimeout(() => {
           clearBtn.textContent = 'Reset!';
           setTimeout(() => { window.location.reload(); }, 500);
