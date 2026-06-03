@@ -140,28 +140,19 @@ async function cacheAssets() {
 
 const connectedSidePanels = new Set();
 
-chrome.runtime.onConnect.addListener((port) => {
-  if (port.name === 'sidepanel') {
-    let panelWindowId = null;
-    port.onMessage.addListener((msg) => {
-      if (msg.type === 'INIT' && msg.windowId) {
-        panelWindowId = msg.windowId;
-        connectedSidePanels.add(panelWindowId);
-        chrome.storage.local.set({ [`sidePanelOpen_${panelWindowId}`]: true });
-      } else if (msg.type === 'PING') {
-        // Prevent Service Worker suspension
-      }
-    });
+chrome.sidePanel.onOpened.addListener((panel) => {
+  if (panel && panel.windowId) {
+    connectedSidePanels.add(panel.windowId);
+    chrome.storage.local.set({ [`sidePanelOpen_${panel.windowId}`]: true });
+  }
+});
 
-    port.onDisconnect.addListener(() => {
-      if (panelWindowId) {
-        connectedSidePanels.delete(panelWindowId);
-        chrome.storage.local.set({
-          [`sidePanelOpen_${panelWindowId}`]: false,
-          temporaryApps: [],
-          dockitSidepanelHovered: false
-        });
-      }
+chrome.sidePanel.onClosed.addListener((panel) => {
+  if (panel && panel.windowId) {
+    connectedSidePanels.delete(panel.windowId);
+    chrome.storage.local.set({
+      [`sidePanelOpen_${panel.windowId}`]: false,
+      temporaryApps: []
     });
   }
 });

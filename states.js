@@ -13,17 +13,6 @@ async function init() {
   const sidebarEl = await sidebar.render();
   document.getElementById('sidebar-container').appendChild(sidebarEl);
 
-  await chrome.storage.local.set({ dockitSidepanelHovered: false });
-  const sidepanelView = document.querySelector('.dockit-sidepanel-view');
-  if (sidepanelView) {
-    sidepanelView.addEventListener('mouseenter', () => {
-      chrome.storage.local.set({ dockitSidepanelHovered: true });
-    });
-    sidepanelView.addEventListener('mouseleave', () => {
-      chrome.storage.local.set({ dockitSidepanelHovered: false });
-    });
-  }
-
   const iframeContainer = document.querySelector('.dockit-iframe-container');
   const controlBar = document.createElement('div');
   controlBar.className = 'dockit-control-bar';
@@ -584,25 +573,7 @@ async function init() {
     }
   });
 
-  // Notify Background of Connection for state tracking
-  chrome.windows.getCurrent((win) => {
-    const port = chrome.runtime.connect({ name: 'sidepanel' });
-    port.postMessage({ type: 'INIT', windowId: win.id });
-    
-    // Keep reference to prevent GC
-    window._dockitPort = port;
-    
-    // Ping to keep the Service Worker awake while the panel is open
-    setInterval(() => {
-      try {
-        port.postMessage({ type: 'PING' });
-      } catch(e) {}
-    }, 20000);
-  });
-
-  window.addEventListener('beforeunload', () => {
-    chrome.storage.local.set({ dockitSidepanelHovered: false });
-  });
+  // Connection state is now tracked natively via chrome.sidePanel.onOpened and onClosed in the background script.
 }
 
 document.addEventListener('DOMContentLoaded', init);
