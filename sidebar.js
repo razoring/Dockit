@@ -620,8 +620,8 @@ class DockitSidebar {
       } else {
         newPlaceholder = window.location.host.replace(/^www\./, '');
       }
-    } catch(e) {}
-    
+    } catch (e) { }
+
     if (this.element) {
       const inputs = this.element.querySelectorAll('.dockit-settings-list-input');
       inputs.forEach(input => {
@@ -634,7 +634,7 @@ class DockitSidebar {
     const inPage = this.element.querySelector('.dockit-in-page');
     // Account for false-positives: rely on the actual DOM state rather than any memory state variables
     const isActuallyOpen = inPage && !inPage.classList.contains('dockit-hidden');
-    
+
     if (isActuallyOpen) {
       this.element.classList.add('dockit-sidebar-hidden');
     } else {
@@ -770,7 +770,7 @@ class DockitSidebar {
     this._inMemoryUrls = urls || [];
     this._isInPageOpen = isInPageOpen || false;
     this._updateSidebarVisibility();
-    
+
     const apps = this.element.querySelectorAll('.dockit-app');
     apps.forEach(el => {
       const url = el.dataset.url;
@@ -1191,7 +1191,7 @@ class DockitSidebar {
     ]);
     const disableSidebarList = storageLists.dockitDisableSidebarList || ['netflix.com'];
     const forceAutohideList = storageLists.dockitForceAutohideList || [];
-    const forceViewList = storageLists.dockitForceViewList || ['instagram.com', 'twitter.com', 'x.com'];
+    const forceViewList = storageLists.dockitForceViewList || ['docs.google.com'];
     const isMobileDefault = storageLists.dockitMobileDefault !== false;
     const forceViewTitle = isMobileDefault ? 'Force Desktop View' : 'Force Mobile View';
     const forceViewDesc = isMobileDefault ? 'Pages that will always force desktop view.' : 'Pages that will always force mobile view.';
@@ -1908,7 +1908,7 @@ class DockitSidebar {
         mobiledefaultCheckbox.checked = storage.dockitMobileDefault !== false;
         mobiledefaultCheckbox.addEventListener('change', async () => {
           await chrome.storage.local.set({ dockitMobileDefault: mobiledefaultCheckbox.checked });
-          
+
           // Update the Force View blocklist title and description dynamically
           const forceViewTitleEl = contentEl.querySelector('#title-blocklist-forceview');
           const forceViewDescEl = contentEl.querySelector('#desc-blocklist-forceview');
@@ -1945,7 +1945,7 @@ class DockitSidebar {
       cacheBtn.addEventListener('click', async () => {
         cacheBtn.dataset.busy = '1';
         cacheBtn.textContent = 'Purging...';
-        
+
         const storage = await chrome.storage.local.get(null);
         const keysToRemove = ['temporaryApps', 'lucideIcons', 'fontCss'];
         const currentLang = storage.dockitLanguage || 'en';
@@ -1971,12 +1971,12 @@ class DockitSidebar {
       clearBtn.addEventListener('click', async () => {
         clearBtn.dataset.busy = '1';
         clearBtn.textContent = 'Resetting...';
-        
+
         //clear all except sidepanel state
         const storage = await chrome.storage.local.get(null);
         const keysToRemove = Object.keys(storage).filter(key => !key.startsWith('sidePanelOpen_'));
         await chrome.storage.local.remove(keysToRemove);
-        
+
         setTimeout(() => {
           clearBtn.textContent = 'Reset!';
           setTimeout(() => { window.location.reload(); }, 500);
