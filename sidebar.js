@@ -589,12 +589,26 @@ class DockitSidebar {
       }
     }
     inPage.classList.remove('dockit-hidden');
+    this._updateSidebarVisibility();
   }
 
   closeSystemApp() {
     const inPage = this.element.querySelector('.dockit-in-page');
     if (inPage) {
       inPage.classList.add('dockit-hidden');
+      this._updateSidebarVisibility();
+    }
+  }
+
+  _updateSidebarVisibility() {
+    const inPage = this.element.querySelector('.dockit-in-page');
+    // Account for false-positives: rely on the actual DOM state rather than any memory state variables
+    const isActuallyOpen = inPage && !inPage.classList.contains('dockit-hidden');
+    
+    if (isActuallyOpen) {
+      this.element.classList.add('dockit-sidebar-hidden');
+    } else {
+      this.element.classList.remove('dockit-sidebar-hidden');
     }
   }
 
@@ -725,6 +739,8 @@ class DockitSidebar {
   setInMemoryUrls(urls, isInPageOpen) {
     this._inMemoryUrls = urls || [];
     this._isInPageOpen = isInPageOpen || false;
+    this._updateSidebarVisibility();
+    
     const apps = this.element.querySelectorAll('.dockit-app');
     apps.forEach(el => {
       const url = el.dataset.url;

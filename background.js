@@ -121,12 +121,15 @@ async function cacheAssets() {
   }
 }
 
+const connectedSidePanels = new Set();
+
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'sidepanel') {
     let panelWindowId = null;
     port.onMessage.addListener((msg) => {
       if (msg.type === 'INIT' && msg.windowId) {
         panelWindowId = msg.windowId;
+        connectedSidePanels.add(panelWindowId);
         chrome.storage.local.set({ [`sidePanelOpen_${panelWindowId}`]: true });
       } else if (msg.type === 'PING') {
         // Prevent Service Worker suspension
@@ -135,6 +138,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
     port.onDisconnect.addListener(() => {
       if (panelWindowId) {
+        connectedSidePanels.delete(panelWindowId);
         chrome.storage.local.set({
           [`sidePanelOpen_${panelWindowId}`]: false,
           temporaryApps: []
@@ -151,6 +155,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   } else if (msg.type === 'CHECK_SIDEPANEL_OPEN') {
     if (msg.windowId) {
+      if (connectedSidePanels.has(msg.windowId)) {
+        sendResponse(true);
+        return false;
+      }
+      
       //check active side panel contexts
       chrome.runtime.getContexts({ contextTypes: ['SIDE_PANEL'] })
         .then((contexts) => {

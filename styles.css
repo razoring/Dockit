@@ -250,6 +250,25 @@ body {
   display: none !important;
 }
 
+/* Sidebar hidden state (in-page active) */
+.dockit-sidebar.dockit-sidebar-hidden > *:not(.dockit-in-page) {
+  display: none !important;
+}
+
+.dockit-sidebar.dockit-sidebar-hidden {
+  width: 0 !important;
+  border-right: none !important;
+}
+
+.dockit-sidebar.dockit-sidebar-hidden::before {
+  display: none !important;
+}
+
+.dockit-sidebar.dockit-sidebar-hidden .dockit-in-page {
+  width: 100vw !important;
+  right: 0 !important;
+}
+
 /* In-Page Panel */
 .dockit-in-page {
   position: absolute;
