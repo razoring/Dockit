@@ -1189,7 +1189,7 @@ class DockitSidebar {
       'dockitForceViewList',
       'dockitMobileDefault'
     ]);
-    const disableSidebarList = storageLists.dockitDisableSidebarList || ['bing.com/images/'];
+    const disableSidebarList = storageLists.dockitDisableSidebarList || ['bing.com/images/search'];
     const forceAutohideList = storageLists.dockitForceAutohideList || [];
     const forceViewList = storageLists.dockitForceViewList || ['docs.google.com'];
     const isMobileDefault = storageLists.dockitMobileDefault !== false;
@@ -1490,7 +1490,7 @@ class DockitSidebar {
         const targetId = btn.dataset.target;
         const input = contentEl.querySelector(`#input-${targetId}`);
         if (!input) return;
-        const value = input.value.trim() || currentSitePlaceholder;
+        const value = input.value.trim() || input.placeholder;
         if (value && value !== 'Add domain or URL...') {
           if (targetId === 'blocklist-disable') {
             if (!disableSidebarList.includes(value)) {
