@@ -256,14 +256,19 @@ class DockitSidebar {
               appEl.dataset.id = app.id;
               appEl.dataset.index = index;
               appEl.title = app.title;
-              appEl.style.cssText = 'width: 56px; height: 56px; background-color: transparent; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: grab; position: relative; transition: background-color 0.2s, box-shadow 0.2s; user-select: none;';
-              appEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.title}" style="width: 32px; height: 32px; pointer-events: none;" draggable="false" />`;
+              appEl.style.cssText = 'width: 100%; height: 56px; background-color: transparent; display: flex; align-items: center; justify-content: center; cursor: grab; position: relative; user-select: none;';
+
+              const innerEl = document.createElement('div');
+              innerEl.className = 'dockit-grid-app-inner';
+              innerEl.style.cssText = 'width: 56px; height: 56px; background-color: transparent; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s, box-shadow 0.2s; pointer-events: none;';
+              innerEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.title}" style="width: 38px; height: 38px; pointer-events: none;" draggable="false" />`;
+              appEl.appendChild(innerEl);
 
               appEl.addEventListener('mouseenter', () => {
-                appEl.style.backgroundColor = 'var(--color-primary)';
+                innerEl.style.backgroundColor = 'var(--color-primary)';
               });
               appEl.addEventListener('mouseleave', () => {
-                appEl.style.backgroundColor = 'transparent';
+                innerEl.style.backgroundColor = 'transparent';
               });
 
               appEl.addEventListener('mousedown', (e) => {
@@ -1451,7 +1456,7 @@ class DockitSidebar {
               </div>
               <div class="dockit-settings-item" data-title="clear cloud data" data-desc="clear all synced data from the cloud">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Clear Cloud Data</span>
+                  <span class="dockit-settings-item-title">Clear All Data</span>
                   <span class="dockit-settings-item-desc">Clear all synced settings and data stored in the cloud.</span>
                 </div>
                 <div class="dockit-settings-item-control" style="width: 100px;">

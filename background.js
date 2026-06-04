@@ -256,75 +256,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     chrome.tabs.create({ url: authUrl, active: true });
     return true;
   } else if (msg.type === 'APPWRITE_SYNC_PUSH') {
-    chrome.storage.local.get(null, async (data) => {
-      if (!data.appwriteSession) {
-        sendResponse({ success: false, error: 'Not logged in' });
-        return;
-      }
-      const { secret, userId } = data.appwriteSession;
-      try {
-        const settingsToSync = { ...data };
-        delete settingsToSync.appwriteSession;
-        delete settingsToSync.lucideIcons;
-        delete settingsToSync.fontCss;
-        delete settingsToSync.dockitStyles;
-        delete settingsToSync.temporaryApps;
-        Object.keys(settingsToSync).forEach(key => {
-          if (key.startsWith('sidePanelOpen_') || key.startsWith('dockitTranslations_v2_')) {
-            delete settingsToSync[key];
-          }
-        });
-        
-        const payload = {
-          profile: userId,
-          settings: JSON.stringify(settingsToSync),
-          updated: new Date().toISOString()
-        };
-        
-        const fallbackCookie = `a_session_6a0a1cc000178886bfaf=${secret}`;
-        
-        // Ensure profile exists
-        await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents`, {
-          method: 'POST',
-          headers: {
-            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
-            'X-Fallback-Cookies': fallbackCookie,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ documentId: userId, data: { username: 'user_' + userId, updated: new Date().toISOString(), created: new Date().toISOString() } })
-        }).catch(() => {}); // ignore if exists
-
-        const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents/${userId}`, {
-          method: 'PATCH',
-          headers: {
-            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
-            'X-Fallback-Cookies': fallbackCookie,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ data: payload })
-        });
-        
-        if (res.status === 404) {
-          const createRes = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents`, {
-            method: 'POST',
-            headers: {
-              'X-Appwrite-Project': '6a0a1cc000178886bfaf',
-              'X-Fallback-Cookies': fallbackCookie,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ documentId: userId, data: payload })
-          });
-          const createData = await createRes.json();
-          if (createData.code) throw new Error(createData.message);
-        } else {
-          const updateData = await res.json();
-          if (updateData.code) throw new Error(updateData.message);
-        }
-        sendResponse({ success: true });
-      } catch (err) {
-        sendResponse({ success: false, error: err.toString() });
-      }
-    });
+    _pushSync().then(sendResponse);
     return true;
   } else if (msg.type === 'APPWRITE_SYNC_PULL') {
     chrome.storage.local.get(['appwriteSession'], async (data) => {
@@ -497,4 +429,90 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       }).catch(() => { });
     }
   } catch (err) {}
+});
+
+async function _pushSync() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(null, async (data) => {
+      if (!data.appwriteSession) {
+        resolve({ success: false, error: 'Not logged in' });
+        return;
+      }
+      const { secret, userId } = data.appwriteSession;
+      try {
+        const settingsToSync = { ...data };
+        delete settingsToSync.appwriteSession;
+        delete settingsToSync.lucideIcons;
+        delete settingsToSync.fontCss;
+        delete settingsToSync.dockitStyles;
+        delete settingsToSync.temporaryApps;
+        Object.keys(settingsToSync).forEach(key => {
+          if (key.startsWith('sidePanelOpen_') || key.startsWith('dockitTranslations_v2_')) {
+            delete settingsToSync[key];
+          }
+        });
+
+        const payload = {
+          profile: userId,
+          settings: JSON.stringify(settingsToSync),
+          updated: new Date().toISOString()
+        };
+
+        const fallbackCookie = `a_session_6a0a1cc000178886bfaf=${secret}`;
+
+        await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents`, {
+          method: 'POST',
+          headers: {
+            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+            'X-Fallback-Cookies': fallbackCookie,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ documentId: userId, data: { username: 'user_' + userId, updated: new Date().toISOString(), created: new Date().toISOString() } })
+        }).catch(() => {});
+
+        const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents/${userId}`, {
+          method: 'PATCH',
+          headers: {
+            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+            'X-Fallback-Cookies': fallbackCookie,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ data: payload })
+        });
+
+        if (res.status === 404) {
+          const createRes = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents`, {
+            method: 'POST',
+            headers: {
+              'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+              'X-Fallback-Cookies': fallbackCookie,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ documentId: userId, data: payload })
+          });
+          const createData = await createRes.json();
+          if (createData.code) throw new Error(createData.message);
+        } else {
+          const updateData = await res.json();
+          if (updateData.code) throw new Error(updateData.message);
+        }
+        resolve({ success: true });
+      } catch (err) {
+        resolve({ success: false, error: err.toString() });
+      }
+    });
+  });
+}
+
+let _syncTimeout = null;
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes.pinnedApps) {
+    if (_syncTimeout) {
+      clearTimeout(_syncTimeout);
+    }
+    _syncTimeout = setTimeout(async () => {
+      await _pushSync().catch(() => {});
+    }, 20000);
+  }
 });
