@@ -217,6 +217,144 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   } else if (msg.type === 'REFETCH_ASSETS') {
     cacheAssets();
+  } else if (msg.type === 'APPWRITE_LOGIN') {
+    const provider = msg.provider || 'google';
+    const redirectUrl = chrome.identity.getRedirectURL();
+    const projectId = '6a0a1cc000178886bfaf';
+    const authUrl = `https://nyc.cloud.appwrite.io/v1/account/sessions/oauth2/${provider}?project=${projectId}&success=${encodeURIComponent(redirectUrl)}&failure=${encodeURIComponent(redirectUrl)}`;
+
+    const listener = async (tabId, changeInfo, tab) => {
+      if (changeInfo.url && changeInfo.url.startsWith(redirectUrl)) {
+        chrome.tabs.onUpdated.removeListener(listener);
+        chrome.tabs.remove(tabId);
+        
+        try {
+          const cookie = await chrome.cookies.get({ url: 'https://nyc.cloud.appwrite.io', name: `a_session_${projectId}` });
+          if (!cookie) throw new Error('Cookie not found after login');
+          
+          const secret = cookie.value;
+          const fallbackCookie = `a_session_${projectId}=${secret}`;
+          
+          const res = await fetch('https://nyc.cloud.appwrite.io/v1/account', {
+            headers: {
+              'X-Appwrite-Project': projectId,
+              'X-Fallback-Cookies': fallbackCookie
+            }
+          });
+          const account = await res.json();
+          if (account.code) throw new Error(account.message);
+          
+          const userId = account.$id;
+          await chrome.storage.local.set({ appwriteSession: { secret, userId } });
+          sendResponse({ success: true, userId });
+        } catch (err) {
+          sendResponse({ success: false, error: err.toString() });
+        }
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+    chrome.tabs.create({ url: authUrl, active: true });
+    return true;
+  } else if (msg.type === 'APPWRITE_SYNC_PUSH') {
+    chrome.storage.local.get(null, async (data) => {
+      if (!data.appwriteSession) {
+        sendResponse({ success: false, error: 'Not logged in' });
+        return;
+      }
+      const { secret, userId } = data.appwriteSession;
+      try {
+        const settingsToSync = { ...data };
+        delete settingsToSync.appwriteSession;
+        delete settingsToSync.lucideIcons;
+        delete settingsToSync.fontCss;
+        delete settingsToSync.dockitStyles;
+        delete settingsToSync.temporaryApps;
+        Object.keys(settingsToSync).forEach(key => {
+          if (key.startsWith('sidePanelOpen_') || key.startsWith('dockitTranslations_v2_')) {
+            delete settingsToSync[key];
+          }
+        });
+        
+        const payload = {
+          profile: userId,
+          settings: JSON.stringify(settingsToSync),
+          updated: new Date().toISOString()
+        };
+        
+        const fallbackCookie = `a_session_6a0a1cc000178886bfaf=${secret}`;
+        
+        // Ensure profile exists
+        await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents`, {
+          method: 'POST',
+          headers: {
+            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+            'X-Fallback-Cookies': fallbackCookie,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ documentId: userId, data: { username: 'user_' + userId, updated: new Date().toISOString(), created: new Date().toISOString() } })
+        }).catch(() => {}); // ignore if exists
+
+        const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents/${userId}`, {
+          method: 'PATCH',
+          headers: {
+            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+            'X-Fallback-Cookies': fallbackCookie,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ data: payload })
+        });
+        
+        if (res.status === 404) {
+          const createRes = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents`, {
+            method: 'POST',
+            headers: {
+              'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+              'X-Fallback-Cookies': fallbackCookie,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ documentId: userId, data: payload })
+          });
+          const createData = await createRes.json();
+          if (createData.code) throw new Error(createData.message);
+        } else {
+          const updateData = await res.json();
+          if (updateData.code) throw new Error(updateData.message);
+        }
+        sendResponse({ success: true });
+      } catch (err) {
+        sendResponse({ success: false, error: err.toString() });
+      }
+    });
+    return true;
+  } else if (msg.type === 'APPWRITE_SYNC_PULL') {
+    chrome.storage.local.get(['appwriteSession'], async (data) => {
+      if (!data.appwriteSession) {
+        sendResponse({ success: false, error: 'Not logged in' });
+        return;
+      }
+      const { secret, userId } = data.appwriteSession;
+      try {
+        const fallbackCookie = `a_session_6a0a1cc000178886bfaf=${secret}`;
+        const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents/${userId}`, {
+          method: 'GET',
+          headers: {
+            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+            'X-Fallback-Cookies': fallbackCookie
+          }
+        });
+        
+        if (res.status === 404) {
+          sendResponse({ success: true, settings: null });
+        } else {
+          const docData = await res.json();
+          if (docData.code) throw new Error(docData.message);
+          sendResponse({ success: true, settings: JSON.parse(docData.settings) });
+        }
+      } catch (err) {
+        sendResponse({ success: false, error: err.toString() });
+      }
+    });
+    return true;
   } else if (msg.type === 'FETCH_SEARCH_SUGGESTIONS') {
     //fetch search suggestions from google suggest API
     fetch(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(msg.query)}`)

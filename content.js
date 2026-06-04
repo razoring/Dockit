@@ -451,6 +451,14 @@ async function init() {
 }
 
 function _destroy() {
+  if (chrome.runtime?.id) {
+    chrome.storage.local.get(['appwriteSession'], (data) => {
+      if (data.appwriteSession) {
+        chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' }).catch(() => {});
+      }
+    });
+  }
+  
   if (_recoveryObserver) {
     _recoveryObserver.disconnect();
     _recoveryObserver = null;

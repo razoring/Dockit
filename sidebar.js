@@ -597,6 +597,14 @@ class DockitSidebar {
     if (inPage) {
       inPage.classList.add('dockit-hidden');
       this._updateSidebarVisibility();
+      
+      if (chrome.runtime?.id) {
+        chrome.storage.local.get(['appwriteSession'], (data) => {
+          if (data.appwriteSession) {
+            chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' }).catch(() => {});
+          }
+        });
+      }
     }
     if (this.isSidePanel && this._updatePlaceholders) {
       chrome.tabs.onActivated.removeListener(this._updatePlaceholders);
@@ -1930,13 +1938,48 @@ class DockitSidebar {
     //bind debug actions
     const syncBtn = contentEl.querySelector('#btn-debug-sync');
     if (syncBtn) {
-      syncBtn.addEventListener('click', () => {
+      syncBtn.addEventListener('click', async () => {
+        if (syncBtn.dataset.busy) return;
         syncBtn.dataset.busy = '1';
-        syncBtn.textContent = 'Syncing...';
-        setTimeout(() => {
+        syncBtn.textContent = 'Authenticating...';
+        
+        try {
+          const storage = await chrome.storage.local.get(['appwriteSession']);
+          let justLoggedIn = false;
+          if (!storage.appwriteSession) {
+            const authRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_LOGIN' });
+            if (!authRes || !authRes.success) throw new Error(authRes?.error || 'Auth failed');
+            justLoggedIn = true;
+          }
+          
+          if (justLoggedIn) {
+            syncBtn.textContent = 'Restoring...';
+            const pullRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PULL' });
+            if (pullRes && pullRes.success && pullRes.settings) {
+              await chrome.storage.local.set(pullRes.settings);
+              syncBtn.textContent = 'Restored!';
+              setTimeout(() => window.location.reload(), 1000);
+              return; // skip the clear timeout below
+            } else {
+              syncBtn.textContent = 'Syncing...';
+              await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' });
+            }
+          } else {
+            syncBtn.textContent = 'Syncing...';
+            const syncRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' });
+            if (!syncRes || !syncRes.success) throw new Error(syncRes?.error || 'Sync failed');
+          }
+          
           syncBtn.textContent = 'Synced!';
-          setTimeout(() => { delete syncBtn.dataset.busy; syncBtn.textContent = t('sync_now'); }, 1500);
-        }, 800);
+        } catch(e) {
+          syncBtn.textContent = 'Failed';
+          console.error(e);
+        }
+        
+        setTimeout(() => { 
+          delete syncBtn.dataset.busy; 
+          syncBtn.textContent = t('sync_now'); 
+        }, 2000);
       });
     }
 

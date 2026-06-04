@@ -13,7 +13,8 @@
     "declarativeNetRequest",
     "declarativeNetRequestWithHostAccess",
     "topSites",
-    "cookies"
+    "cookies",
+    "identity"
   ],
   "host_permissions": [
     "<all_urls>"
