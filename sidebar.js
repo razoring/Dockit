@@ -702,13 +702,22 @@ class DockitSidebar {
 
   _updateSidebarVisibility() {
     const inPage = this.element.querySelector('.dockit-in-page');
-    // Account for false-positives: rely on the actual DOM state rather than any memory state variables
     const isActuallyOpen = inPage && !inPage.classList.contains('dockit-hidden');
-
+    const host = this.element.getRootNode()?.host || document.getElementById('dockit-host-root');
     if (isActuallyOpen) {
       this.element.classList.add('dockit-sidebar-hidden');
+      if (host) {
+        host.classList.add('dockit-host-panel-open');
+      }
+      document.documentElement.classList.add('dockit-host-panel-open');
+      document.body.classList.add('dockit-host-panel-open');
     } else {
       this.element.classList.remove('dockit-sidebar-hidden');
+      if (host) {
+        host.classList.remove('dockit-host-panel-open');
+      }
+      document.documentElement.classList.remove('dockit-host-panel-open');
+      document.body.classList.remove('dockit-host-panel-open');
     }
   }
 
@@ -2183,6 +2192,7 @@ class DockitSidebar {
     if (host) {
       host.classList.add('dockit-theme-editor-active');
     }
+    document.documentElement.classList.add('dockit-theme-editor-active');
     document.body.classList.add('dockit-theme-editor-active');
 
     const editorEl = document.createElement('div');
@@ -2197,6 +2207,7 @@ class DockitSidebar {
       if (host) {
         host.classList.remove('dockit-theme-editor-active');
       }
+      document.documentElement.classList.remove('dockit-theme-editor-active');
       document.body.classList.remove('dockit-theme-editor-active');
       this._themeEditor = null;
       this._renderCustomization();
@@ -2337,10 +2348,7 @@ class DockitThemeEditor {
       wrapper.style.width = `${data.width}px`;
       wrapper.style.height = `${data.height}px`;
 
-      if (data.id === 'edit-apps') {
-        wrapper.style.borderRadius = 'var(--corner-radius-value, 8px)';
-        wrapper.style.overflow = 'hidden';
-      }
+
 
       wrapper.appendChild(data.node);
 
@@ -2399,7 +2407,7 @@ class DockitThemeEditor {
     const sidebarInPage = clonedSidebar.querySelector('.dockit-in-page');
     if (sidebarInPage) sidebarInPage.remove();
     clonedSidebar.classList.remove('dockit-sidebar-hidden');
-    clonedSidebar.style.cssText = 'height: 100%; width: 100%; position: relative; border-right: none; margin: 0; padding: 12px 0; box-sizing: border-box;';
+    clonedSidebar.style.cssText = 'height: 100%; width: 100%; position: relative; border-right: none; margin: 0; padding: 12px 0; box-sizing: border-box; border-radius: var(--corner-radius-value, 0px); overflow: hidden;';
 
     const FAKE_FAVICONS = [
       { domain: 'github.com', label: 'GitHub' },
@@ -2585,7 +2593,6 @@ class DockitThemeEditor {
       css += `  ${key}: ${val} !important;\n`;
     }
     for (const [key, val] of Object.entries(this.theme.options)) {
-      if (key === '--padding-value' || key === '--corner-radius-value') continue;
       css += `  ${key}: ${val} !important;\n`;
     }
     css += '}\n';
@@ -3058,6 +3065,23 @@ class DockitThemeEditor {
             }
           });
 
+          this.applyEditingThemeCSS();
+        });
+      }
+    });
+
+    ['blur', 'opacity', 'padding', 'corners'].forEach(type => {
+      const slider = toolbar.querySelector(`#slider-${type}`);
+      if (slider) {
+        slider.addEventListener('input', (e) => {
+          let val = e.target.value;
+          if (type === 'opacity') {
+            this.theme.options['--opacity-value'] = (val / 100).toString();
+          } else if (type === 'blur' || type === 'padding') {
+            this.theme.options[`--${type}-value`] = val + 'px';
+          } else if (type === 'corners') {
+            this.theme.options['--corner-radius-value'] = val + 'px';
+          }
           this.applyEditingThemeCSS();
         });
       }

@@ -191,8 +191,19 @@ async function init() {
       box-sizing: border-box !important;
     }
     html body.dockit-full-width,
-    html:not(.dockit-autohide-active) body.dockit-full-width {
+    html:not(.dockit-autohide-active) body.dockit-full-width,
+    html body.dockit-host-panel-open,
+    html:not(.dockit-autohide-active) body.dockit-host-panel-open,
+    html body.dockit-theme-editor-active,
+    html:not(.dockit-autohide-active) body.dockit-theme-editor-active,
+    html.dockit-host-panel-open body,
+    html.dockit-theme-editor-active body {
       width: 100% !important;
+      overflow: hidden !important;
+    }
+    html.dockit-host-panel-open,
+    html.dockit-theme-editor-active {
+      overflow: hidden !important;
     }
     #dockit-host-root {
       width: ${SIDEBAR_WIDTH}px;
@@ -202,6 +213,15 @@ async function init() {
       right: 0 !important;
       z-index: 2147483647;
       transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    }
+    #dockit-host-root.dockit-host-panel-open,
+    #dockit-host-root.dockit-theme-editor-active {
+      width: 100vw !important;
+      left: 0 !important;
+      right: 0 !important;
+      transform: none !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
     }
     #dockit-host-root.dockit-autohide-hidden {
       transform: translateX(${SIDEBAR_WIDTH}px) !important;
