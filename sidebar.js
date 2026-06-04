@@ -2299,6 +2299,11 @@ class DockitThemeEditor {
       wrapper.style.width = `${data.width}px`;
       wrapper.style.height = `${data.height}px`;
 
+      if (data.id === 'edit-apps') {
+        wrapper.style.borderRadius = 'var(--corner-radius-value, 8px)';
+        wrapper.style.overflow = 'hidden';
+      }
+
       wrapper.appendChild(data.node);
 
       let directions = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
@@ -2414,7 +2419,7 @@ class DockitThemeEditor {
       this.container.appendChild(styleEl);
     }
 
-    let css = '.dockit-theme-editor-grid {\n';
+    let css = '.dockit-theme-editor {\n';
     for (const [key, val] of Object.entries(this.theme.colors)) {
       css += `  ${key}: ${val} !important;\n`;
     }
@@ -2596,7 +2601,10 @@ class DockitThemeEditor {
       if (wrapper !== this.isolatedMockup) return;
 
       let target = e.target;
-      if (target === wrapper || target.classList.contains('dockit-resize-handle')) return;
+      if (target === wrapper || target.classList.contains('dockit-resize-handle')) {
+        this.removeHoverBorder();
+        return;
+      }
 
       const selectable = target.closest('[data-theme-colors]');
       if (!selectable || !wrapper.contains(selectable) || selectable.getAttribute('data-theme-colors') === '--color-background') {
@@ -2614,7 +2622,13 @@ class DockitThemeEditor {
       if (wrapper !== this.isolatedMockup) return;
 
       let target = e.target;
-      if (target === wrapper || target.classList.contains('dockit-resize-handle')) return;
+      if (target === wrapper || target.classList.contains('dockit-resize-handle')) {
+        this.removeSelectionBorder();
+        this.selectedElement = null;
+        const toolbar = this.container.querySelector('.dockit-context-toolbar');
+        if (toolbar) toolbar.style.display = 'none';
+        return;
+      }
 
       const selectable = target.closest('[data-theme-colors]');
       if (!selectable || !wrapper.contains(selectable)) return;
@@ -2805,7 +2819,7 @@ class DockitThemeEditor {
       const baseVar = v.endsWith('-rgba') ? v.slice(0, -5) : v;
       const val = this.theme.colors[baseVar] || '#000000';
       swatchesHtml += `
-        <div class="dockit-color-field">
+        <div class="dockit-color-field ${v.endsWith('-rgba') ? 'is-rgba' : ''}">
           <input type="color" data-var="${v}" value="${this.normalizeColorForPicker(val)}" title="Modifying ${v}" />
         </div>
       `;
@@ -2862,6 +2876,15 @@ class DockitThemeEditor {
         picker.addEventListener('input', (e) => {
           const baseVar = v.endsWith('-rgba') ? v.slice(0, -5) : v;
           this.theme.colors[baseVar] = e.target.value;
+          
+          toolbar.querySelectorAll('input[type="color"]').forEach(otherPicker => {
+            const otherV = otherPicker.getAttribute('data-var');
+            const otherBaseVar = otherV.endsWith('-rgba') ? otherV.slice(0, -5) : otherV;
+            if (otherBaseVar === baseVar && otherPicker !== picker) {
+              otherPicker.value = e.target.value;
+            }
+          });
+
           this.applyEditingThemeCSS();
         });
       }
