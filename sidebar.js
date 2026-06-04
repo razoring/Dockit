@@ -2284,13 +2284,6 @@ class DockitThemeEditor {
         </div>
         
         <div class="dockit-theme-dropdown" style="display: none;">
-          <button class="dockit-dropdown-item" id="btn-clear-theme">
-            ${trashIcon} <span>Reset to Default Theme</span>
-          </button>
-          <button class="dockit-dropdown-item" id="btn-reset-theme">
-            ${resetIcon} <span>Reload Current Theme</span>
-          </button>
-          <div class="dockit-dropdown-divider"></div>
           <button class="dockit-dropdown-item" id="btn-apply-theme">
             ${checkIcon} <span>Apply Theme</span>
           </button>
@@ -2299,6 +2292,13 @@ class DockitThemeEditor {
           </button>
           <button class="dockit-dropdown-item" id="btn-discard-theme">
             ${discardIcon} <span>Exit Editor</span>
+          </button>
+          <div class="dockit-dropdown-divider"></div>
+          <button class="dockit-dropdown-item" id="btn-reset-theme">
+            ${resetIcon} <span>Discard Changes</span>
+          </button>
+          <button class="dockit-dropdown-item" id="btn-clear-theme">
+            ${trashIcon} <span>Reset to Default Theme</span>
           </button>
         </div>
       </div>
@@ -2780,7 +2780,7 @@ class DockitThemeEditor {
       }
 
       const selectable = target.closest('[data-theme-colors]');
-      if (!selectable || !wrapper.contains(selectable) || selectable.getAttribute('data-theme-colors') === '--color-background') {
+      if (!selectable || !wrapper.contains(selectable) || selectable === wrapper.firstElementChild || selectable.getAttribute('data-theme-colors') === '--color-background') {
         this.removeHoverBorder();
         return;
       }
@@ -2806,7 +2806,7 @@ class DockitThemeEditor {
       const selectable = target.closest('[data-theme-colors]');
       if (!selectable || !wrapper.contains(selectable)) return;
 
-      if (selectable.getAttribute('data-theme-colors') === '--color-background') {
+      if (selectable === wrapper.firstElementChild || selectable.getAttribute('data-theme-colors') === '--color-background') {
         this.removeSelectionBorder();
         this.selectedElement = null;
         const toolbar = this.container.querySelector('.dockit-context-toolbar');
