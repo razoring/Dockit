@@ -1229,6 +1229,8 @@ body {
 
 .dockit-dropdown-item svg {
   opacity: 0.7;
+  width: 14px;
+  height: 14px;
 }
 
 .dockit-dropdown-item:hover svg {
@@ -1238,7 +1240,7 @@ body {
 .dockit-dropdown-divider {
   height: 1px;
   background-color: var(--color-border);
-  margin: 6px 0;
+  margin: 6px 12px;
 }
 
 /* Canvas Viewport */
@@ -1414,7 +1416,7 @@ body {
 }
 
 .dockit-toolbar-tool.is-active .dockit-toolbar-slider-container {
-  max-width: 160px;
+  max-width: 100px;
   opacity: 1;
   margin-left: 8px;
 }

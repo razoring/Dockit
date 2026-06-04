@@ -403,7 +403,7 @@ class DockitSidebar {
                   <div style="font-weight: 500; font-size: 13px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${item.title}</div>
                   <div style="font-size: 11px; color: var(--color-foreground); opacity: 0.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;" data-theme-colors="--color-foreground-rgba">${_formatUrl(item.url)}</div>
                 </div>
-                <div class="dockit-suggestion-plus" style="width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;" data-theme-colors="--color-primary">
+                <div class="dockit-suggestion-plus" style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;" data-theme-colors="--color-primary">
                   ${plusIconSvg}
                 </div>
               `;
@@ -2213,6 +2213,7 @@ class DockitThemeEditor {
     if (data.dockitTheme) {
       this.theme = JSON.parse(JSON.stringify(data.dockitTheme));
     }
+    this.originalThemeStr = JSON.stringify(this.theme);
 
     const storageData = await chrome.storage.local.get(['lucideIcons']);
     this.lucideIcons = storageData.lucideIcons || {};
@@ -2247,20 +2248,20 @@ class DockitThemeEditor {
         
         <div class="dockit-theme-dropdown" style="display: none;">
           <button class="dockit-dropdown-item" id="btn-clear-theme">
-            ${trashIcon} <span>Clear Theme</span>
+            ${trashIcon} <span>Reset to Default Draft</span>
           </button>
           <button class="dockit-dropdown-item" id="btn-reset-theme">
-            ${resetIcon} <span>Reset Theme</span>
+            ${resetIcon} <span>Load Current Theme</span>
           </button>
           <div class="dockit-dropdown-divider"></div>
           <button class="dockit-dropdown-item" id="btn-apply-theme">
-            ${checkIcon} <span>Apply</span>
+            ${checkIcon} <span>Apply Theme</span>
           </button>
           <button class="dockit-dropdown-item" id="btn-publish-theme" style="opacity: 0.5;">
-            ${uploadIcon} <span>Publish</span>
+            ${uploadIcon} <span>Publish Theme</span>
           </button>
           <button class="dockit-dropdown-item" id="btn-discard-theme">
-            ${discardIcon} <span>Cancel</span>
+            ${discardIcon} <span>Exit Editor</span>
           </button>
         </div>
       </div>
@@ -2456,7 +2457,7 @@ class DockitThemeEditor {
             <div style="font-size:11px;color:var(--color-foreground);opacity:0.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;" data-theme-colors="--color-foreground-rgba">${app.url}</div>
           </div>
           <div class="dockit-suggestion-plus" data-theme-colors="--color-primary"
-            style="width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--color-primary);flex-shrink:0;">
+            style="width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--color-primary);flex-shrink:0;">
             ${plusSvg}
           </div>
         </div>
@@ -2965,15 +2966,13 @@ class DockitThemeEditor {
       toolsHtml += `
         <div class="dockit-toolbar-tool">
           <button class="dockit-toolbar-icon-btn" title="Blur">${apertureIcon}</button>
-          <div class="dockit-toolbar-slider-container" style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:11px;font-weight:500;opacity:0.8;">Blur</span>
+          <div class="dockit-toolbar-slider-container">
             <input type="range" id="slider-blur" min="0" max="20" value="${parseInt(this.theme.options['--blur-value']) || 0}" />
           </div>
         </div>
         <div class="dockit-toolbar-tool">
           <button class="dockit-toolbar-icon-btn" title="Transparency">${blendIcon}</button>
-          <div class="dockit-toolbar-slider-container" style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:11px;font-weight:500;opacity:0.8;">Opacity</span>
+          <div class="dockit-toolbar-slider-container">
             <input type="range" id="slider-opacity" min="10" max="100" value="${Math.round(parseFloat(this.theme.options['--opacity-value']) * 100) || 100}" />
           </div>
         </div>
@@ -2982,15 +2981,13 @@ class DockitThemeEditor {
         toolsHtml += `
           <div class="dockit-toolbar-tool">
             <button class="dockit-toolbar-icon-btn" title="Padding">${paddingIcon}</button>
-            <div class="dockit-toolbar-slider-container" style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:11px;font-weight:500;opacity:0.8;">Padding</span>
+            <div class="dockit-toolbar-slider-container">
               <input type="range" id="slider-padding" min="0" max="32" value="${parseInt(this.theme.options['--padding-value']) || 0}" />
             </div>
           </div>
           <div class="dockit-toolbar-tool">
             <button class="dockit-toolbar-icon-btn" title="Corners">${radiusIcon}</button>
-            <div class="dockit-toolbar-slider-container" style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:11px;font-weight:500;opacity:0.8;">Corners</span>
+            <div class="dockit-toolbar-slider-container">
               <input type="range" id="slider-corners" min="0" max="24" value="${parseInt(this.theme.options['--corner-radius-value']) || 0}" />
             </div>
           </div>
@@ -3120,6 +3117,7 @@ class DockitThemeEditor {
 
   async applyTheme() {
     await chrome.storage.local.set({ dockitTheme: this.theme });
+    this.originalThemeStr = JSON.stringify(this.theme);
     const applyBtn = this.container.querySelector('#btn-apply-theme');
     if (applyBtn) {
       const originalText = applyBtn.innerHTML;
@@ -3131,6 +3129,11 @@ class DockitThemeEditor {
   }
 
   discard() {
+    if (this.originalThemeStr && JSON.stringify(this.theme) !== this.originalThemeStr) {
+      if (!confirm('You have unapplied changes. Are you sure you want to exit?')) {
+        return;
+      }
+    }
     this.exitIsolationMode();
     this.onClose();
   }
