@@ -656,13 +656,14 @@ body {
   border: 1.5px solid var(--color-border);
   border-radius: 4px;
   outline: none;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--color-secondary);
   cursor: pointer;
   position: relative;
   transition: background-color 0.2s, border-color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .dockit-settings-expand-all-input:checked {
@@ -674,8 +675,8 @@ body {
   content: '';
   width: 8px;
   height: 5px;
-  border-left: 2px solid white;
-  border-bottom: 2px solid white;
+  border-left: 2px solid var(--color-background);
+  border-bottom: 2px solid var(--color-background);
   transform: rotate(-45deg) translate(1px, -1px);
   position: absolute;
 }
@@ -1243,10 +1244,10 @@ body {
 /* Canvas Viewport */
 .dockit-theme-editor-canvas {
   flex: 1;
-  background-color: #181818;
+  background-color: var(--color-background);
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
   background-size: 20px 20px;
   position: relative;
   overflow: hidden;
@@ -1380,6 +1381,13 @@ body {
   justify-content: center;
   border-radius: 4px;
   transition: all 0.2s;
+  width: 28px;
+  height: 28px;
+}
+
+.dockit-toolbar-icon-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .dockit-toolbar-icon-btn:hover {
@@ -1390,6 +1398,10 @@ body {
 .dockit-toolbar-icon-btn.is-active {
   opacity: 1;
   color: var(--color-primary);
+}
+
+.dockit-toolbar-img-btn {
+  outline: none;
 }
 
 .dockit-toolbar-slider-container {

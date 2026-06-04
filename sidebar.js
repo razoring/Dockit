@@ -211,7 +211,7 @@ class DockitSidebar {
         const isCurrentlyPinned = pinnedAppsInitial.some(app => app.url === tab.url);
 
         contentEl.innerHTML = `
-          <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: var(--corner-radius-value, 12px); padding: 12px; gap: 12px; margin-bottom: 20px; border: 1px solid var(--color-border);" data-theme-colors="--color-border, --color-secondary">
+          <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: 12px; padding: 12px; gap: 12px; margin-bottom: 20px; border: 1px solid var(--color-border);" data-theme-colors="--color-border, --color-secondary">
             <img class="dockit-active-site-favicon" src="${favIconUrl}" style="width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;" />
             <div class="dockit-active-site-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
               <div class="dockit-active-site-title" style="font-weight: 600; font-size: 14px; line-height: 1.15; word-break: break-word;" data-theme-colors="--color-foreground">${title}</div>
@@ -222,14 +222,14 @@ class DockitSidebar {
             </button>
           </div>
           
-          <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid var(--color-border); border-radius: var(--corner-radius-value, 12px); background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;" data-theme-colors="--color-border, --color-secondary">
+          <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;" data-theme-colors="--color-border, --color-secondary">
             <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${_t('pinned_apps')}</div>
             <div class="dockit-apps-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px;">
               <!-- Pinned apps will be rendered here dynamically -->
             </div>
           </div>
 
-          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: var(--corner-radius-value, 12px); background-color: var(--color-background); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;" data-theme-colors="--color-border, --color-background">
+          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-background); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;" data-theme-colors="--color-border, --color-background">
             <div class="dockit-search-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${_t('search_title')}</div>
             <div class="dockit-settings-search-wrapper dockit-search-bar-container" data-theme-colors="--color-primary, --color-border, --color-secondary">
               ${searchIconSvg}
@@ -2260,7 +2260,7 @@ class DockitThemeEditor {
             ${uploadIcon} <span>Publish</span>
           </button>
           <button class="dockit-dropdown-item" id="btn-discard-theme">
-            ${discardIcon} <span>Discard</span>
+            ${discardIcon} <span>Quit</span>
           </button>
         </div>
       </div>
@@ -2363,6 +2363,128 @@ class DockitThemeEditor {
     clonedSidebar.classList.remove('dockit-sidebar-hidden');
     clonedSidebar.style.cssText = 'height: 100%; width: 100%; position: relative; border-right: none; margin: 0; padding: 12px 0; box-sizing: border-box;';
 
+    const FAKE_FAVICONS = [
+      { domain: 'github.com', label: 'GitHub' },
+      { domain: 'youtube.com', label: 'YouTube' },
+      { domain: 'figma.com', label: 'Figma' },
+      { domain: 'notion.so', label: 'Notion' },
+      { domain: 'linear.app', label: 'Linear' },
+      { domain: 'vercel.com', label: 'Vercel' },
+    ];
+
+    const FAKE_APPS = [
+      { domain: 'github.com', title: 'GitHub', url: 'github.com' },
+      { domain: 'youtube.com', title: 'YouTube', url: 'youtube.com' },
+      { domain: 'figma.com', title: 'Figma', url: 'figma.com' },
+      { domain: 'notion.so', title: 'Notion Workspace', url: 'notion.so' },
+      { domain: 'linear.app', title: 'Linear — Issues', url: 'linear.app' },
+      { domain: 'vercel.com', title: 'Vercel Dashboard', url: 'vercel.com' },
+      { domain: 'reddit.com', title: 'Reddit', url: 'reddit.com' },
+      { domain: 'x.com', title: 'X / Twitter', url: 'x.com' },
+    ];
+
+    //sidebar: populate #pinned-section with fake .dockit-app icon elements
+    const sidebarPinnedSection = clonedSidebar.querySelector('#pinned-section');
+    if (sidebarPinnedSection) {
+      sidebarPinnedSection.innerHTML = '';
+      FAKE_FAVICONS.forEach(f => {
+        const appEl = document.createElement('div');
+        appEl.className = 'dockit-app';
+        appEl.setAttribute('data-theme-colors', '--color-primary, --color-foreground');
+        appEl.title = f.label;
+        appEl.innerHTML = `<img src="https://www.google.com/s2/favicons?domain=${f.domain}&sz=32" alt="${f.label}" draggable="false" style="width:100%;height:100%;border-radius:6px;" />`;
+        sidebarPinnedSection.appendChild(appEl);
+      });
+      //also show the divider below pinned section
+      const pinnedDivider = clonedSidebar.querySelector('.dockit-divider');
+      if (pinnedDivider) pinnedDivider.style.display = 'block';
+    }
+
+    //edit-apps: overwrite active site container with a fake entry
+    const activeSiteContainer = editAppsContent.querySelector('.dockit-active-site-container');
+    if (activeSiteContainer) {
+      const pinIcon = this.lucideIcons['pin'] || `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>`;
+      activeSiteContainer.innerHTML = `
+        <img src="https://www.google.com/s2/favicons?domain=figma.com&sz=32"
+          class="dockit-active-site-favicon" style="width:32px;height:32px;border-radius:6px;flex-shrink:0;" />
+        <div class="dockit-active-site-info" style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;">
+          <div class="dockit-active-site-title" style="font-weight:600;font-size:14px;line-height:1.15;" data-theme-colors="--color-foreground">Figma — Design File</div>
+          <div class="dockit-active-site-url" style="font-size:12px;opacity:0.6;line-height:1.15;margin-top:1px;" data-theme-colors="--color-foreground-rgba">figma.com/file/abc123</div>
+        </div>
+        <div style="width:24px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--color-primary);" data-theme-colors="--color-primary">
+          <div style="width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); pointer-events: none; color: currentColor;">
+            ${pinIcon}
+          </div>
+        </div>
+      `;
+    }
+
+    //edit-apps: populate pinned apps grid with fake icons
+    const appsGrid = editAppsContent.querySelector('.dockit-apps-grid');
+    if (appsGrid) {
+      appsGrid.style.display = 'grid';
+      appsGrid.innerHTML = FAKE_FAVICONS.map(f => `
+        <div class="dockit-grid-app" style="width:100%;height:56px;display:flex;align-items:center;justify-content:center;cursor:grab;">
+          <div class="dockit-grid-app-inner" data-theme-colors="--color-primary"
+            style="width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;background-color:transparent;">
+            <img src="https://www.google.com/s2/favicons?domain=${f.domain}&sz=32"
+              alt="${f.label}" style="width:38px;height:38px;" draggable="false" />
+          </div>
+        </div>
+      `).join('');
+    }
+
+    //edit-apps: replace absolute dropdown with a standalone rounded results list below the search card
+    const searchCard = editAppsContent.querySelector('.dockit-search-card');
+    const suggestionsDropdown = editAppsContent.querySelector('.dockit-suggestions-dropdown');
+    if (suggestionsDropdown) suggestionsDropdown.remove(); //remove from inside search card
+
+    if (searchCard) {
+      searchCard.style.marginBottom = '4px'; //close gap to match live dropdown placement
+      const plusSvg = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+      const resultsContainer = document.createElement('div');
+      resultsContainer.setAttribute('data-theme-colors', '--color-border, --color-secondary');
+      resultsContainer.style.cssText = 'border: 1px solid var(--color-border); border-radius: 8px; background-color: var(--color-secondary); overflow: hidden; margin-bottom: 24px;';
+      resultsContainer.innerHTML = FAKE_APPS.map(app => `
+        <div class="dockit-suggestion-row" data-theme-colors="--color-foreground"
+          style="display:flex;align-items:center;padding:8px 12px;gap:10px;cursor:pointer;transition:background-color 0.15s;min-height:48px;">
+          <img src="https://www.google.com/s2/favicons?domain=${app.domain}&sz=32"
+            style="width:24px;height:24px;border-radius:4px;flex-shrink:0;"
+            onerror="this.src='https://www.google.com/s2/favicons?domain=google.com&sz=32'" />
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px;">
+            <div style="font-weight:500;font-size:13px;color:var(--color-foreground);" data-theme-colors="--color-foreground">${app.title}</div>
+            <div style="font-size:11px;color:var(--color-foreground);opacity:0.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;" data-theme-colors="--color-foreground-rgba">${app.url}</div>
+          </div>
+          <div class="dockit-suggestion-plus" data-theme-colors="--color-primary"
+            style="width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--color-primary);flex-shrink:0;">
+            ${plusSvg}
+          </div>
+        </div>
+      `).join('');
+      searchCard.insertAdjacentElement('afterend', resultsContainer);
+    }
+
+
+    //settings: inject fake blocklist tags
+    const blocklistContainers = settingsContent.querySelectorAll('.dockit-settings-tags');
+    const FAKE_BLOCKED = ['reddit.com', 'twitter.com', 'facebook.com'];
+    const FAKE_AUTOHIDE = ['mail.google.com', 'docs.google.com'];
+    blocklistContainers.forEach((container, i) => {
+      const domains = i === 0 ? FAKE_BLOCKED : FAKE_AUTOHIDE;
+      container.innerHTML = domains.map(d => `
+        <div class="dockit-settings-tag" data-theme-colors="--color-secondary, --color-border, --color-foreground">
+          <span>${d}</span>
+        </div>
+      `).join('');
+    });
+
+    //settings: alternate toggle checked states to show on/off
+    settingsContent.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
+      cb.checked = i % 2 === 0;
+    });
+
+
+
     const result = {
       sidebar: clonedSidebar,
       settings: this.wrapInPageMockup('Settings', settingsContent),
@@ -2392,6 +2514,7 @@ class DockitThemeEditor {
     return result;
   }
 
+
   wrapInPageMockup(title, contentNode) {
     const wrapper = document.createElement('div');
     wrapper.className = 'dockit-in-page';
@@ -2419,7 +2542,7 @@ class DockitThemeEditor {
       this.container.appendChild(styleEl);
     }
 
-    let css = '.dockit-theme-editor {\n';
+    let css = '.dockit-theme-editor-grid {\n';
     for (const [key, val] of Object.entries(this.theme.colors)) {
       css += `  ${key}: ${val} !important;\n`;
     }
@@ -2480,8 +2603,20 @@ class DockitThemeEditor {
       }
     });
 
+    const BASE_GRID_SIZE = 20;
+    const updateToolbarPosition = () => {
+      if (this.selectedMockupWrapper) {
+        this.showToolbar(this.selectedMockupWrapper.getBoundingClientRect(), 'wrapper', this.selectedMockupWrapper);
+      } else if (this.selectedElement) {
+        this.showToolbar(this.selectedElement.getBoundingClientRect(), 'element', this.selectedElement);
+      }
+    };
     const updateTransform = () => {
       grid.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
+      const scaledGrid = BASE_GRID_SIZE * this.zoom;
+      canvas.style.backgroundSize = `${scaledGrid}px ${scaledGrid}px`;
+      canvas.style.backgroundPosition = `${this.panX}px ${this.panY}px`;
+      updateToolbarPosition();
     };
 
     canvas.addEventListener('wheel', (e) => {
@@ -2811,7 +2946,7 @@ class DockitThemeEditor {
       swatches = ['--color-background'];
     } else if (type === 'element') {
       const vars = this.getThemeVariableForElement(target);
-      swatches = vars.filter(v => !v.includes('--color-background')).slice(0, 2);
+      swatches = vars.filter(v => !v.includes('--color-background')).slice(0, 3);
     }
 
     let swatchesHtml = '';
@@ -2876,7 +3011,7 @@ class DockitThemeEditor {
         picker.addEventListener('input', (e) => {
           const baseVar = v.endsWith('-rgba') ? v.slice(0, -5) : v;
           this.theme.colors[baseVar] = e.target.value;
-          
+
           toolbar.querySelectorAll('input[type="color"]').forEach(otherPicker => {
             const otherV = otherPicker.getAttribute('data-var');
             const otherBaseVar = otherV.endsWith('-rgba') ? otherV.slice(0, -5) : otherV;
@@ -2896,7 +3031,7 @@ class DockitThemeEditor {
         const isActive = tool.classList.contains('is-active');
         toolbar.querySelectorAll('.dockit-toolbar-tool').forEach(t => t.classList.remove('is-active'));
         toolbar.querySelectorAll('.dockit-toolbar-icon-btn').forEach(b => b.classList.remove('is-active'));
-        
+
         if (!isActive) {
           tool.classList.add('is-active');
           e.currentTarget.classList.add('is-active');
