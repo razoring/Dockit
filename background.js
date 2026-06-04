@@ -88,7 +88,7 @@ async function cacheAssets() {
 
     // 2. Cache Google Fonts (Inter)
     // First, get the CSS
-    const fontCssRes = await fetch('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap', {
+    const fontCssRes = await fetch('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap', {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36' }
     });
     let fontCss = await fontCssRes.text();

@@ -68,6 +68,43 @@ class DockitSidebar {
     this._themeEditor = null;
   }
 
+  showDialog({ title, message, type = 'alert', confirmText = 'OK', cancelText = 'Cancel', onConfirm = null, onCancel = null }) {
+    const overlay = document.createElement('div');
+    overlay.className = 'dockit-dialog-overlay';
+    overlay.innerHTML = `
+      <div class="dockit-dialog-box" data-theme-colors="--color-background, --color-border, --color-foreground">
+        ${title ? `<div class="dockit-dialog-title">${title}</div>` : ''}
+        <div class="dockit-dialog-message">${message}</div>
+        <div class="dockit-dialog-actions">
+          ${type === 'confirm' ? `<button class="dockit-dialog-btn cancel-btn" data-theme-colors="--color-border, --color-foreground">${cancelText}</button>` : ''}
+          <button class="dockit-dialog-btn confirm-btn" data-theme-colors="--color-primary, --color-foreground">${confirmText}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Apply colors for the newly injected HTML
+    if (typeof applyThemeColorsToElement === 'function') {
+      applyThemeColorsToElement(overlay);
+    }
+
+    const closeDialog = () => {
+      overlay.remove();
+    };
+
+    if (type === 'confirm') {
+      overlay.querySelector('.cancel-btn').addEventListener('click', () => {
+        closeDialog();
+        if (onCancel) onCancel();
+      });
+    }
+
+    overlay.querySelector('.confirm-btn').addEventListener('click', () => {
+      closeDialog();
+      if (onConfirm) onConfirm();
+    });
+  }
+
   async render() {
     this.element.innerHTML = `
       <div class="dockit-taper-top"></div>
@@ -2248,10 +2285,10 @@ class DockitThemeEditor {
         
         <div class="dockit-theme-dropdown" style="display: none;">
           <button class="dockit-dropdown-item" id="btn-clear-theme">
-            ${trashIcon} <span>Reset to Default Draft</span>
+            ${trashIcon} <span>Reset to Default Theme</span>
           </button>
           <button class="dockit-dropdown-item" id="btn-reset-theme">
-            ${resetIcon} <span>Load Current Theme</span>
+            ${resetIcon} <span>Reload Current Theme</span>
           </button>
           <div class="dockit-dropdown-divider"></div>
           <button class="dockit-dropdown-item" id="btn-apply-theme">
@@ -2785,7 +2822,7 @@ class DockitThemeEditor {
     this.container.querySelector('#btn-reset-theme').addEventListener('click', () => this.resetTheme());
     this.container.querySelector('#btn-apply-theme').addEventListener('click', () => this.applyTheme());
     this.container.querySelector('#btn-publish-theme').addEventListener('click', () => {
-      alert('Publishing themes will be supported in a future update!');
+      this.sidebar.showDialog({ message: 'Publishing themes will be supported in a future update!' });
     });
     this.container.querySelector('#btn-discard-theme').addEventListener('click', () => this.discard());
 
@@ -3040,9 +3077,12 @@ class DockitThemeEditor {
       });
     });
 
-    toolbar.querySelector('#btn-img-importer').addEventListener('click', () => {
-      alert('Image Importer is currently a placeholder!');
-    });
+    const btnImgImporter = toolbar.querySelector('#btn-img-importer');
+    if (btnImgImporter) {
+      btnImgImporter.addEventListener('click', () => {
+        this.sidebar.showDialog({ message: 'Image Importer is currently a placeholder!' });
+      });
+    }
   }
 
   normalizeColorForPicker(colorStr) {
@@ -3130,9 +3170,17 @@ class DockitThemeEditor {
 
   discard() {
     if (this.originalThemeStr && JSON.stringify(this.theme) !== this.originalThemeStr) {
-      if (!confirm('You have unapplied changes. Are you sure you want to exit?')) {
-        return;
-      }
+      this.sidebar.showDialog({
+        title: 'Unsaved Changes',
+        message: 'You have unapplied changes. Are you sure you want to exit?',
+        type: 'confirm',
+        confirmText: 'Exit',
+        onConfirm: () => {
+          this.exitIsolationMode();
+          this.onClose();
+        }
+      });
+      return;
     }
     this.exitIsolationMode();
     this.onClose();

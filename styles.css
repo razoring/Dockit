@@ -10,7 +10,7 @@
   --color-accent: #ef4444;
 
   /* typography using injected font */
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
 }
 
 * {
@@ -252,7 +252,7 @@ body {
 }
 
 /* Sidebar hidden state (in-page active) */
-.dockit-sidebar.dockit-sidebar-hidden > *:not(.dockit-in-page) {
+.dockit-sidebar.dockit-sidebar-hidden>*:not(.dockit-in-page) {
   display: none !important;
 }
 
@@ -843,12 +843,12 @@ body {
   border-radius: 50%;
 }
 
-.dockit-ios-switch input:checked + .dockit-ios-slider {
+.dockit-ios-switch input:checked+.dockit-ios-slider {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.dockit-ios-switch input:checked + .dockit-ios-slider:before {
+.dockit-ios-switch input:checked+.dockit-ios-slider:before {
   transform: translateX(14px);
 }
 
@@ -1119,18 +1119,23 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
 }
 
 .dockit-theme-editor-menubar {
   height: 50px;
-  background: linear-gradient(to bottom, var(--color-secondary), var(--color-background));
-  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-secondary) 75%, transparent);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 10000200;
   box-sizing: border-box;
 }
@@ -1151,6 +1156,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
   cursor: pointer;
   transition: background-color 0.2s, border-color 0.2s;
 }
@@ -1247,7 +1253,7 @@ body {
 .dockit-theme-editor-canvas {
   flex: 1;
   background-color: var(--color-background);
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -1284,7 +1290,7 @@ body {
   box-sizing: border-box;
 }
 
-.dockit-mockup-wrapper > *:not(.dockit-resize-handle) {
+.dockit-mockup-wrapper>*:not(.dockit-resize-handle) {
   overflow: hidden;
 }
 
@@ -1308,14 +1314,53 @@ body {
   display: block;
 }
 
-.dockit-resize-handle.nw { top: -4px; left: -4px; cursor: nwse-resize; }
-.dockit-resize-handle.ne { top: -4px; right: -4px; cursor: nesw-resize; }
-.dockit-resize-handle.sw { bottom: -4px; left: -4px; cursor: nesw-resize; }
-.dockit-resize-handle.se { bottom: -4px; right: -4px; cursor: nwse-resize; }
-.dockit-resize-handle.n { top: -4px; left: calc(50% - 4px); cursor: ns-resize; }
-.dockit-resize-handle.s { bottom: -4px; left: calc(50% - 4px); cursor: ns-resize; }
-.dockit-resize-handle.e { right: -4px; top: calc(50% - 4px); cursor: ew-resize; }
-.dockit-resize-handle.w { left: -4px; top: calc(50% - 4px); cursor: ew-resize; }
+.dockit-resize-handle.nw {
+  top: -4px;
+  left: -4px;
+  cursor: nwse-resize;
+}
+
+.dockit-resize-handle.ne {
+  top: -4px;
+  right: -4px;
+  cursor: nesw-resize;
+}
+
+.dockit-resize-handle.sw {
+  bottom: -4px;
+  left: -4px;
+  cursor: nesw-resize;
+}
+
+.dockit-resize-handle.se {
+  bottom: -4px;
+  right: -4px;
+  cursor: nwse-resize;
+}
+
+.dockit-resize-handle.n {
+  top: -4px;
+  left: calc(50% - 4px);
+  cursor: ns-resize;
+}
+
+.dockit-resize-handle.s {
+  bottom: -4px;
+  left: calc(50% - 4px);
+  cursor: ns-resize;
+}
+
+.dockit-resize-handle.e {
+  right: -4px;
+  top: calc(50% - 4px);
+  cursor: ew-resize;
+}
+
+.dockit-resize-handle.w {
+  left: -4px;
+  top: calc(50% - 4px);
+  cursor: ew-resize;
+}
 
 /* Inactive (Dimmed) Mockups in Isolation Mode */
 .dockit-theme-editor-canvas.dockit-theme-editor-isolated .dockit-mockup-wrapper:not(.is-isolated) {
@@ -1451,13 +1496,11 @@ body {
   bottom: 0;
   border-radius: 50%;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 3px,
-    var(--color-background) 3px,
-    var(--color-background) 6px
-  );
+  background: repeating-linear-gradient(45deg,
+      transparent,
+      transparent 3px,
+      var(--color-background) 3px,
+      var(--color-background) 6px);
   opacity: 0.6;
 }
 
@@ -1516,4 +1559,79 @@ body {
 
 body.dockit-theme-editor-active {
   overflow: hidden !important;
+}
+
+/* Custom Dialog Overlay */
+.dockit-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 20000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  pointer-events: auto;
+}
+
+.dockit-dialog-box {
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  color: var(--color-foreground);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dockit-dialog-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.dockit-dialog-message {
+  font-size: 14px;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+.dockit-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.dockit-dialog-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.dockit-dialog-btn:hover {
+  opacity: 0.8;
+}
+
+.dockit-dialog-btn.cancel-btn {
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-foreground);
+}
+
+.dockit-dialog-btn.confirm-btn {
+  background-color: var(--color-primary);
+  color: #fff;
 }
