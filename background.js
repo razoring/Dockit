@@ -355,6 +355,32 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
     });
     return true;
+  } else if (msg.type === 'APPWRITE_SYNC_CLEAR') {
+    chrome.storage.local.get(['appwriteSession'], async (data) => {
+      if (!data.appwriteSession) {
+        sendResponse({ success: false, error: 'Not logged in' });
+        return;
+      }
+      const { secret, userId } = data.appwriteSession;
+      try {
+        const fallbackCookie = `a_session_6a0a1cc000178886bfaf=${secret}`;
+        const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+            'X-Fallback-Cookies': fallbackCookie
+          }
+        });
+        if (res.status !== 204 && res.status !== 404 && res.status !== 200) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Failed to delete cloud data (status ${res.status})`);
+        }
+        sendResponse({ success: true });
+      } catch (err) {
+        sendResponse({ success: false, error: err.toString() });
+      }
+    });
+    return true;
   } else if (msg.type === 'FETCH_SEARCH_SUGGESTIONS') {
     //fetch search suggestions from google suggest API
     fetch(`https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(msg.query)}`)

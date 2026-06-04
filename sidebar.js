@@ -26,8 +26,11 @@ const I18N_STRINGS_DEFAULT = {
   'cloud_sync_desc': 'Force instant synchronization of configuration to the cloud.',
   'clear_cache': 'Clear Cache',
   'clear_cache_desc': 'Purge cached asset resources and system pre-fetches.',
-  'clear_data': 'Clear Data',
+  'clear_data': 'Clear Local Data',
   'clear_data_desc': 'Clear all extension storage and reset default states.',
+  'clear_cloud_data': 'Clear Cloud Data',
+  'clear_cloud_data_desc': 'Clear all synced settings and data stored in the cloud.',
+  'clear_cloud': 'Clear Cloud',
   'select_language': 'Select Language',
   'select_language_desc': 'Change the interface language of settings.',
   'search_placeholder': 'Search...',
@@ -597,11 +600,11 @@ class DockitSidebar {
     if (inPage) {
       inPage.classList.add('dockit-hidden');
       this._updateSidebarVisibility();
-      
+
       if (chrome.runtime?.id) {
         chrome.storage.local.get(['appwriteSession'], (data) => {
           if (data.appwriteSession) {
-            chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' }).catch(() => {});
+            chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' }).catch(() => { });
           }
         });
       }
@@ -1439,11 +1442,20 @@ class DockitSidebar {
               </div>
               <div class="dockit-settings-item" data-title="clear data" data-desc="clear all extension storage and reset default states">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Clear Data</span>
-                  <span class="dockit-settings-item-desc">Clear all extension storage and reset default states.</span>
+                  <span class="dockit-settings-item-title">Clear Local Data</span>
+                  <span class="dockit-settings-item-desc">Clear all local extension storage and reset default states.</span>
                 </div>
                 <div class="dockit-settings-item-control" style="width: 100px;">
                   <button class="dockit-settings-btn accent" id="btn-debug-clear">Clear Data</button>
+                </div>
+              </div>
+              <div class="dockit-settings-item" data-title="clear cloud data" data-desc="clear all synced data from the cloud">
+                <div class="dockit-settings-item-info">
+                  <span class="dockit-settings-item-title">Clear Cloud Data</span>
+                  <span class="dockit-settings-item-desc">Clear all synced settings and data stored in the cloud.</span>
+                </div>
+                <div class="dockit-settings-item-control" style="width: 100px;">
+                  <button class="dockit-settings-btn accent" id="btn-debug-clear-cloud">Clear Cloud</button>
                 </div>
               </div>
             </div>
@@ -1691,6 +1703,7 @@ class DockitSidebar {
         'cloud sync': ['cloud_sync', 'cloud_sync_desc'],
         'clear cache': ['clear_cache', 'clear_cache_desc'],
         'clear data': ['clear_data', 'clear_data_desc'],
+        'clear cloud data': ['clear_cloud_data', 'clear_cloud_data_desc'],
         'select language': ['select_language', 'select_language_desc']
       };
 
@@ -1727,6 +1740,8 @@ class DockitSidebar {
       if (cacheBtn && !cacheBtn.dataset.busy) cacheBtn.textContent = t('clear_cache');
       const clearBtn = contentEl.querySelector('#btn-debug-clear');
       if (clearBtn && !clearBtn.dataset.busy) clearBtn.textContent = t('clear_data');
+      const clearCloudBtn = contentEl.querySelector('#btn-debug-clear-cloud');
+      if (clearCloudBtn && !clearCloudBtn.dataset.busy) clearCloudBtn.textContent = t('clear_cloud');
 
       //toggle all text
       if (toggleAllText) {
@@ -1942,7 +1957,7 @@ class DockitSidebar {
         if (syncBtn.dataset.busy) return;
         syncBtn.dataset.busy = '1';
         syncBtn.textContent = 'Authenticating...';
-        
+
         try {
           const storage = await chrome.storage.local.get(['appwriteSession']);
           let justLoggedIn = false;
@@ -1951,12 +1966,16 @@ class DockitSidebar {
             if (!authRes || !authRes.success) throw new Error(authRes?.error || 'Auth failed');
             justLoggedIn = true;
           }
-          
+
           if (justLoggedIn) {
             syncBtn.textContent = 'Restoring...';
             const pullRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PULL' });
             if (pullRes && pullRes.success && pullRes.settings) {
-              await chrome.storage.local.set(pullRes.settings);
+              const cleanSettings = { ...pullRes.settings };
+              if (!Array.isArray(cleanSettings.pinnedApps)) {
+                delete cleanSettings.pinnedApps;
+              }
+              await chrome.storage.local.set(cleanSettings);
               syncBtn.textContent = 'Restored!';
               setTimeout(() => window.location.reload(), 1000);
               return; // skip the clear timeout below
@@ -1969,16 +1988,16 @@ class DockitSidebar {
             const syncRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' });
             if (!syncRes || !syncRes.success) throw new Error(syncRes?.error || 'Sync failed');
           }
-          
+
           syncBtn.textContent = 'Synced!';
-        } catch(e) {
+        } catch (e) {
           syncBtn.textContent = 'Failed';
           console.error(e);
         }
-        
-        setTimeout(() => { 
-          delete syncBtn.dataset.busy; 
-          syncBtn.textContent = t('sync_now'); 
+
+        setTimeout(() => {
+          delete syncBtn.dataset.busy;
+          syncBtn.textContent = t('sync_now');
         }, 2000);
       });
     }
@@ -2028,6 +2047,45 @@ class DockitSidebar {
           clearBtn.textContent = 'Reset!';
           setTimeout(() => { window.location.reload(); }, 500);
         }, 800);
+      });
+    }
+
+    const clearCloudBtn = contentEl.querySelector('#btn-debug-clear-cloud');
+    if (clearCloudBtn) {
+      clearCloudBtn.addEventListener('click', async () => {
+        if (clearCloudBtn.dataset.busy) return;
+        clearCloudBtn.dataset.busy = '1';
+        clearCloudBtn.textContent = 'Clearing...';
+
+        try {
+          const storage = await chrome.storage.local.get(['appwriteSession']);
+          if (!storage.appwriteSession) {
+            const authRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_LOGIN' });
+            if (!authRes || !authRes.success) throw new Error(authRes?.error || 'Auth failed');
+          }
+          const clearRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_CLEAR' });
+          if (!clearRes || !clearRes.success) throw new Error(clearRes?.error || 'Clear failed');
+
+          clearCloudBtn.textContent = 'Resetting...';
+          const storageAll = await chrome.storage.local.get(null);
+          const keysToRemove = Object.keys(storageAll).filter(key => !key.startsWith('sidePanelOpen_'));
+          await chrome.storage.local.remove(keysToRemove);
+          if (chrome.runtime?.id) {
+            chrome.runtime.sendMessage({ type: 'REFETCH_ASSETS' });
+          }
+
+          clearCloudBtn.textContent = 'Cleared!';
+          setTimeout(() => { window.location.reload(); }, 500);
+          return;
+        } catch (err) {
+          clearCloudBtn.textContent = 'Failed';
+          console.error(err);
+        }
+
+        setTimeout(() => {
+          delete clearCloudBtn.dataset.busy;
+          clearCloudBtn.textContent = t('clear_cloud');
+        }, 2000);
       });
     }
   }
