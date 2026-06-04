@@ -287,6 +287,10 @@ body {
   transform: translateX(0);
   visibility: visible;
   overflow: hidden;
+  opacity: var(--opacity-value, 1.0);
+  backdrop-filter: blur(var(--blur-value, 0px));
+  -webkit-backdrop-filter: blur(var(--blur-value, 0px));
+  border-radius: var(--corner-radius-value, 0px);
 }
 
 .dockit-in-page.dockit-hidden {
@@ -309,7 +313,7 @@ body {
 
 .dockit-in-page-content {
   flex: 1;
-  padding: 16px;
+  padding: var(--padding-value, 16px);
   overflow-y: auto;
   position: relative;
 }
@@ -1099,4 +1103,344 @@ body {
   top: 7px;
   bottom: 7px;
   height: auto;
+}
+
+/* Theme Editor Views */
+.dockit-theme-editor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000000;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.dockit-theme-editor-menubar {
+  height: 50px;
+  background: linear-gradient(to bottom, var(--color-secondary), var(--color-background));
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  position: relative;
+  z-index: 10000200;
+  box-sizing: border-box;
+}
+
+.dockit-menubar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dockit-menu-trigger-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-foreground);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.dockit-menu-trigger-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--color-primary);
+}
+
+.dockit-theme-name-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.dockit-theme-name-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.dockit-theme-name-input {
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-foreground);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 2px 6px;
+  outline: none;
+}
+
+.dockit-theme-name-edit-icon {
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+}
+
+.dockit-theme-name-container:hover .dockit-theme-name-edit-icon {
+  opacity: 1;
+}
+
+/* Dropdown Menu */
+.dockit-theme-dropdown {
+  position: absolute;
+  top: 45px;
+  left: 16px;
+  background-color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 6px 0;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 10000300;
+  display: none;
+}
+
+.dockit-dropdown-item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--color-foreground);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.dockit-dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dockit-dropdown-item svg {
+  opacity: 0.7;
+}
+
+.dockit-dropdown-item:hover svg {
+  opacity: 1;
+}
+
+.dockit-dropdown-divider {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: 6px 0;
+}
+
+/* Canvas Viewport */
+.dockit-theme-editor-canvas {
+  flex: 1;
+  background-color: #181818;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 20px 20px;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  z-index: 10000100;
+  user-select: none;
+}
+
+.dockit-theme-editor-canvas:active {
+  cursor: grabbing;
+}
+
+.dockit-theme-editor-grid {
+  position: absolute;
+  width: 4000px;
+  height: 4000px;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.dockit-mockup-wrapper {
+  position: absolute;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--corner-radius-value, 12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(var(--blur-value, 0px));
+  -webkit-backdrop-filter: blur(var(--blur-value, 0px));
+  opacity: var(--opacity-value, 1.0);
+  /* padding: var(--padding-value, 0px); temporarily disabled */
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.dockit-mockup-wrapper > *:not(.dockit-resize-handle) {
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.dockit-mockup-wrapper.is-selected {
+  outline: 2px solid var(--color-primary);
+}
+
+/* Resize Handles */
+.dockit-resize-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-primary);
+  border: 1px solid #fff;
+  border-radius: 50%;
+  display: none;
+  z-index: 10000150;
+}
+
+.dockit-mockup-wrapper.is-selected .dockit-resize-handle {
+  display: block;
+}
+
+.dockit-resize-handle.nw { top: -4px; left: -4px; cursor: nwse-resize; }
+.dockit-resize-handle.ne { top: -4px; right: -4px; cursor: nesw-resize; }
+.dockit-resize-handle.sw { bottom: -4px; left: -4px; cursor: nesw-resize; }
+.dockit-resize-handle.se { bottom: -4px; right: -4px; cursor: nwse-resize; }
+.dockit-resize-handle.n { top: -4px; left: calc(50% - 4px); cursor: ns-resize; }
+.dockit-resize-handle.s { bottom: -4px; left: calc(50% - 4px); cursor: ns-resize; }
+.dockit-resize-handle.e { right: -4px; top: calc(50% - 4px); cursor: ew-resize; }
+.dockit-resize-handle.w { left: -4px; top: calc(50% - 4px); cursor: ew-resize; }
+
+/* Inactive (Dimmed) Mockups in Isolation Mode */
+.dockit-theme-editor-canvas.dockit-theme-editor-isolated .dockit-mockup-wrapper:not(.is-isolated) {
+  opacity: 0.3 !important;
+  pointer-events: none !important;
+}
+
+/* Pointer Events mapping for isolation */
+.dockit-mockup-wrapper:not(.is-isolated) *:not(.dockit-resize-handle) {
+  pointer-events: none !important;
+}
+
+.dockit-mockup-wrapper.is-isolated * {
+  pointer-events: auto !important;
+}
+
+/* Element Hover / Select bounds in isolation mode */
+.dockit-mockup-wrapper.is-isolated .dockit-element-hover {
+  outline: 1.5px dashed var(--color-primary) !important;
+  outline-offset: -1px;
+}
+
+.dockit-mockup-wrapper.is-isolated .dockit-element-selected {
+  outline: 2px solid var(--color-accent) !important;
+  outline-offset: -1px;
+}
+
+/* Context Floating Toolbar */
+.dockit-context-toolbar {
+  position: absolute;
+  background-color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10000400;
+  box-sizing: border-box;
+}
+
+.dockit-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.dockit-toolbar-row label {
+  width: 80px;
+  opacity: 0.8;
+}
+
+.dockit-toolbar-row input[type="range"] {
+  width: 80px;
+  height: 4px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.dockit-toolbar-row span {
+  width: 40px;
+  text-align: right;
+  opacity: 0.6;
+}
+
+.dockit-toolbar-colors {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dockit-color-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.dockit-color-field label {
+  opacity: 0.8;
+  font-weight: 600;
+}
+
+.dockit-color-field input[type="color"] {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.dockit-toolbar-img-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-foreground);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+  padding: 0;
+}
+
+.dockit-toolbar-img-btn:hover {
+  border-color: var(--color-primary);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Expansion variables for host element when active */
+#dockit-host-root.dockit-theme-editor-active {
+  width: 100vw !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+}
+
+body.dockit-theme-editor-active {
+  overflow: hidden !important;
 }

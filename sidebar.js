@@ -46,7 +46,13 @@ const I18N_STRINGS_DEFAULT = {
   'no_pinned_apps': 'No pinned apps yet.',
   'pin_hint': 'Use the pin icon above to pin this site!',
   'drag_delete': 'Drag outside to delete',
-  'translating': 'Translating...'
+  'translating': 'Translating...',
+  'enter_theme_editor': 'Enter Theme Editor',
+  'clear_theme': 'Clear Theme',
+  'reset_theme': 'Reset Theme',
+  'apply': 'Apply',
+  'publish': 'Publish',
+  'discard': 'Discard'
 };
 
 class DockitSidebar {
@@ -59,6 +65,7 @@ class DockitSidebar {
     this._inMemoryUrls = [];
     this._isInPageOpen = false;
     this._i18n = { ...I18N_STRINGS_DEFAULT };
+    this._themeEditor = null;
   }
 
   async render() {
@@ -203,7 +210,7 @@ class DockitSidebar {
         const isCurrentlyPinned = pinnedAppsInitial.some(app => app.url === tab.url);
 
         contentEl.innerHTML = `
-          <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: 12px; padding: 12px; gap: 12px; margin-bottom: 20px; border: 1px solid var(--color-border);">
+          <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: var(--corner-radius-value, 12px); padding: 12px; gap: 12px; margin-bottom: 20px; border: 1px solid var(--color-border);">
             <img class="dockit-active-site-favicon" src="${favIconUrl}" style="width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;" />
             <div class="dockit-active-site-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
               <div class="dockit-active-site-title" style="font-weight: 600; font-size: 14px; line-height: 1.15; word-break: break-word;">${title}</div>
@@ -214,14 +221,14 @@ class DockitSidebar {
             </button>
           </div>
           
-          <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
+          <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid var(--color-border); border-radius: var(--corner-radius-value, 12px); background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
             <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">${_t('pinned_apps')}</div>
             <div class="dockit-apps-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px;">
               <!-- Pinned apps will be rendered here dynamically -->
             </div>
           </div>
 
-          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-background); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;">
+          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: var(--corner-radius-value, 12px); background-color: var(--color-background); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;">
             <div class="dockit-search-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">${_t('search_title')}</div>
             <div class="dockit-settings-search-wrapper dockit-search-bar-container">
               ${searchIconSvg}
@@ -592,6 +599,9 @@ class DockitSidebar {
       } else if (name === 'Settings') {
         contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Loading settings...</div>`;
         await this._renderSettings();
+      } else if (name === 'Customization') {
+        contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Loading customization...</div>`;
+        await this._renderCustomization();
       } else {
         contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to ${name}</div>`;
       }
@@ -601,6 +611,10 @@ class DockitSidebar {
   }
 
   closeSystemApp() {
+    if (this._themeEditor) {
+      this._themeEditor.discard();
+      return;
+    }
     const inPage = this.element.querySelector('.dockit-in-page');
     if (inPage) {
       inPage.classList.add('dockit-hidden');
@@ -2093,5 +2107,875 @@ class DockitSidebar {
         }, 2000);
       });
     }
+  }
+
+  async _renderCustomization() {
+    const contentEl = this.element.querySelector('#dockit-in-page-content');
+    if (!contentEl) return;
+
+    const storageData = await chrome.storage.local.get(['lucideIcons']);
+    const shapesIconSvg = (storageData.lucideIcons && storageData.lucideIcons['shapes']) || `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M8.3 10a3.5 3.5 0 0 1 6.8 0M12 2v3M12 19v3M3 12h3M18 12h3"/></svg>`;
+
+    contentEl.innerHTML = `
+      <div class="dockit-customization-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; gap: 16px; padding: 20px;">
+        <div class="dockit-shapes-icon" style="font-size: 32px; color: var(--color-primary); display: flex; align-items: center; justify-content: center;">${shapesIconSvg}</div>
+        <div style="font-weight: 600; font-size: 18px; color: var(--color-foreground);">Theme Customizer</div>
+        <div style="font-size: 13px; opacity: 0.7; max-width: 260px; line-height: 1.4;">
+          Create and edit personalized color themes for your workspace with our visual Theme Editor.
+        </div>
+        <button class="dockit-btn" id="dockit-enter-editor-btn" style="background: var(--color-primary); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 10px;">
+          ${this._i18n.enter_theme_editor || 'Enter Theme Editor'}
+        </button>
+      </div>
+    `;
+
+    const enterBtn = contentEl.querySelector('#dockit-enter-editor-btn');
+    if (enterBtn) {
+      enterBtn.addEventListener('click', () => {
+        this.enterThemeEditor();
+      });
+    }
+  }
+
+  async enterThemeEditor() {
+    const host = this.element.getRootNode()?.host || document.getElementById('dockit-host-root');
+    if (host) {
+      host.classList.add('dockit-theme-editor-active');
+    }
+    document.body.classList.add('dockit-theme-editor-active');
+
+    const editorEl = document.createElement('div');
+    editorEl.className = 'dockit-theme-editor';
+    editorEl.id = 'dockit-theme-editor';
+    
+    const container = this.element.parentNode || document.body;
+    container.appendChild(editorEl);
+
+    this._themeEditor = new DockitThemeEditor(editorEl, this, () => {
+      editorEl.remove();
+      if (host) {
+        host.classList.remove('dockit-theme-editor-active');
+      }
+      document.body.classList.remove('dockit-theme-editor-active');
+      this._themeEditor = null;
+      this._renderCustomization();
+    });
+    
+    await this._themeEditor.init();
+  }
+}
+
+class DockitThemeEditor {
+  constructor(containerEl, sidebarInstance, onClose) {
+    this.container = containerEl;
+    this.sidebar = sidebarInstance;
+    this.onClose = onClose;
+    this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.isPanning = false;
+    
+    this.theme = {
+      name: 'My Custom Theme',
+      colors: {
+        '--color-background': '#333333',
+        '--color-foreground': '#ffffff',
+        '--color-primary': '#3b82f6',
+        '--color-secondary': '#252525',
+        '--color-border': '#434343',
+        '--color-accent': '#ef4444'
+      },
+      options: {
+        '--padding-value': '0px',
+        '--blur-value': '0px',
+        '--opacity-value': '1.0',
+        '--corner-radius-value': '0px'
+      }
+    };
+    
+    this.isIsolated = false;
+    this.isolatedMockup = null;
+    this.selectedElement = null;
+    this.selectedMockupWrapper = null;
+    this.dragMockup = null;
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+    this.dragStartLeft = 0;
+    this.dragStartTop = 0;
+  }
+  
+  async init() {
+    const data = await chrome.storage.local.get(['dockitTheme']);
+    if (data.dockitTheme) {
+      this.theme = JSON.parse(JSON.stringify(data.dockitTheme));
+    }
+    
+    const storageData = await chrome.storage.local.get(['lucideIcons']);
+    this.lucideIcons = storageData.lucideIcons || {};
+    
+    this.render();
+    this.setupEvents();
+    this.applyEditingThemeCSS();
+  }
+  
+  render() {
+    const menuIcon = this.lucideIcons['menu'] || `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`;
+    const editIcon = this.lucideIcons['edit-3'] || `<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+    
+    const trashIcon = this.lucideIcons['trash-2'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+    const resetIcon = this.lucideIcons['rotate-cw'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>`;
+    const checkIcon = this.lucideIcons['check'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+    const uploadIcon = this.lucideIcons['upload'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>`;
+    const discardIcon = this.lucideIcons['x'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+
+    this.container.innerHTML = `
+      <div class="dockit-theme-editor-menubar">
+        <div class="dockit-menubar-left">
+          <button class="dockit-menu-trigger-btn">
+            <span class="dockit-menu-trigger-icon">${menuIcon}</span>
+          </button>
+          <div class="dockit-theme-name-container">
+            <span class="dockit-theme-name-label">${this.theme.name}</span>
+            <input class="dockit-theme-name-input" type="text" value="${this.theme.name}" style="display: none;" />
+            <span class="dockit-theme-name-edit-icon">${editIcon}</span>
+          </div>
+        </div>
+        
+        <div class="dockit-theme-dropdown" style="display: none;">
+          <button class="dockit-dropdown-item" id="btn-clear-theme">
+            ${trashIcon} <span>Clear Theme</span>
+          </button>
+          <button class="dockit-dropdown-item" id="btn-reset-theme">
+            ${resetIcon} <span>Reset Theme</span>
+          </button>
+          <div class="dockit-dropdown-divider"></div>
+          <button class="dockit-dropdown-item" id="btn-apply-theme">
+            ${checkIcon} <span>Apply</span>
+          </button>
+          <button class="dockit-dropdown-item" id="btn-publish-theme" style="opacity: 0.5;">
+            ${uploadIcon} <span>Publish</span>
+          </button>
+          <button class="dockit-dropdown-item" id="btn-discard-theme">
+            ${discardIcon} <span>Discard</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="dockit-theme-editor-canvas">
+        <div class="dockit-theme-editor-grid"></div>
+      </div>
+      
+      <div class="dockit-context-toolbar" style="display: none;"></div>
+    `;
+    
+    this.renderMockups();
+  }
+  
+  async renderMockups() {
+    const grid = this.container.querySelector('.dockit-theme-editor-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    const clones = await this.getLiveMockupClones();
+    if (!clones) return;
+    
+    const mockupsData = [
+      { id: 'sidebar', title: 'Sidebar', left: 100, top: 150, width: 64, height: 500, node: clones.sidebar },
+      { id: 'settings', title: 'Settings', left: 220, top: 150, width: 320, height: 500, node: clones.settings },
+      { id: 'edit-apps', title: 'Edit Apps', left: 580, top: 150, width: 320, height: 500, node: clones.editApps },
+      { id: 'customization', title: 'Customization', left: 940, top: 150, width: 320, height: 500, node: clones.customization }
+    ];
+    
+    mockupsData.forEach(data => {
+      const wrapper = document.createElement('div');
+      wrapper.className = `dockit-mockup-wrapper mockup-${data.id}`;
+      wrapper.dataset.id = data.id;
+      wrapper.style.left = `${data.left}px`;
+      wrapper.style.top = `${data.top}px`;
+      wrapper.style.width = `${data.width}px`;
+      wrapper.style.height = `${data.height}px`;
+      
+      wrapper.appendChild(data.node);
+      
+      const directions = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+      directions.forEach(dir => {
+        const handle = document.createElement('div');
+        handle.className = `dockit-resize-handle ${dir}`;
+        handle.dataset.direction = dir;
+        wrapper.appendChild(handle);
+      });
+      
+      grid.appendChild(wrapper);
+    });
+  }
+
+  async getLiveMockupClones() {
+    const realContentEl = this.sidebar.element.querySelector('#dockit-in-page-content');
+    const titleEl = this.sidebar.element.querySelector('#dockit-in-page-title');
+    if (!realContentEl) return null;
+    
+    const origAppName = titleEl ? titleEl.dataset.appName : '';
+    
+    const tempContentEl = document.createElement('div');
+    tempContentEl.id = 'dockit-in-page-content';
+    tempContentEl.style.display = 'none';
+    
+    realContentEl.parentNode.appendChild(tempContentEl);
+    realContentEl.removeAttribute('id');
+    
+    if (titleEl) titleEl.dataset.appName = 'Settings';
+    await this.sidebar._renderSettings();
+    const settingsContent = tempContentEl.cloneNode(true);
+    settingsContent.style.display = '';
+    settingsContent.removeAttribute('id');
+    
+    if (titleEl) titleEl.dataset.appName = 'Edit Apps';
+    await this.sidebar.refreshActiveSite();
+    const editAppsContent = tempContentEl.cloneNode(true);
+    editAppsContent.style.display = '';
+    editAppsContent.removeAttribute('id');
+    
+    if (titleEl) titleEl.dataset.appName = 'Customization';
+    await this.sidebar._renderCustomization();
+    const customizationContent = tempContentEl.cloneNode(true);
+    customizationContent.style.display = '';
+    customizationContent.removeAttribute('id');
+    
+    realContentEl.id = 'dockit-in-page-content';
+    if (titleEl) titleEl.dataset.appName = origAppName;
+    tempContentEl.remove();
+    
+    const clonedSidebar = this.sidebar.element.cloneNode(true);
+    const sidebarInPage = clonedSidebar.querySelector('.dockit-in-page');
+    if (sidebarInPage) sidebarInPage.remove();
+    clonedSidebar.classList.remove('dockit-sidebar-hidden');
+    clonedSidebar.style.cssText = 'height: 100%; width: 100%; position: relative; border-right: none; margin: 0; padding: 12px 0; box-sizing: border-box;';
+    
+    const result = {
+      sidebar: clonedSidebar,
+      settings: this.wrapInPageMockup('Settings', settingsContent),
+      editApps: this.wrapInPageMockup('Edit Apps', editAppsContent),
+      customization: this.wrapInPageMockup('Customization', customizationContent)
+    };
+    
+    Object.values(result).forEach(node => {
+      node.querySelectorAll('input').forEach(input => {
+        input.setAttribute('readonly', 'true');
+      });
+    });
+    
+    return result;
+  }
+
+  wrapInPageMockup(title, contentNode) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dockit-in-page';
+    wrapper.style.cssText = 'position: relative; right: auto; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; pointer-events: none;';
+    
+    const xIcon = this.lucideIcons['x'] || `<svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+    
+    wrapper.innerHTML = `
+      <div class="dockit-in-page-header">
+        <div class="dockit-action-btn" style="padding: 0; opacity: 1; margin: 0; background: transparent; display: flex; align-items: center; justify-content: center; border: none; color: var(--color-foreground);">${xIcon}</div>
+        <span class="dockit-in-page-title">${title}</span>
+      </div>
+    `;
+    
+    wrapper.appendChild(contentNode);
+    return wrapper;
+  }
+  
+  applyEditingThemeCSS() {
+    let styleEl = this.container.querySelector('#editing-theme-styles');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'editing-theme-styles';
+      this.container.appendChild(styleEl);
+    }
+    
+    let css = '.dockit-theme-editor-grid {\n';
+    for (const [key, val] of Object.entries(this.theme.colors)) {
+      css += `  ${key}: ${val} !important;\n`;
+    }
+    for (const [key, val] of Object.entries(this.theme.options)) {
+      css += `  ${key}: ${val} !important;\n`;
+    }
+    css += '}\n';
+    
+    styleEl.textContent = css;
+  }
+  
+  setupEvents() {
+    const canvas = this.container.querySelector('.dockit-theme-editor-canvas');
+    const grid = this.container.querySelector('.dockit-theme-editor-grid');
+    const triggerBtn = this.container.querySelector('.dockit-menu-trigger-btn');
+    const dropdown = this.container.querySelector('.dockit-theme-dropdown');
+    
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (!triggerBtn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+    
+    const nameLabel = this.container.querySelector('.dockit-theme-name-label');
+    const nameInput = this.container.querySelector('.dockit-theme-name-input');
+    const editIcon = this.container.querySelector('.dockit-theme-name-edit-icon');
+    
+    const startEditName = (e) => {
+      e.stopPropagation();
+      nameLabel.style.display = 'none';
+      editIcon.style.display = 'none';
+      nameInput.style.display = 'inline-block';
+      nameInput.focus();
+      nameInput.select();
+    };
+    
+    nameLabel.addEventListener('click', startEditName);
+    editIcon.addEventListener('click', startEditName);
+    
+    nameInput.addEventListener('blur', () => {
+      this.theme.name = nameInput.value.trim() || 'My Custom Theme';
+      nameLabel.textContent = this.theme.name;
+      nameInput.style.display = 'none';
+      nameLabel.style.display = 'inline-block';
+      editIcon.style.display = 'inline-block';
+    });
+    
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        nameInput.blur();
+      }
+    });
+
+    const updateTransform = () => {
+      grid.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
+    };
+    
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = 1.1;
+      const oldZoom = this.zoom;
+      if (e.deltaY < 0) {
+        this.zoom = Math.min(this.zoom * zoomFactor, 3.0);
+      } else {
+        this.zoom = Math.max(this.zoom / zoomFactor, 0.3);
+      }
+      
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      const gridX = (mouseX - this.panX) / oldZoom;
+      const gridY = (mouseY - this.panY) / oldZoom;
+      
+      this.panX = mouseX - gridX * this.zoom;
+      this.panY = mouseY - gridY * this.zoom;
+      
+      updateTransform();
+    });
+    
+    canvas.addEventListener('mousedown', (e) => {
+      const isCanvasBackground = e.target === canvas || e.target === grid;
+      if (e.button === 1 || e.button === 2 || (e.button === 0 && isCanvasBackground)) {
+        this.isPanning = true;
+        this.dragStartX = e.clientX - this.panX;
+        this.dragStartY = e.clientY - this.panY;
+        canvas.style.cursor = 'grabbing';
+        if (e.button === 0 && isCanvasBackground) {
+          this.deselectAll();
+        }
+        e.preventDefault();
+      }
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+      if (this.isPanning) {
+        this.panX = e.clientX - this.dragStartX;
+        this.panY = e.clientY - this.dragStartY;
+        updateTransform();
+      }
+    });
+    
+    window.addEventListener('mouseup', () => {
+      if (this.isPanning) {
+        this.isPanning = false;
+        canvas.style.cursor = '';
+      }
+    });
+    
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
+    
+    grid.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      
+      const wrapper = e.target.closest('.dockit-mockup-wrapper');
+      const handle = e.target.closest('.dockit-resize-handle');
+      
+      if (this.isIsolated) {
+        if (wrapper !== this.isolatedMockup) {
+          this.deselectAll();
+        }
+        return;
+      }
+      
+      if (wrapper) {
+        e.stopPropagation();
+        this.selectMockup(wrapper);
+        
+        if (handle) {
+          this.initResizing(e, wrapper, handle.dataset.direction);
+        } else {
+          this.dragMockup = wrapper;
+          this.dragStartX = e.clientX;
+          this.dragStartY = e.clientY;
+          this.dragStartLeft = parseInt(wrapper.style.left) || 0;
+          this.dragStartTop = parseInt(wrapper.style.top) || 0;
+        }
+      } else {
+        this.deselectAll();
+      }
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+      if (this.dragMockup && !this.isIsolated) {
+        const deltaX = (e.clientX - this.dragStartX) / this.zoom;
+        const deltaY = (e.clientY - this.dragStartY) / this.zoom;
+        this.dragMockup.style.left = `${this.dragStartLeft + deltaX}px`;
+        this.dragMockup.style.top = `${this.dragStartTop + deltaY}px`;
+      }
+    });
+    
+    window.addEventListener('mouseup', () => {
+      if (this.dragMockup) {
+        this.dragMockup = null;
+      }
+    });
+    
+    grid.addEventListener('dblclick', (e) => {
+      const wrapper = e.target.closest('.dockit-mockup-wrapper');
+      if (wrapper) {
+        e.stopPropagation();
+        this.enterIsolationMode(wrapper);
+      }
+    });
+    
+    grid.addEventListener('mousemove', (e) => {
+      if (!this.isIsolated) return;
+      
+      const wrapper = e.target.closest('.dockit-mockup-wrapper');
+      if (wrapper !== this.isolatedMockup) return;
+      
+      let target = e.target;
+      if (target === wrapper || target.classList.contains('dockit-resize-handle')) return;
+      
+      const svgMatch = target.closest('svg');
+      if (svgMatch && svgMatch.parentElement && svgMatch.parentElement !== wrapper) {
+        target = svgMatch.parentElement;
+      }
+      
+      const { bgVar, fgVar } = this.getThemeVariableForElement(target);
+      if (!bgVar && !fgVar) {
+        this.removeHoverBorder();
+        return;
+      }
+      
+      this.updateHoverBorder(target);
+    });
+    
+    grid.addEventListener('click', (e) => {
+      if (!this.isIsolated) return;
+      
+      const wrapper = e.target.closest('.dockit-mockup-wrapper');
+      if (wrapper !== this.isolatedMockup) return;
+      
+      let target = e.target;
+      if (target === wrapper || target.classList.contains('dockit-resize-handle')) return;
+      
+      const svgMatch = target.closest('svg');
+      if (svgMatch && svgMatch.parentElement && svgMatch.parentElement !== wrapper) {
+        target = svgMatch.parentElement;
+      }
+      
+      const { bgVar, fgVar } = this.getThemeVariableForElement(target);
+      if (!bgVar && !fgVar) return;
+      
+      e.stopPropagation();
+      this.selectElement(target);
+    });
+    
+    this.container.querySelector('#btn-clear-theme').addEventListener('click', () => this.clearTheme());
+    this.container.querySelector('#btn-reset-theme').addEventListener('click', () => this.resetTheme());
+    this.container.querySelector('#btn-apply-theme').addEventListener('click', () => this.applyTheme());
+    this.container.querySelector('#btn-publish-theme').addEventListener('click', () => {
+      alert('Publishing themes will be supported in a future update!');
+    });
+    this.container.querySelector('#btn-discard-theme').addEventListener('click', () => this.discard());
+    
+    updateTransform();
+  }
+
+  selectMockup(wrapper) {
+    if (this.selectedMockupWrapper === wrapper) return;
+    this.deselectAll();
+    
+    this.selectedMockupWrapper = wrapper;
+    wrapper.classList.add('is-selected');
+    
+    const rect = wrapper.getBoundingClientRect();
+    this.showToolbar(rect, 'wrapper', wrapper);
+  }
+  
+  deselectAll() {
+    if (this.selectedMockupWrapper) {
+      this.selectedMockupWrapper.classList.remove('is-selected');
+      this.selectedMockupWrapper = null;
+    }
+    
+    this.exitIsolationMode();
+    
+    const toolbar = this.container.querySelector('.dockit-context-toolbar');
+    if (toolbar) toolbar.style.display = 'none';
+  }
+  
+  initResizing(e, wrapper, direction) {
+    e.stopPropagation();
+    e.preventDefault();
+    const startWidth = wrapper.offsetWidth;
+    const startHeight = wrapper.offsetHeight;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startLeft = parseInt(wrapper.style.left) || 0;
+    const startTop = parseInt(wrapper.style.top) || 0;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = (moveEvent.clientX - startX) / this.zoom;
+      const deltaY = (moveEvent.clientY - startY) / this.zoom;
+
+      if (direction.includes('e')) {
+        wrapper.style.width = `${Math.max(64, startWidth + deltaX)}px`;
+      }
+      if (direction.includes('s')) {
+        wrapper.style.height = `${Math.max(100, startHeight + deltaY)}px`;
+      }
+      if (direction.includes('w')) {
+        const newWidth = Math.max(64, startWidth - deltaX);
+        if (newWidth !== 64) {
+          wrapper.style.width = `${newWidth}px`;
+          wrapper.style.left = `${startLeft + deltaX}px`;
+        }
+      }
+      if (direction.includes('n')) {
+        const newHeight = Math.max(100, startHeight - deltaY);
+        if (newHeight !== 100) {
+          wrapper.style.height = `${newHeight}px`;
+          wrapper.style.top = `${startTop + deltaY}px`;
+        }
+      }
+      
+      if (this.selectedMockupWrapper === wrapper) {
+        const rect = wrapper.getBoundingClientRect();
+        this.showToolbar(rect, 'wrapper', wrapper);
+      }
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }
+  
+  enterIsolationMode(wrapper) {
+    this.deselectAll();
+    
+    this.isIsolated = true;
+    this.isolatedMockup = wrapper;
+    wrapper.classList.add('is-isolated');
+    this.container.querySelector('.dockit-theme-editor-canvas').classList.add('dockit-theme-editor-isolated');
+  }
+  
+  exitIsolationMode() {
+    if (this.isIsolated && this.isolatedMockup) {
+      this.isolatedMockup.classList.remove('is-isolated');
+      this.container.querySelector('.dockit-theme-editor-canvas').classList.remove('dockit-theme-editor-isolated');
+    }
+    
+    this.isIsolated = false;
+    this.isolatedMockup = null;
+    this.removeHoverBorder();
+    this.removeSelectionBorder();
+  }
+  
+  updateHoverBorder(target) {
+    this.removeHoverBorder();
+    this.hoveredElement = target;
+    target.classList.add('dockit-element-hover');
+  }
+  
+  removeHoverBorder() {
+    if (this.hoveredElement) {
+      this.hoveredElement.classList.remove('dockit-element-hover');
+      this.hoveredElement = null;
+    }
+  }
+  
+  selectElement(target) {
+    this.removeSelectionBorder();
+    this.selectedElement = target;
+    target.classList.add('dockit-element-selected');
+    
+    const rect = target.getBoundingClientRect();
+    this.showToolbar(rect, 'element', target);
+  }
+  
+  removeSelectionBorder() {
+    if (this.selectedElement) {
+      this.selectedElement.classList.remove('dockit-element-selected');
+      this.selectedElement = null;
+    }
+  }
+  
+  showToolbar(rect, type, target) {
+    const toolbar = this.container.querySelector('.dockit-context-toolbar');
+    if (!toolbar) return;
+    
+    toolbar.style.display = 'flex';
+    
+    const editorRect = this.container.getBoundingClientRect();
+    const top = rect.top - editorRect.top;
+    const left = rect.left - editorRect.left;
+    
+    let toolbarTop = top - 45;
+    if (toolbarTop < 50) {
+      toolbarTop = top + rect.height + 10;
+    }
+    
+    let toolbarLeft = left + (rect.width - 240) / 2;
+    toolbarLeft = Math.max(10, Math.min(toolbarLeft, editorRect.width - 250));
+    
+    toolbar.style.top = `${toolbarTop}px`;
+    toolbar.style.left = `${toolbarLeft}px`;
+    
+    if (type === 'wrapper') {
+      toolbar.innerHTML = `
+        <div class="dockit-toolbar-row">
+          <label>Padding</label>
+          <input type="range" id="slider-padding" min="0" max="32" value="${parseInt(this.theme.options['--padding-value']) || 0}" />
+          <span>${this.theme.options['--padding-value']}</span>
+        </div>
+        <div class="dockit-toolbar-row">
+          <label>Blur</label>
+          <input type="range" id="slider-blur" min="0" max="20" value="${parseInt(this.theme.options['--blur-value']) || 0}" />
+          <span>${this.theme.options['--blur-value']}</span>
+        </div>
+        <div class="dockit-toolbar-row">
+          <label>Transparency</label>
+          <input type="range" id="slider-opacity" min="10" max="100" value="${Math.round(parseFloat(this.theme.options['--opacity-value']) * 100) || 100}" />
+          <span>${Math.round(parseFloat(this.theme.options['--opacity-value']) * 100) || 100}%</span>
+        </div>
+        <div class="dockit-toolbar-row">
+          <label>Corners</label>
+          <input type="range" id="slider-corners" min="0" max="24" value="${parseInt(this.theme.options['--corner-radius-value']) || 0}" />
+          <span>${this.theme.options['--corner-radius-value']}</span>
+        </div>
+      `;
+      
+      toolbar.querySelector('#slider-padding').addEventListener('input', (e) => {
+        const val = `${e.target.value}px`;
+        this.theme.options['--padding-value'] = val;
+        e.target.nextElementSibling.textContent = val;
+        this.applyEditingThemeCSS();
+      });
+      toolbar.querySelector('#slider-blur').addEventListener('input', (e) => {
+        const val = `${e.target.value}px`;
+        this.theme.options['--blur-value'] = val;
+        e.target.nextElementSibling.textContent = val;
+        this.applyEditingThemeCSS();
+      });
+      toolbar.querySelector('#slider-opacity').addEventListener('input', (e) => {
+        const val = (e.target.value / 100).toFixed(2);
+        this.theme.options['--opacity-value'] = val;
+        e.target.nextElementSibling.textContent = `${e.target.value}%`;
+        this.applyEditingThemeCSS();
+      });
+      toolbar.querySelector('#slider-corners').addEventListener('input', (e) => {
+        const val = `${e.target.value}px`;
+        this.theme.options['--corner-radius-value'] = val;
+        e.target.nextElementSibling.textContent = val;
+        this.applyEditingThemeCSS();
+      });
+      
+    } else if (type === 'element') {
+      const { bgVar, fgVar } = this.getThemeVariableForElement(target);
+      
+      const bgVal = bgVar ? (this.theme.colors[bgVar] || '#333333') : '';
+      const fgVal = fgVar ? (this.theme.colors[fgVar] || '#ffffff') : '';
+      
+      const imageIcon = this.lucideIcons['image'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+      
+      toolbar.innerHTML = `
+        <div class="dockit-toolbar-colors">
+          ${bgVar ? `
+            <div class="dockit-color-field">
+              <label title="Modifying ${bgVar}">BG</label>
+              <input type="color" id="picker-bg" value="${this.normalizeColorForPicker(bgVal)}" />
+            </div>
+          ` : ''}
+          ${fgVar ? `
+            <div class="dockit-color-field">
+              <label title="Modifying ${fgVar}">FG</label>
+              <input type="color" id="picker-fg" value="${this.normalizeColorForPicker(fgVal)}" />
+            </div>
+          ` : ''}
+          <button class="dockit-toolbar-img-btn" id="btn-img-importer" title="Import Image (Placeholder)">
+            ${imageIcon}
+          </button>
+        </div>
+      `;
+      
+      if (bgVar) {
+        toolbar.querySelector('#picker-bg').addEventListener('input', (e) => {
+          this.theme.colors[bgVar] = e.target.value;
+          this.applyEditingThemeCSS();
+        });
+      }
+      if (fgVar) {
+        toolbar.querySelector('#picker-fg').addEventListener('input', (e) => {
+          this.theme.colors[fgVar] = e.target.value;
+          this.applyEditingThemeCSS();
+        });
+      }
+      toolbar.querySelector('#btn-img-importer').addEventListener('click', () => {
+        alert('Image Importer is currently a placeholder!');
+      });
+    }
+  }
+
+  normalizeColorForPicker(colorStr) {
+    if (!colorStr) return '#000000';
+    colorStr = colorStr.trim();
+    if (colorStr.startsWith('#')) {
+      if (colorStr.length === 4) {
+        return '#' + colorStr[1] + colorStr[1] + colorStr[2] + colorStr[2] + colorStr[3] + colorStr[3];
+      }
+      return colorStr;
+    }
+    const div = document.createElement('div');
+    div.style.color = colorStr;
+    document.body.appendChild(div);
+    const computed = window.getComputedStyle(div).color;
+    document.body.removeChild(div);
+    const match = computed.match(/\d+/g);
+    if (match && match.length >= 3) {
+      const r = parseInt(match[0]).toString(16).padStart(2, '0');
+      const g = parseInt(match[1]).toString(16).padStart(2, '0');
+      const b = parseInt(match[2]).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    }
+    return '#333333';
+  }
+
+  getThemeVariableForElement(element) {
+    const classList = Array.from(element.classList);
+    const tag = element.tagName.toLowerCase();
+    
+    let bgVar = '';
+    let fgVar = '';
+    
+    if (tag === 'span' || tag === 'label' || tag === 'button' || tag === 'input') {
+      fgVar = '--color-foreground';
+    }
+    
+    if (classList.includes('dockit-in-page-title') || classList.includes('dockit-settings-category-title') || classList.includes('dockit-active-site-title') || classList.includes('dockit-active-site-url') || classList.includes('dockit-grid-title') || classList.includes('dockit-search-title') || classList.includes('dockit-suggestion-row')) {
+      fgVar = '--color-foreground';
+    } else if (classList.includes('dockit-pin-btn') || element.closest('.dockit-pin-btn')) {
+      fgVar = '--color-primary';
+    } else if (classList.includes('dockit-action-btn') && element.closest('.dockit-bottom-controls')) {
+      fgVar = '--color-foreground';
+    }
+    
+    if (classList.includes('dockit-sidebar')) {
+      bgVar = '--color-background';
+    } else if (classList.includes('dockit-in-page') || classList.includes('dockit-in-page-content')) {
+      bgVar = '--color-background';
+    } else if (classList.includes('dockit-settings-category') || classList.includes('dockit-settings-category-header') || classList.includes('dockit-grid-card') || classList.includes('dockit-search-card') || classList.includes('dockit-active-site-container') || classList.includes('dockit-suggestion-row')) {
+      bgVar = '--color-secondary';
+    } else if (classList.includes('dockit-grid-app-inner')) {
+      bgVar = '--color-secondary';
+    } else if (classList.includes('dockit-action-btn') || classList.includes('dockit-btn')) {
+      bgVar = '--color-primary';
+    } else if (classList.includes('dockit-divider')) {
+      bgVar = '--color-border';
+    } else if (classList.includes('dockit-settings-search-wrapper')) {
+      bgVar = '--color-secondary';
+      fgVar = '--color-foreground';
+    }
+    
+    return { bgVar, fgVar };
+  }
+
+  clearTheme() {
+    this.theme.colors = {
+      '--color-background': '#333333',
+      '--color-foreground': '#ffffff',
+      '--color-primary': '#3b82f6',
+      '--color-secondary': '#252525',
+      '--color-border': '#434343',
+      '--color-accent': '#ef4444'
+    };
+    this.theme.options = {
+      '--padding-value': '0px',
+      '--blur-value': '0px',
+      '--opacity-value': '1.0',
+      '--corner-radius-value': '0px'
+    };
+    this.applyEditingThemeCSS();
+    if (this.selectedMockupWrapper) {
+      this.showToolbar(this.selectedMockupWrapper.getBoundingClientRect(), 'wrapper', this.selectedMockupWrapper);
+    } else if (this.selectedElement) {
+      this.showToolbar(this.selectedElement.getBoundingClientRect(), 'element', this.selectedElement);
+    }
+  }
+  
+  async resetTheme() {
+    const data = await chrome.storage.local.get(['dockitTheme']);
+    if (data.dockitTheme) {
+      this.theme = JSON.parse(JSON.stringify(data.dockitTheme));
+    } else {
+      this.clearTheme();
+      return;
+    }
+    this.applyEditingThemeCSS();
+    if (this.selectedMockupWrapper) {
+      this.showToolbar(this.selectedMockupWrapper.getBoundingClientRect(), 'wrapper', this.selectedMockupWrapper);
+    } else if (this.selectedElement) {
+      this.showToolbar(this.selectedElement.getBoundingClientRect(), 'element', this.selectedElement);
+    }
+  }
+  
+  async applyTheme() {
+    await chrome.storage.local.set({ dockitTheme: this.theme });
+    const applyBtn = this.container.querySelector('#btn-apply-theme');
+    if (applyBtn) {
+      const originalText = applyBtn.innerHTML;
+      applyBtn.innerHTML = `<span>Applied!</span>`;
+      setTimeout(() => {
+        applyBtn.innerHTML = originalText;
+      }, 1500);
+    }
+  }
+  
+  discard() {
+    this.exitIsolationMode();
+    this.onClose();
   }
 }

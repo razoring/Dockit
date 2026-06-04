@@ -1,5 +1,35 @@
 // sidepanel.js
+function applyTheme(themeObj) {
+  let styleEl = document.getElementById('dockit-applied-theme-style');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'dockit-applied-theme-style';
+    document.head.appendChild(styleEl);
+  }
+  if (!themeObj || !themeObj.colors) {
+    styleEl.textContent = '';
+    return;
+  }
+  let css = ':root {\n';
+  for (const [key, val] of Object.entries(themeObj.colors)) {
+    css += `  ${key}: ${val} !important;\n`;
+  }
+  if (themeObj.options) {
+    for (const [key, val] of Object.entries(themeObj.options)) {
+      css += `  ${key}: ${val} !important;\n`;
+    }
+  }
+  css += '}';
+  styleEl.textContent = css;
+}
+
 async function init() {
+  // Inject theme settings if available
+  const themeData = await chrome.storage.local.get(['dockitTheme']);
+  if (themeData.dockitTheme) {
+    applyTheme(themeData.dockitTheme);
+  }
+
   // Inject Cached Fonts
   const storage = await chrome.storage.local.get(['fontCss', 'temporaryApps', 'dockitMobileDefault']);
   if (storage.fontCss) {
@@ -462,6 +492,10 @@ async function init() {
 
   // Re-render when storage changes
   chrome.storage.onChanged.addListener((changes) => {
+    if (changes.dockitTheme) {
+      applyTheme(changes.dockitTheme.newValue);
+    }
+
     if (changes.dockitShowUrlBar) {
       const show = changes.dockitShowUrlBar.newValue !== false;
       if (_activeUrl && show) {

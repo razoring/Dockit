@@ -34,6 +34,31 @@ let _mouseLeaveListener = null;
 let _focusListener = null;
 let _visibilityListener = null;
 
+function applyTheme(themeObj) {
+  if (!_hostElement || !_hostElement.shadowRoot) return;
+  let styleEl = _hostElement.shadowRoot.getElementById('dockit-applied-theme-style');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'dockit-applied-theme-style';
+    _hostElement.shadowRoot.appendChild(styleEl);
+  }
+  if (!themeObj || !themeObj.colors) {
+    styleEl.textContent = '';
+    return;
+  }
+  let css = ':host {\n';
+  for (const [key, val] of Object.entries(themeObj.colors)) {
+    css += `  ${key}: ${val} !important;\n`;
+  }
+  if (themeObj.options) {
+    for (const [key, val] of Object.entries(themeObj.options)) {
+      css += `  ${key}: ${val} !important;\n`;
+    }
+  }
+  css += '}';
+  styleEl.textContent = css;
+}
+
 async function _createSidebar() {
   if (!chrome.runtime?.id) {
     _destroy();
@@ -67,7 +92,7 @@ async function _createSidebar() {
     tagEl.dataset.value = _currentTag;
     tagEl.style.display = 'none';
     shadowRoot.appendChild(tagEl);
-    const styleStorage = await chrome.storage.local.get(['fontCss', 'dockitStyles']);
+    const styleStorage = await chrome.storage.local.get(['fontCss', 'dockitStyles', 'dockitTheme']);
     if (styleStorage.dockitStyles) {
       const mainStyle = document.createElement('style');
       mainStyle.textContent = styleStorage.dockitStyles;
@@ -84,6 +109,10 @@ async function _createSidebar() {
       const fontStyle = document.createElement('style');
       fontStyle.textContent = styleStorage.fontCss;
       shadowRoot.appendChild(fontStyle);
+    }
+
+    if (styleStorage.dockitTheme) {
+      applyTheme(styleStorage.dockitTheme);
     }
     _sidebar = new DockitSidebar(false);
     const sidebarEl = await _sidebar.render();
@@ -418,6 +447,10 @@ async function init() {
   _statusCheckInterval = setInterval(_checkSidePanelStatus, 10000);
 
   chrome.storage.onChanged.addListener((changes) => {
+    if (changes.dockitTheme) {
+      applyTheme(changes.dockitTheme.newValue);
+    }
+
     if (currentWindowId && changes[`sidePanelOpen_${currentWindowId}`]) {
       const isOpen = !!changes[`sidePanelOpen_${currentWindowId}`].newValue;
       try { sessionStorage.setItem('dockit-sidepanel-open', isOpen ? '1' : '0'); } catch (e) { }
