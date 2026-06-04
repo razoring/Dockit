@@ -313,7 +313,7 @@ body {
 
 .dockit-in-page-content {
   flex: 1;
-  padding: var(--padding-value, 16px);
+  padding: 16px;
   overflow-y: auto;
   position: relative;
 }
@@ -1270,8 +1270,6 @@ body {
 .dockit-mockup-wrapper {
   position: absolute;
   background-color: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: var(--corner-radius-value, 12px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
@@ -1284,7 +1282,6 @@ body {
 }
 
 .dockit-mockup-wrapper > *:not(.dockit-resize-handle) {
-  border-radius: inherit;
   overflow: hidden;
 }
 
@@ -1352,64 +1349,104 @@ body {
   padding: 8px 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 8px;
   z-index: 10000400;
   box-sizing: border-box;
 }
 
-.dockit-toolbar-row {
+.dockit-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--color-border);
+  margin: 0 4px;
+}
+
+.dockit-toolbar-tool {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 11px;
 }
 
-.dockit-toolbar-row label {
-  width: 80px;
-  opacity: 0.8;
+.dockit-toolbar-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-foreground);
+  opacity: 0.7;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
-.dockit-toolbar-row input[type="range"] {
+.dockit-toolbar-icon-btn:hover {
+  opacity: 1;
+  background: var(--color-border);
+}
+
+.dockit-toolbar-icon-btn.is-active {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.dockit-toolbar-slider-container {
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.dockit-toolbar-tool.is-active .dockit-toolbar-slider-container {
+  max-width: 100px;
+  opacity: 1;
+  margin-left: 8px;
+}
+
+.dockit-toolbar-slider-container input[type="range"] {
   width: 80px;
   height: 4px;
   accent-color: var(--color-primary);
   cursor: pointer;
 }
 
-.dockit-toolbar-row span {
-  width: 40px;
-  text-align: right;
-  opacity: 0.6;
-}
-
 .dockit-toolbar-colors {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .dockit-color-field {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
 }
 
 .dockit-color-field label {
-  opacity: 0.8;
-  font-weight: 600;
+  display: none;
 }
 
 .dockit-color-field input[type="color"] {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: 50%;
   background: transparent;
   padding: 0;
   cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.dockit-color-field input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.dockit-color-field input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
 }
 
 .dockit-toolbar-img-btn {
