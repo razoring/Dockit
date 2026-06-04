@@ -60,7 +60,7 @@ class DockitSidebar {
     this.isSidePanel = isSidePanel;
     this.element = document.createElement('div');
     this.element.className = 'dockit-sidebar';
-    this.element.dataset.themeColors = 'background,border';
+    this.element.setAttribute('data-theme-colors', '--color-border, --color-background');
     this._dragState = null;
     this._inMemoryUrls = [];
     this._isInPageOpen = false;
@@ -73,19 +73,19 @@ class DockitSidebar {
       <div class="dockit-taper-top"></div>
       <div class="dockit-taper-bottom"></div>
       <div class="dockit-section" id="pinned-section"></div>
-      <div class="dockit-divider" data-theme-colors="border"></div>
+      <div class="dockit-divider" data-theme-colors="--color-border"></div>
       <div class="dockit-section" id="temp-section"></div>
-      <div class="dockit-divider" id="temp-divider" data-theme-colors="border" style="display:none"></div>
+      <div class="dockit-divider" id="temp-divider" data-theme-colors="--color-border" style="display:none"></div>
       
-      <button class="dockit-action-btn" id="add-btn" style="margin-top: 0px;" data-theme-colors="foreground,secondary,accent">
+      <button class="dockit-action-btn" id="add-btn" style="margin-top: 0px;" data-theme-colors="--color-secondary, --color-foreground">
          <span class="icon-plus"></span>
       </button>
 
       <div class="dockit-bottom-controls">
-         <button class="dockit-action-btn" id="ext-btn" data-theme-colors="foreground,secondary">
+         <button class="dockit-action-btn" id="ext-btn" data-theme-colors="--color-secondary, --color-foreground">
             <span class="icon-puzzle"></span>
          </button>
-         <button class="dockit-action-btn" id="set-btn" data-theme-colors="foreground,secondary">
+         <button class="dockit-action-btn" id="set-btn" data-theme-colors="--color-secondary, --color-foreground">
             <span class="icon-settings"></span>
          </button>
       </div>
@@ -93,12 +93,13 @@ class DockitSidebar {
 
     const inPageEl = document.createElement('div');
     inPageEl.className = 'dockit-in-page dockit-hidden';
+    inPageEl.setAttribute('data-theme-colors', '--color-background');
     inPageEl.innerHTML = `
       <div class="dockit-in-page-header">
-        <button class="dockit-action-btn" id="dockit-in-page-close" style="padding: 0; opacity: 1; margin: 0; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; color: var(--color-foreground);">
+        <button class="dockit-action-btn" id="dockit-in-page-close" style="padding: 0; opacity: 1; margin: 0; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; color: var(--color-foreground);" data-theme-colors="--color-foreground">
           <span class="icon-close"></span>
         </button>
-        <span class="dockit-in-page-title" id="dockit-in-page-title"></span>
+        <span class="dockit-in-page-title" id="dockit-in-page-title" data-theme-colors="--color-foreground"></span>
       </div>
       <div class="dockit-in-page-content" id="dockit-in-page-content"></div>
     `;
@@ -210,31 +211,31 @@ class DockitSidebar {
         const isCurrentlyPinned = pinnedAppsInitial.some(app => app.url === tab.url);
 
         contentEl.innerHTML = `
-          <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: var(--corner-radius-value, 12px); padding: 12px; gap: 12px; margin-bottom: 20px; border: 1px solid var(--color-border);">
+          <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: var(--corner-radius-value, 12px); padding: 12px; gap: 12px; margin-bottom: 20px; border: 1px solid var(--color-border);" data-theme-colors="--color-border, --color-secondary">
             <img class="dockit-active-site-favicon" src="${favIconUrl}" style="width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;" />
             <div class="dockit-active-site-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
-              <div class="dockit-active-site-title" style="font-weight: 600; font-size: 14px; line-height: 1.15; word-break: break-word;">${title}</div>
-              <div class="dockit-active-site-url" style="font-size: 12px; opacity: 0.6; line-height: 1.15; word-break: break-all; margin-top: 1px;">${displayUrl}</div>
+              <div class="dockit-active-site-title" style="font-weight: 600; font-size: 14px; line-height: 1.15; word-break: break-word;" data-theme-colors="--color-foreground">${title}</div>
+              <div class="dockit-active-site-url" style="font-size: 12px; opacity: 0.6; line-height: 1.15; word-break: break-all; margin-top: 1px;" data-theme-colors="--color-foreground-rgba">${displayUrl}</div>
             </div>
-            <button class="dockit-pin-btn" style="background: transparent; border: none; width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; transition: color 0.2s, opacity 0.2s; display: flex; align-items: center; justify-content: center; padding: 0;" title="Pin to Sidebar">
+            <button class="dockit-pin-btn" style="background: transparent; border: none; width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; transition: color 0.2s, opacity 0.2s; display: flex; align-items: center; justify-content: center; padding: 0;" title="Pin to Sidebar" data-theme-colors="--color-primary">
               ${cleanPinIcon}
             </button>
           </div>
           
-          <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid var(--color-border); border-radius: var(--corner-radius-value, 12px); background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
-            <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">${_t('pinned_apps')}</div>
+          <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid var(--color-border); border-radius: var(--corner-radius-value, 12px); background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;" data-theme-colors="--color-border, --color-secondary">
+            <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${_t('pinned_apps')}</div>
             <div class="dockit-apps-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px;">
               <!-- Pinned apps will be rendered here dynamically -->
             </div>
           </div>
 
-          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: var(--corner-radius-value, 12px); background-color: var(--color-background); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;">
-            <div class="dockit-search-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);">${_t('search_title')}</div>
-            <div class="dockit-settings-search-wrapper dockit-search-bar-container">
+          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: var(--corner-radius-value, 12px); background-color: var(--color-background); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;" data-theme-colors="--color-border, --color-background">
+            <div class="dockit-search-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${_t('search_title')}</div>
+            <div class="dockit-settings-search-wrapper dockit-search-bar-container" data-theme-colors="--color-primary, --color-border, --color-secondary">
               ${searchIconSvg}
-              <input class="dockit-settings-search-input dockit-search-input" type="text" placeholder="${_t('search_placeholder')}" />
+              <input class="dockit-settings-search-input dockit-search-input" type="text" placeholder="${_t('search_placeholder')}" data-theme-colors="--color-foreground" />
             </div>
-            <div class="dockit-suggestions-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background-color: var(--color-secondary); border: 1px solid var(--color-border); border-radius: 8px; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); max-height: 250px; overflow-y: auto; padding: 6px 0;"></div>
+            <div class="dockit-suggestions-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background-color: var(--color-secondary); border: 1px solid var(--color-border); border-radius: 8px; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); max-height: 250px; overflow-y: auto; padding: 6px 0;" data-theme-colors="--color-border, --color-secondary"></div>
           </div>
 
           <!-- drag-to-delete trash overlay -->
@@ -267,6 +268,7 @@ class DockitSidebar {
 
               const innerEl = document.createElement('div');
               innerEl.className = 'dockit-grid-app-inner';
+              innerEl.setAttribute('data-theme-colors', '--color-primary');
               innerEl.style.cssText = 'width: 56px; height: 56px; background-color: transparent; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s, box-shadow 0.2s; pointer-events: none;';
               innerEl.innerHTML = `<img src="${app.iconUrl}" alt="${app.title}" style="width: 38px; height: 38px; pointer-events: none;" draggable="false" />`;
               appEl.appendChild(innerEl);
@@ -392,15 +394,16 @@ class DockitSidebar {
             items.forEach(item => {
               const row = document.createElement('div');
               row.className = 'dockit-suggestion-row';
+              row.setAttribute('data-theme-colors', '--color-foreground');
               row.style.cssText = 'display: flex; align-items: center; padding: 8px 12px; gap: 10px; cursor: pointer; transition: background-color 0.15s; min-height: 48px;';
 
               row.innerHTML = `
                 <img src="${item.iconUrl}" style="width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0;" onerror="this.src='https://www.google.com/s2/favicons?domain=google.com&sz=32'" />
                 <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
-                  <div style="font-weight: 500; font-size: 13px; color: var(--color-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">${item.title}</div>
-                  <div style="font-size: 11px; color: var(--color-foreground); opacity: 0.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">${_formatUrl(item.url)}</div>
+                  <div style="font-weight: 500; font-size: 13px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${item.title}</div>
+                  <div style="font-size: 11px; color: var(--color-foreground); opacity: 0.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;" data-theme-colors="--color-foreground-rgba">${_formatUrl(item.url)}</div>
                 </div>
-                <div class="dockit-suggestion-plus" style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;">
+                <div class="dockit-suggestion-plus" style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;" data-theme-colors="--color-primary">
                   ${plusIconSvg}
                 </div>
               `;
@@ -748,7 +751,7 @@ class DockitSidebar {
     apps.forEach((app, index) => {
       const el = document.createElement('div');
       el.className = 'dockit-app';
-      el.dataset.themeColors = 'secondary,foreground,primary';
+      el.setAttribute('data-theme-colors', '--color-primary, --color-foreground');
       el.dataset.id = app.id;
       el.dataset.list = listType;
       el.dataset.index = index;
@@ -1252,108 +1255,108 @@ class DockitSidebar {
     contentEl.innerHTML = `
       <div class="dockit-settings-container">
         <div class="dockit-settings-toolbar">
-          <div class="dockit-settings-search-wrapper">
+          <div class="dockit-settings-search-wrapper" data-theme-colors="--color-primary, --color-border, --color-secondary">
             ${searchIconSvg}
-            <input class="dockit-settings-search-input" id="dockit-settings-search" type="text" placeholder="Search..." />
+            <input class="dockit-settings-search-input" id="dockit-settings-search" type="text" placeholder="Search..." data-theme-colors="--color-foreground" />
           </div>
           <label class="dockit-settings-expand-all-wrapper" id="dockit-settings-toggle-all-label">
-            <input class="dockit-settings-expand-all-input" id="dockit-settings-toggle-all" type="checkbox" checked />
-            <span class="dockit-settings-expand-all-label" id="dockit-settings-toggle-all-text">Collapse All</span>
+            <input class="dockit-settings-expand-all-input" id="dockit-settings-toggle-all" type="checkbox" checked data-theme-colors="--color-primary, --color-border" />
+            <span class="dockit-settings-expand-all-label" id="dockit-settings-toggle-all-text" data-theme-colors="--color-foreground">Collapse All</span>
           </label>
         </div>
 
         <div class="dockit-settings-list">
           <!-- Language Category -->
-          <div class="dockit-settings-category" data-category="language">
+          <div class="dockit-settings-category" data-category="language" data-theme-colors="--color-border, --color-secondary">
             <div class="dockit-settings-category-header">
-              <span class="dockit-settings-category-title">Language</span>
-              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+              <span class="dockit-settings-category-title" data-theme-colors="--color-foreground">Language</span>
+              <span class="dockit-settings-category-chevron" data-theme-colors="--color-foreground">${chevronUpSvg}</span>
             </div>
             <div class="dockit-settings-category-content">
               <div class="dockit-settings-item" data-title="select language" data-desc="change the interface language of settings">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Select Language</span>
-                  <span class="dockit-settings-item-desc">Change the interface language of settings.</span>
+                  <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Select Language</span>
+                  <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Change the interface language of settings.</span>
                 </div>
                 <div class="dockit-settings-item-control" style="width: 140px; position: relative;">
-                  <div class="dockit-settings-language-picker" id="dockit-lang-picker">
+                  <div class="dockit-settings-language-picker" id="dockit-lang-picker" data-theme-colors="--color-border, --color-secondary, --color-foreground">
                     <div class="dockit-language-selected">
                       <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1fa-1f1f8.svg" />
                       <span>English</span>
                     </div>
                     <div class="dockit-language-dropdown">
-                      <div class="dockit-language-option is-selected" data-lang="en">
+                      <div class="dockit-language-option is-selected" data-lang="en" data-theme-colors="--color-primary, --color-background, --color-foreground">
                         <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1fa-1f1f8.svg" />
                         <span>English</span>
                       </div>
-                      <div class="dockit-language-option" data-lang="es">
+                      <div class="dockit-language-option" data-lang="es" data-theme-colors="--color-primary, --color-background, --color-foreground">
                         <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ea-1f1f8.svg" />
                         <span>Español</span>
                       </div>
-                      <div class="dockit-language-option" data-lang="fr">
+                      <div class="dockit-language-option" data-lang="fr" data-theme-colors="--color-primary, --color-background, --color-foreground">
                         <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1eb-1f1f7.svg" />
                         <span>Français</span>
                       </div>
-                      <div class="dockit-language-option" data-lang="de">
+                      <div class="dockit-language-option" data-lang="de" data-theme-colors="--color-primary, --color-background, --color-foreground">
                         <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1e9-1f1ea.svg" />
                         <span>Deutsch</span>
                       </div>
-                      <div class="dockit-language-option" data-lang="ja">
+                      <div class="dockit-language-option" data-lang="ja" data-theme-colors="--color-primary, --color-background, --color-foreground">
                         <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ef-1f1f5.svg" />
                         <span>日本語</span>
                       </div>
-                      <div class="dockit-language-option" data-lang="zh">
+                      <div class="dockit-language-option" data-lang="zh" data-theme-colors="--color-primary, --color-background, --color-foreground">
                         <img class="dockit-flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1e8-1f1f3.svg" />
                         <span>中文</span>
                       </div>
                     </div>
                   </div>
-                  <div class="dockit-translation-loading" id="dockit-translation-status">Translating...</div>
+                  <div class="dockit-translation-loading" id="dockit-translation-status" data-theme-colors="--color-foreground-rgba">Translating...</div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Appearance Category -->
-          <div class="dockit-settings-category" data-category="appearance">
+          <div class="dockit-settings-category" data-category="appearance" data-theme-colors="--color-border, --color-secondary">
             <div class="dockit-settings-category-header">
-              <span class="dockit-settings-category-title">Appearance</span>
-              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+              <span class="dockit-settings-category-title" data-theme-colors="--color-foreground">Appearance</span>
+              <span class="dockit-settings-category-chevron" data-theme-colors="--color-foreground">${chevronUpSvg}</span>
             </div>
             <div class="dockit-settings-category-content">
               <div class="dockit-settings-item" data-title="enable taper" data-desc="enable rounded edges along the sidebar">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Enable Taper</span>
-                  <span class="dockit-settings-item-desc">Enable rounded edges along the sidebar.</span>
+                  <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Enable Taper</span>
+                  <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Enable rounded edges along the sidebar.</span>
                 </div>
                 <div class="dockit-settings-item-control">
                   <label class="dockit-ios-switch">
                     <input type="checkbox" id="setting-appearance-taper" />
-                    <span class="dockit-ios-slider"></span>
+                    <span class="dockit-ios-slider" data-theme-colors="--color-primary, --color-border, --color-background"></span>
                   </label>
                 </div>
               </div>
               <div class="dockit-settings-item" data-title="show url bar" data-desc="display url and navigation controls in side panels">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Show URL Bar</span>
-                  <span class="dockit-settings-item-desc">Display URL and navigation controls in side panels.</span>
+                  <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Show URL Bar</span>
+                  <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Display URL and navigation controls in side panels.</span>
                 </div>
                 <div class="dockit-settings-item-control">
                   <label class="dockit-ios-switch">
                     <input type="checkbox" id="setting-appearance-urlbar" checked />
-                    <span class="dockit-ios-slider"></span>
+                    <span class="dockit-ios-slider" data-theme-colors="--color-primary, --color-border, --color-background"></span>
                   </label>
                 </div>
               </div>
               <div class="dockit-settings-item" data-title="mobile default view" data-desc="open apps using the mobile site by default">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Mobile Default View</span>
-                  <span class="dockit-settings-item-desc">Open apps using the mobile site by default.</span>
+                  <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Mobile Default View</span>
+                  <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Open apps using the mobile site by default.</span>
                 </div>
                 <div class="dockit-settings-item-control">
                   <label class="dockit-ios-switch">
                     <input type="checkbox" id="dockit-settings-mobiledefault" checked />
-                    <span class="dockit-ios-slider"></span>
+                    <span class="dockit-ios-slider" data-theme-colors="--color-primary, --color-border, --color-background"></span>
                   </label>
                 </div>
               </div>
@@ -1361,21 +1364,21 @@ class DockitSidebar {
           </div>
 
           <!-- Functionality Category -->
-          <div class="dockit-settings-category" data-category="functionality">
+          <div class="dockit-settings-category" data-category="functionality" data-theme-colors="--color-border, --color-secondary">
             <div class="dockit-settings-category-header">
-              <span class="dockit-settings-category-title">Functionality</span>
-              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+              <span class="dockit-settings-category-title" data-theme-colors="--color-foreground">Functionality</span>
+              <span class="dockit-settings-category-chevron" data-theme-colors="--color-foreground">${chevronUpSvg}</span>
             </div>
             <div class="dockit-settings-category-content">
               <div class="dockit-settings-item" data-title="auto-hide sidepanel" data-desc="automatically hide side panels when focus is lost">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Auto-hide Sidebar</span>
-                  <span class="dockit-settings-item-desc">Automatically hide side panels when focus is lost.</span>
+                  <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Auto-hide Sidebar</span>
+                  <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Automatically hide side panels when focus is lost.</span>
                 </div>
                 <div class="dockit-settings-item-control">
                   <label class="dockit-ios-switch">
                     <input type="checkbox" id="setting-functionality-autohide" />
-                    <span class="dockit-ios-slider"></span>
+                    <span class="dockit-ios-slider" data-theme-colors="--color-primary, --color-border, --color-background"></span>
                   </label>
                 </div>
               </div>
@@ -1383,22 +1386,22 @@ class DockitSidebar {
           </div>
 
           <!-- Blocklists Category -->
-          <div class="dockit-settings-category" data-category="blocklists">
+          <div class="dockit-settings-category" data-category="blocklists" data-theme-colors="--color-border, --color-secondary">
             <div class="dockit-settings-category-header">
-              <span class="dockit-settings-category-title">Blocklists</span>
-              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+              <span class="dockit-settings-category-title" data-theme-colors="--color-foreground">Blocklists</span>
+              <span class="dockit-settings-category-chevron" data-theme-colors="--color-foreground">${chevronUpSvg}</span>
             </div>
             <div class="dockit-settings-category-content">
               <!-- Disable Sidebar -->
               <div class="dockit-settings-item" data-title="disable sidebar" data-desc="pages where the sidebar will be completely disabled">
                 <div class="dockit-settings-list-wrapper">
                   <div class="dockit-settings-item-info">
-                    <span class="dockit-settings-item-title">Disable Sidebar</span>
-                    <span class="dockit-settings-item-desc">Pages where the sidebar will be completely disabled.</span>
+                    <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Disable Sidebar</span>
+                    <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Pages where the sidebar will be completely disabled.</span>
                   </div>
-                  <div class="dockit-settings-list-input-container">
-                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-disable" />
-                    <button class="dockit-settings-list-add-btn" data-target="blocklist-disable">Add</button>
+                  <div class="dockit-settings-list-input-container" data-theme-colors="--color-border">
+                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-disable" data-theme-colors="--color-foreground" />
+                    <button class="dockit-settings-list-add-btn" data-target="blocklist-disable" data-theme-colors="--color-primary">Add</button>
                   </div>
                   <div class="dockit-settings-tags" id="tags-blocklist-disable"></div>
                 </div>
@@ -1407,12 +1410,12 @@ class DockitSidebar {
               <div class="dockit-settings-item" data-title="force auto-hide" data-desc="pages that will always force auto-hide behavior">
                 <div class="dockit-settings-list-wrapper">
                   <div class="dockit-settings-item-info">
-                    <span class="dockit-settings-item-title">Force Auto-hide</span>
-                    <span class="dockit-settings-item-desc">Pages that will always force auto-hide behavior.</span>
+                    <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Force Auto-hide</span>
+                    <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Pages that will always force auto-hide behavior.</span>
                   </div>
-                  <div class="dockit-settings-list-input-container">
-                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-autohide" />
-                    <button class="dockit-settings-list-add-btn" data-target="blocklist-autohide">Add</button>
+                  <div class="dockit-settings-list-input-container" data-theme-colors="--color-border">
+                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-autohide" data-theme-colors="--color-foreground" />
+                    <button class="dockit-settings-list-add-btn" data-target="blocklist-autohide" data-theme-colors="--color-primary">Add</button>
                   </div>
                   <div class="dockit-settings-tags" id="tags-blocklist-autohide"></div>
                 </div>
@@ -1421,12 +1424,12 @@ class DockitSidebar {
               <div class="dockit-settings-item" data-title="force opposite view" data-desc="pages that will force the opposite of the default view">
                 <div class="dockit-settings-list-wrapper">
                   <div class="dockit-settings-item-info">
-                    <span class="dockit-settings-item-title" id="title-blocklist-forceview">${forceViewTitle}</span>
-                    <span class="dockit-settings-item-desc" id="desc-blocklist-forceview">${forceViewDesc}</span>
+                    <span class="dockit-settings-item-title" id="title-blocklist-forceview" data-theme-colors="--color-foreground">${forceViewTitle}</span>
+                    <span class="dockit-settings-item-desc" id="desc-blocklist-forceview" data-theme-colors="--color-foreground-rgba">${forceViewDesc}</span>
                   </div>
-                  <div class="dockit-settings-list-input-container">
-                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-forceview" />
-                    <button class="dockit-settings-list-add-btn" data-target="blocklist-forceview">Add</button>
+                  <div class="dockit-settings-list-input-container" data-theme-colors="--color-border">
+                    <input class="dockit-settings-list-input" type="text" placeholder="${currentSitePlaceholder}" id="input-blocklist-forceview" data-theme-colors="--color-foreground" />
+                    <button class="dockit-settings-list-add-btn" data-target="blocklist-forceview" data-theme-colors="--color-primary">Add</button>
                   </div>
                   <div class="dockit-settings-tags" id="tags-blocklist-forceview"></div>
                 </div>
@@ -1435,46 +1438,46 @@ class DockitSidebar {
           </div>
 
           <!-- Debug Category -->
-          <div class="dockit-settings-category" data-category="debug">
+          <div class="dockit-settings-category" data-category="debug" data-theme-colors="--color-border, --color-secondary">
             <div class="dockit-settings-category-header">
-              <span class="dockit-settings-category-title">Debug</span>
-              <span class="dockit-settings-category-chevron">${chevronUpSvg}</span>
+              <span class="dockit-settings-category-title" data-theme-colors="--color-foreground">Debug</span>
+              <span class="dockit-settings-category-chevron" data-theme-colors="--color-foreground">${chevronUpSvg}</span>
             </div>
             <div class="dockit-settings-category-content">
               <div class="dockit-settings-item" data-title="cloud sync" data-desc="force instant synchronization of configuration to the cloud">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Cloud Sync</span>
-                  <span class="dockit-settings-item-desc">Force instant synchronization of configuration to the cloud.</span>
+                  <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Cloud Sync</span>
+                  <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Force instant synchronization of configuration to the cloud.</span>
                 </div>
                 <div class="dockit-settings-item-control" style="width: 100px;">
-                  <button class="dockit-settings-btn" id="btn-debug-sync">Sync Now</button>
+                  <button class="dockit-settings-btn" id="btn-debug-sync" data-theme-colors="--color-border, --color-foreground">Sync Now</button>
                 </div>
               </div>
               <div class="dockit-settings-item" data-title="clear cache" data-desc="purge cached asset resources and system pre-fetches">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Clear Cache</span>
-                  <span class="dockit-settings-item-desc">Purge cached asset resources and system pre-fetches.</span>
+                  <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Clear Cache</span>
+                  <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Purge cached asset resources and system pre-fetches.</span>
                 </div>
                 <div class="dockit-settings-item-control" style="width: 100px;">
-                  <button class="dockit-settings-btn" id="btn-debug-cache">Clear Cache</button>
+                  <button class="dockit-settings-btn" id="btn-debug-cache" data-theme-colors="--color-border, --color-foreground">Clear Cache</button>
                 </div>
               </div>
               <div class="dockit-settings-item" data-title="clear data" data-desc="clear all extension storage and reset default states">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Clear Local Data</span>
-                  <span class="dockit-settings-item-desc">Clear all local extension storage and reset default states.</span>
+                  <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Clear Local Data</span>
+                  <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Clear all local extension storage and reset default states.</span>
                 </div>
                 <div class="dockit-settings-item-control" style="width: 100px;">
-                  <button class="dockit-settings-btn accent" id="btn-debug-clear">Clear Data</button>
+                  <button class="dockit-settings-btn accent" id="btn-debug-clear" data-theme-colors="--color-accent, --color-accent-rgba, --color-foreground">Clear Data</button>
                 </div>
               </div>
               <div class="dockit-settings-item" data-title="clear cloud data" data-desc="clear all synced data from the cloud">
                 <div class="dockit-settings-item-info">
-                  <span class="dockit-settings-item-title">Clear All Data</span>
-                  <span class="dockit-settings-item-desc">Clear all synced settings and data stored in the cloud.</span>
+                  <span class="dockit-settings-item-title" data-theme-colors="--color-foreground">Clear All Data</span>
+                  <span class="dockit-settings-item-desc" data-theme-colors="--color-foreground-rgba">Clear all synced settings and data stored in the cloud.</span>
                 </div>
                 <div class="dockit-settings-item-control" style="width: 100px;">
-                  <button class="dockit-settings-btn accent" id="btn-debug-clear-cloud">Clear Cloud</button>
+                  <button class="dockit-settings-btn accent" id="btn-debug-clear-cloud" data-theme-colors="--color-accent, --color-accent-rgba, --color-foreground">Clear Cloud</button>
                 </div>
               </div>
             </div>
@@ -1492,9 +1495,10 @@ class DockitSidebar {
       tagsArray.forEach((tag, idx) => {
         const tagEl = document.createElement('div');
         tagEl.className = 'dockit-settings-tag';
+        tagEl.setAttribute('data-theme-colors', '--color-border, --color-foreground');
         tagEl.innerHTML = `
-          <span>${tag}</span>
-          <span class="dockit-settings-tag-remove" data-index="${idx}">${xIconSvg}</span>
+          <span data-theme-colors="--color-foreground">${tag}</span>
+          <span class="dockit-settings-tag-remove" data-index="${idx}" data-theme-colors="--color-accent, --color-foreground">${xIconSvg}</span>
         `;
         tagEl.querySelector('.dockit-settings-tag-remove').addEventListener('click', async () => {
           let tagsArray = [];
@@ -2118,12 +2122,12 @@ class DockitSidebar {
 
     contentEl.innerHTML = `
       <div class="dockit-customization-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; gap: 16px; padding: 20px;">
-        <div class="dockit-shapes-icon" style="font-size: 32px; color: var(--color-primary); display: flex; align-items: center; justify-content: center;">${shapesIconSvg}</div>
-        <div style="font-weight: 600; font-size: 18px; color: var(--color-foreground);">Theme Customizer</div>
-        <div style="font-size: 13px; opacity: 0.7; max-width: 260px; line-height: 1.4;">
+        <div class="dockit-shapes-icon" style="font-size: 32px; color: var(--color-primary); display: flex; align-items: center; justify-content: center;" data-theme-colors="--color-primary">${shapesIconSvg}</div>
+        <div style="font-weight: 600; font-size: 18px; color: var(--color-foreground);" data-theme-colors="--color-foreground">Theme Customizer</div>
+        <div style="font-size: 13px; opacity: 0.7; max-width: 260px; line-height: 1.4;" data-theme-colors="--color-foreground-rgba">
           Create and edit personalized color themes for your workspace with our visual Theme Editor.
         </div>
-        <button class="dockit-btn" id="dockit-enter-editor-btn" style="background: var(--color-primary); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 10px;">
+        <button class="dockit-btn" id="dockit-enter-editor-btn" style="background: var(--color-primary); color: var(--color-foreground); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 10px;" data-theme-colors="--color-primary, --color-foreground">
           ${this._i18n.enter_theme_editor || 'Enter Theme Editor'}
         </button>
       </div>
@@ -2261,7 +2265,7 @@ class DockitThemeEditor {
         </div>
       </div>
       
-      <div class="dockit-theme-editor-canvas">
+      <div class="dockit-theme-editor-canvas" style="user-select: none; -webkit-user-select: none;">
         <div class="dockit-theme-editor-grid"></div>
       </div>
       
@@ -2280,7 +2284,7 @@ class DockitThemeEditor {
     if (!clones) return;
     
     const mockupsData = [
-      { id: 'sidebar', title: 'Sidebar', left: 100, top: 150, width: 64, height: 500, node: clones.sidebar },
+      { id: 'sidebar', title: 'Sidebar', left: 100, top: 150, width: 48, height: 500, node: clones.sidebar },
       { id: 'settings', title: 'Settings', left: 220, top: 150, width: 320, height: 500, node: clones.settings },
       { id: 'edit-apps', title: 'Edit Apps', left: 580, top: 150, width: 320, height: 500, node: clones.editApps },
       { id: 'customization', title: 'Customization', left: 940, top: 150, width: 320, height: 500, node: clones.customization }
@@ -2297,7 +2301,9 @@ class DockitThemeEditor {
       
       wrapper.appendChild(data.node);
       
-      const directions = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+      let directions = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+      if (data.id === 'sidebar') directions = ['n', 's'];
+      
       directions.forEach(dir => {
         const handle = document.createElement('div');
         handle.className = `dockit-resize-handle ${dir}`;
@@ -2318,6 +2324,7 @@ class DockitThemeEditor {
     
     const tempContentEl = document.createElement('div');
     tempContentEl.id = 'dockit-in-page-content';
+    tempContentEl.className = 'dockit-in-page-content';
     tempContentEl.style.display = 'none';
     
     realContentEl.parentNode.appendChild(tempContentEl);
@@ -2359,8 +2366,21 @@ class DockitThemeEditor {
     };
     
     Object.values(result).forEach(node => {
+      node.querySelectorAll('svg').forEach(svg => {
+        if (!svg.hasAttribute('data-theme-colors')) {
+          const closestTheme = svg.parentElement ? svg.parentElement.closest('[data-theme-colors]:not(.dockit-in-page):not(.dockit-sidebar):not(.dockit-section)') : null;
+          if (!closestTheme) {
+            svg.setAttribute('data-theme-colors', '--color-foreground');
+          }
+        }
+      });
       node.querySelectorAll('input').forEach(input => {
         input.setAttribute('readonly', 'true');
+      });
+      node.querySelectorAll('label, input[type="checkbox"]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.preventDefault();
+        }, true);
       });
     });
     
@@ -2370,14 +2390,15 @@ class DockitThemeEditor {
   wrapInPageMockup(title, contentNode) {
     const wrapper = document.createElement('div');
     wrapper.className = 'dockit-in-page';
+    wrapper.setAttribute('data-theme-colors', '--color-background');
     wrapper.style.cssText = 'position: relative; right: auto; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; pointer-events: none;';
     
     const xIcon = this.lucideIcons['x'] || `<svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
     
     wrapper.innerHTML = `
       <div class="dockit-in-page-header">
-        <div class="dockit-action-btn" style="padding: 0; opacity: 1; margin: 0; background: transparent; display: flex; align-items: center; justify-content: center; border: none; color: var(--color-foreground);">${xIcon}</div>
-        <span class="dockit-in-page-title">${title}</span>
+        <div class="dockit-action-btn" style="padding: 0; opacity: 1; margin: 0; background: transparent; display: flex; align-items: center; justify-content: center; border: none; color: var(--color-foreground);" data-theme-colors="--color-foreground">${xIcon}</div>
+        <span class="dockit-in-page-title" data-theme-colors="--color-foreground">${title}</span>
       </div>
     `;
     
@@ -2398,6 +2419,7 @@ class DockitThemeEditor {
       css += `  ${key}: ${val} !important;\n`;
     }
     for (const [key, val] of Object.entries(this.theme.options)) {
+      if (key === '--padding-value' || key === '--corner-radius-value') continue;
       css += `  ${key}: ${val} !important;\n`;
     }
     css += '}\n';
@@ -2408,6 +2430,7 @@ class DockitThemeEditor {
   setupEvents() {
     const canvas = this.container.querySelector('.dockit-theme-editor-canvas');
     const grid = this.container.querySelector('.dockit-theme-editor-grid');
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
     const triggerBtn = this.container.querySelector('.dockit-menu-trigger-btn');
     const dropdown = this.container.querySelector('.dockit-theme-dropdown');
     
@@ -2575,18 +2598,13 @@ class DockitThemeEditor {
       let target = e.target;
       if (target === wrapper || target.classList.contains('dockit-resize-handle')) return;
       
-      const svgMatch = target.closest('svg');
-      if (svgMatch && svgMatch.parentElement && svgMatch.parentElement !== wrapper) {
-        target = svgMatch.parentElement;
-      }
-      
-      const { bgVar, fgVar } = this.getThemeVariableForElement(target);
-      if (!bgVar && !fgVar) {
+      const selectable = target.closest('[data-theme-colors]');
+      if (!selectable || !wrapper.contains(selectable)) {
         this.removeHoverBorder();
         return;
       }
       
-      this.updateHoverBorder(target);
+      this.updateHoverBorder(selectable);
     });
     
     grid.addEventListener('click', (e) => {
@@ -2598,16 +2616,11 @@ class DockitThemeEditor {
       let target = e.target;
       if (target === wrapper || target.classList.contains('dockit-resize-handle')) return;
       
-      const svgMatch = target.closest('svg');
-      if (svgMatch && svgMatch.parentElement && svgMatch.parentElement !== wrapper) {
-        target = svgMatch.parentElement;
-      }
-      
-      const { bgVar, fgVar } = this.getThemeVariableForElement(target);
-      if (!bgVar && !fgVar) return;
+      const selectable = target.closest('[data-theme-colors]');
+      if (!selectable || !wrapper.contains(selectable)) return;
       
       e.stopPropagation();
-      this.selectElement(target);
+      this.selectElement(selectable);
     });
     
     this.container.querySelector('#btn-clear-theme').addEventListener('click', () => this.clearTheme());
@@ -2789,6 +2802,7 @@ class DockitThemeEditor {
         </div>
       `;
       
+      /* Temporarily removed toolbar functionality
       toolbar.querySelector('#slider-padding').addEventListener('input', (e) => {
         const val = `${e.target.value}px`;
         this.theme.options['--padding-value'] = val;
@@ -2813,47 +2827,51 @@ class DockitThemeEditor {
         e.target.nextElementSibling.textContent = val;
         this.applyEditingThemeCSS();
       });
+      */
       
     } else if (type === 'element') {
-      const { bgVar, fgVar } = this.getThemeVariableForElement(target);
-      
-      const bgVal = bgVar ? (this.theme.colors[bgVar] || '#333333') : '';
-      const fgVal = fgVar ? (this.theme.colors[fgVar] || '#ffffff') : '';
+      const vars = this.getThemeVariableForElement(target);
       
       const imageIcon = this.lucideIcons['image'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
       
+      let swatchesHtml = '';
+      vars.forEach((v) => {
+        const baseVar = v.endsWith('-rgba') ? v.slice(0, -5) : v;
+        const val = this.theme.colors[baseVar] || '#000000';
+        let label = baseVar.replace('--color-', '');
+        label = label.charAt(0).toUpperCase() + label.slice(1);
+        if (v.endsWith('-rgba')) {
+          label += ' (Alpha)';
+        }
+        
+        swatchesHtml += `
+          <div class="dockit-color-field">
+            <label title="Modifying ${v}">${label}</label>
+            <input type="color" data-var="${v}" value="${this.normalizeColorForPicker(val)}" />
+          </div>
+        `;
+      });
+      
       toolbar.innerHTML = `
         <div class="dockit-toolbar-colors">
-          ${bgVar ? `
-            <div class="dockit-color-field">
-              <label title="Modifying ${bgVar}">BG</label>
-              <input type="color" id="picker-bg" value="${this.normalizeColorForPicker(bgVal)}" />
-            </div>
-          ` : ''}
-          ${fgVar ? `
-            <div class="dockit-color-field">
-              <label title="Modifying ${fgVar}">FG</label>
-              <input type="color" id="picker-fg" value="${this.normalizeColorForPicker(fgVal)}" />
-            </div>
-          ` : ''}
+          ${swatchesHtml}
           <button class="dockit-toolbar-img-btn" id="btn-img-importer" title="Import Image (Placeholder)">
             ${imageIcon}
           </button>
         </div>
       `;
       
-      if (bgVar) {
-        toolbar.querySelector('#picker-bg').addEventListener('input', (e) => {
-          this.theme.colors[bgVar] = e.target.value;
-          this.applyEditingThemeCSS();
-        });
-      }
-      if (fgVar) {
-        toolbar.querySelector('#picker-fg').addEventListener('input', (e) => {
-          this.theme.colors[fgVar] = e.target.value;
-          this.applyEditingThemeCSS();
-        });
-      }
+      vars.forEach(v => {
+        const picker = toolbar.querySelector(`input[data-var="${v}"]`);
+        if (picker) {
+          picker.addEventListener('input', (e) => {
+            const baseVar = v.endsWith('-rgba') ? v.slice(0, -5) : v;
+            this.theme.colors[baseVar] = e.target.value;
+            this.applyEditingThemeCSS();
+          });
+        }
+      });
+      
       toolbar.querySelector('#btn-img-importer').addEventListener('click', () => {
         alert('Image Importer is currently a placeholder!');
       });
@@ -2885,42 +2903,10 @@ class DockitThemeEditor {
   }
 
   getThemeVariableForElement(element) {
-    const classList = Array.from(element.classList);
-    const tag = element.tagName.toLowerCase();
-    
-    let bgVar = '';
-    let fgVar = '';
-    
-    if (tag === 'span' || tag === 'label' || tag === 'button' || tag === 'input') {
-      fgVar = '--color-foreground';
-    }
-    
-    if (classList.includes('dockit-in-page-title') || classList.includes('dockit-settings-category-title') || classList.includes('dockit-active-site-title') || classList.includes('dockit-active-site-url') || classList.includes('dockit-grid-title') || classList.includes('dockit-search-title') || classList.includes('dockit-suggestion-row')) {
-      fgVar = '--color-foreground';
-    } else if (classList.includes('dockit-pin-btn') || element.closest('.dockit-pin-btn')) {
-      fgVar = '--color-primary';
-    } else if (classList.includes('dockit-action-btn') && element.closest('.dockit-bottom-controls')) {
-      fgVar = '--color-foreground';
-    }
-    
-    if (classList.includes('dockit-sidebar')) {
-      bgVar = '--color-background';
-    } else if (classList.includes('dockit-in-page') || classList.includes('dockit-in-page-content')) {
-      bgVar = '--color-background';
-    } else if (classList.includes('dockit-settings-category') || classList.includes('dockit-settings-category-header') || classList.includes('dockit-grid-card') || classList.includes('dockit-search-card') || classList.includes('dockit-active-site-container') || classList.includes('dockit-suggestion-row')) {
-      bgVar = '--color-secondary';
-    } else if (classList.includes('dockit-grid-app-inner')) {
-      bgVar = '--color-secondary';
-    } else if (classList.includes('dockit-action-btn') || classList.includes('dockit-btn')) {
-      bgVar = '--color-primary';
-    } else if (classList.includes('dockit-divider')) {
-      bgVar = '--color-border';
-    } else if (classList.includes('dockit-settings-search-wrapper')) {
-      bgVar = '--color-secondary';
-      fgVar = '--color-foreground';
-    }
-    
-    return { bgVar, fgVar };
+    if (!element) return [];
+    const colorsAttr = element.getAttribute('data-theme-colors');
+    if (!colorsAttr) return [];
+    return colorsAttr.split(',').map(c => c.trim()).filter(Boolean);
   }
 
   clearTheme() {
