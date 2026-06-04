@@ -1414,7 +1414,7 @@ body {
 }
 
 .dockit-toolbar-tool.is-active .dockit-toolbar-slider-container {
-  max-width: 100px;
+  max-width: 160px;
   opacity: 1;
   margin-left: 8px;
 }

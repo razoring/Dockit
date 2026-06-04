@@ -403,7 +403,7 @@ class DockitSidebar {
                   <div style="font-weight: 500; font-size: 13px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${item.title}</div>
                   <div style="font-size: 11px; color: var(--color-foreground); opacity: 0.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;" data-theme-colors="--color-foreground-rgba">${_formatUrl(item.url)}</div>
                 </div>
-                <div class="dockit-suggestion-plus" style="width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;" data-theme-colors="--color-primary">
+                <div class="dockit-suggestion-plus" style="width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--color-primary); flex-shrink: 0;" data-theme-colors="--color-primary">
                   ${plusIconSvg}
                 </div>
               `;
@@ -2260,7 +2260,7 @@ class DockitThemeEditor {
             ${uploadIcon} <span>Publish</span>
           </button>
           <button class="dockit-dropdown-item" id="btn-discard-theme">
-            ${discardIcon} <span>Quit</span>
+            ${discardIcon} <span>Cancel</span>
           </button>
         </div>
       </div>
@@ -2456,7 +2456,7 @@ class DockitThemeEditor {
             <div style="font-size:11px;color:var(--color-foreground);opacity:0.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;" data-theme-colors="--color-foreground-rgba">${app.url}</div>
           </div>
           <div class="dockit-suggestion-plus" data-theme-colors="--color-primary"
-            style="width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--color-primary);flex-shrink:0;">
+            style="width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--color-primary);flex-shrink:0;">
             ${plusSvg}
           </div>
         </div>
@@ -2965,13 +2965,15 @@ class DockitThemeEditor {
       toolsHtml += `
         <div class="dockit-toolbar-tool">
           <button class="dockit-toolbar-icon-btn" title="Blur">${apertureIcon}</button>
-          <div class="dockit-toolbar-slider-container">
+          <div class="dockit-toolbar-slider-container" style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-weight:500;opacity:0.8;">Blur</span>
             <input type="range" id="slider-blur" min="0" max="20" value="${parseInt(this.theme.options['--blur-value']) || 0}" />
           </div>
         </div>
         <div class="dockit-toolbar-tool">
           <button class="dockit-toolbar-icon-btn" title="Transparency">${blendIcon}</button>
-          <div class="dockit-toolbar-slider-container">
+          <div class="dockit-toolbar-slider-container" style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;font-weight:500;opacity:0.8;">Opacity</span>
             <input type="range" id="slider-opacity" min="10" max="100" value="${Math.round(parseFloat(this.theme.options['--opacity-value']) * 100) || 100}" />
           </div>
         </div>
@@ -2980,13 +2982,15 @@ class DockitThemeEditor {
         toolsHtml += `
           <div class="dockit-toolbar-tool">
             <button class="dockit-toolbar-icon-btn" title="Padding">${paddingIcon}</button>
-            <div class="dockit-toolbar-slider-container">
+            <div class="dockit-toolbar-slider-container" style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;font-weight:500;opacity:0.8;">Padding</span>
               <input type="range" id="slider-padding" min="0" max="32" value="${parseInt(this.theme.options['--padding-value']) || 0}" />
             </div>
           </div>
           <div class="dockit-toolbar-tool">
             <button class="dockit-toolbar-icon-btn" title="Corners">${radiusIcon}</button>
-            <div class="dockit-toolbar-slider-container">
+            <div class="dockit-toolbar-slider-container" style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;font-weight:500;opacity:0.8;">Corners</span>
               <input type="range" id="slider-corners" min="0" max="24" value="${parseInt(this.theme.options['--corner-radius-value']) || 0}" />
             </div>
           </div>
