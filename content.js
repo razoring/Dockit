@@ -334,6 +334,24 @@ async function init() {
   //dockit's scroll.js makes body the scroll container (overflow-y:auto).
   //setting overflow:hidden here kills the scrollbar entirely.
 
+  //bing targeted patch
+  //when sidebar is visible, body is the scroll container (height:100%).
+  //bing's footer uses position:absolute;bottom:0 which breaks in this layout.
+  if (window.location.hostname.includes('bing.com')) {
+    const bingStyle = document.createElement('style');
+    bingStyle.id = 'dockit-bing-patch';
+    bingStyle.textContent = `
+      html:not(.dockit-autohide-active) body:not(.b_pinchathead) {
+        min-height: unset !important;
+        padding-bottom: 0 !important;
+      }
+      html:not(.dockit-autohide-active) #b_footer {
+        position: relative !important;
+      }
+    `;
+    document.head.appendChild(bingStyle);
+  }
+
   _indicator = document.createElement('div');
   _indicator.id = 'dockit-autohide-indicator';
   document.documentElement.appendChild(_indicator);

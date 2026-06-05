@@ -1,7 +1,22 @@
 //scroll.js
 
 (function() {
-  const _getWrapper = () => document.body;
+  //check if autohide is active and sidebar is hidden (not constraining page)
+  const _isAutoHidePassthrough = () => {
+    const html = document.documentElement;
+    if (!html) return false;
+    if (!html.classList.contains('dockit-autohide-active')) return false;
+    //when autohide is active, only override when sidebar is visible
+    const host = document.getElementById('dockit-host-root');
+    if (!host) return true;
+    return host.classList.contains('dockit-autohide-hidden');
+  };
+
+  //return body as scroll wrapper only when sidebar is actively constraining layout
+  const _getWrapper = () => {
+    if (_isAutoHidePassthrough()) return null;
+    return document.body;
+  };
   const getDesc = (obj, prop) => Object.getOwnPropertyDescriptor(obj, prop);
   
   const elScrollTop = getDesc(Element.prototype, 'scrollTop');
@@ -23,9 +38,12 @@
 
   //bing targeted patch
   if (window.location.hostname.includes('bing.com')) {
-    // stop resize events from triggering bing's dynamic parameter reloads
+    //stop resize events from triggering bing's dynamic parameter reloads
+    //only suppress when sidebar is actively constraining layout
     window.addEventListener('resize', (e) => {
-      e.stopImmediatePropagation();
+      if (!_isAutoHidePassthrough()) {
+        e.stopImmediatePropagation();
+      }
     }, true);
   }
 
@@ -36,6 +54,7 @@
   });
 
   const _getOffset = () => {
+    if (_isAutoHidePassthrough()) return 0;
     let isFullWidth = false;
     try {
       if (window.sessionStorage.getItem('dockit-sidepanel-open') === '1') {
@@ -211,3 +230,4 @@
     }
   };
 })();
+
