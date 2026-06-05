@@ -271,6 +271,9 @@ body {
 }
 
 /* In-Page Panel */
+/* YOUTUBE SCROLL FIX: pointer-events:none lets scroll events pass through
+   the full-viewport backdrop to the page underneath. Only actual panel
+   children (header, content) capture pointer events via the rule below. */
 .dockit-in-page {
   position: absolute;
   top: 0;
@@ -289,6 +292,11 @@ body {
   overflow: hidden;
   backdrop-filter: blur(var(--blur-value, 0px));
   border-radius: var(--corner-radius-value, 0px);
+  pointer-events: none;
+}
+
+.dockit-in-page > * {
+  pointer-events: auto;
 }
 
 .dockit-in-page.dockit-hidden {
@@ -1598,11 +1606,20 @@ body {
   padding: 0 !important;
   transform: none !important;
   opacity: 1 !important;
+  pointer-events: none !important;
+}
+
+/* Re-enable pointer events on actual interactive children inside the expanded host */
+#dockit-host-root.dockit-host-panel-open .dockit-sidebar,
+:host(.dockit-host-panel-open) .dockit-sidebar,
+#dockit-host-root.dockit-theme-editor-active .dockit-sidebar,
+:host(.dockit-theme-editor-active) .dockit-sidebar,
+#dockit-host-root.dockit-host-panel-open .dockit-in-page > *,
+:host(.dockit-host-panel-open) .dockit-in-page > * {
   pointer-events: auto !important;
 }
 
-body.dockit-theme-editor-active,
-body.dockit-host-panel-open {
+body.dockit-theme-editor-active {
   overflow: hidden !important;
 }
 

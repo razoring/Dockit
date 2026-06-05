@@ -191,17 +191,15 @@ async function init() {
       box-sizing: border-box !important;
     }
     html body.dockit-full-width,
-    html:not(.dockit-autohide-active) body.dockit-full-width,
-    html body.dockit-host-panel-open,
-    html:not(.dockit-autohide-active) body.dockit-host-panel-open,
+    html:not(.dockit-autohide-active) body.dockit-full-width {
+      width: 100% !important;
+    }
     html body.dockit-theme-editor-active,
     html:not(.dockit-autohide-active) body.dockit-theme-editor-active,
-    html.dockit-host-panel-open body,
     html.dockit-theme-editor-active body {
       width: 100% !important;
       overflow: hidden !important;
     }
-    html.dockit-host-panel-open,
     html.dockit-theme-editor-active {
       overflow: hidden !important;
     }
@@ -221,7 +219,7 @@ async function init() {
       right: 0 !important;
       transform: none !important;
       opacity: 1 !important;
-      pointer-events: auto !important;
+      pointer-events: none !important;
     }
     #dockit-host-root.dockit-autohide-hidden {
       transform: translateX(${SIDEBAR_WIDTH}px) !important;
@@ -332,18 +330,9 @@ async function init() {
   }
 
   //youtube targeted patch
-  if (window.location.hostname.includes('youtube.com')) {
-    const youtubeStyle = document.createElement('style');
-    youtubeStyle.id = 'dockit-youtube-patch';
-    youtubeStyle.textContent = `
-      body:has(ytd-guide[opened]),
-      body:has(tp-yt-app-drawer[opened]),
-      body:has(tp-yt-iron-overlay-backdrop) {
-        overflow: hidden !important;
-      }
-    `;
-    document.head.appendChild(youtubeStyle);
-  }
+  //NOTE: do NOT add overflow:hidden to body on youtube.
+  //dockit's scroll.js makes body the scroll container (overflow-y:auto).
+  //setting overflow:hidden here kills the scrollbar entirely.
 
   _indicator = document.createElement('div');
   _indicator.id = 'dockit-autohide-indicator';
