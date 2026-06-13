@@ -81,11 +81,25 @@ function applyTheme(themeObj) {
           return curved * 50;
         };
 
-        const widthPct = (imgData.width / origWidth) * 100;
-        const heightPct = (imgData.height / origHeight) * 100;
+        let scaledWidth = imgData.width;
+        let scaledHeight = imgData.height;
+        let rawOffsetX = imgData.offsetX !== undefined ? imgData.offsetX : (imgData.x ? ((imgData.x + (imgData.width / 2) - (origWidth / 2)) / origWidth) * 100 : 0);
+        let rawOffsetY = imgData.offsetY !== undefined ? imgData.offsetY : (imgData.y ? ((imgData.y + (imgData.height / 2) - (origHeight / 2)) / origHeight) * 100 : 0);
 
-        const rawOffsetX = imgData.offsetX !== undefined ? imgData.offsetX : (imgData.x ? ((imgData.x + (imgData.width / 2) - (origWidth / 2)) / origWidth) * 100 : 0);
-        const rawOffsetY = imgData.offsetY !== undefined ? imgData.offsetY : (imgData.y ? ((imgData.y + (imgData.height / 2) - (origHeight / 2)) / origHeight) * 100 : 0);
+        if (imgData.parentId === 'sidebar' && !isSidebar) {
+           scaledWidth *= 2;
+           scaledHeight *= 2;
+           rawOffsetX *= 0.5;
+           rawOffsetY *= 0.5;
+        } else if (imgData.parentId !== 'sidebar' && isSidebar) {
+           scaledWidth *= 0.5;
+           scaledHeight *= 0.5;
+           rawOffsetX *= 2;
+           rawOffsetY *= 2;
+        }
+
+        const widthPct = (scaledWidth / origWidth) * 100;
+        const heightPct = (scaledHeight / origHeight) * 100;
 
         const stickyX = applyEdgeStickiness(rawOffsetX);
         const stickyY = applyEdgeStickiness(rawOffsetY);
@@ -102,18 +116,31 @@ function applyTheme(themeObj) {
           patternLayer.style.backgroundRepeat = 'repeat';
           patternLayer.style.setProperty('pointer-events', 'none', 'important');
           patternLayer.style.zIndex = '-1';
-          patternLayer.style.backgroundSize = `auto ${heightPct}%`;
-          patternLayer.style.backgroundPosition = `calc(50% + ${stickyX}%) calc(50% + ${stickyY}%)`;
+          if (isSidebar) {
+            patternLayer.style.backgroundSize = `${scaledWidth}px ${scaledHeight}px`;
+            patternLayer.style.backgroundPosition = `calc(50% + ${rawOffsetX}% + ${rawOffsetX * scaledWidth / 100}px) calc(50% + ${rawOffsetY}% + ${rawOffsetY * scaledHeight / 100}px)`;
+          } else {
+            patternLayer.style.backgroundSize = `auto ${heightPct}%`;
+            patternLayer.style.backgroundPosition = `calc(50% + ${stickyX}%) calc(50% + ${stickyY}%)`;
+          }
           targetContainer.appendChild(patternLayer);
         } else {
           const imgContainer = document.createElement('div');
           imgContainer.className = 'dockit-mockup-image-container';
           imgContainer.style.position = 'absolute';
-          imgContainer.style.width = 'auto';
-          imgContainer.style.height = `${heightPct}%`;
-          imgContainer.style.left = `calc(50% + ${stickyX}%)`;
-          imgContainer.style.top = `calc(50% + ${stickyY}%)`;
-          imgContainer.style.transform = 'translate(-50%, -50%)';
+          if (isSidebar) {
+            imgContainer.style.width = `${scaledWidth}px`;
+            imgContainer.style.height = `${scaledHeight}px`;
+            imgContainer.style.left = `calc(50% + ${rawOffsetX}% - ${scaledWidth / 2}px)`;
+            imgContainer.style.top = `calc(50% + ${rawOffsetY}% - ${scaledHeight / 2}px)`;
+            imgContainer.style.transform = 'none';
+          } else {
+            imgContainer.style.width = 'auto';
+            imgContainer.style.height = `${heightPct}%`;
+            imgContainer.style.left = `calc(50% + ${stickyX}%)`;
+            imgContainer.style.top = `calc(50% + ${stickyY}%)`;
+            imgContainer.style.transform = 'translate(-50%, -50%)';
+          }
           imgContainer.style.setProperty('pointer-events', 'none', 'important');
           imgContainer.style.zIndex = '0';
           imgContainer.style.display = 'flex';
@@ -124,8 +151,13 @@ function applyTheme(themeObj) {
           imgEl.src = imgData.src;
           imgEl.className = 'dockit-mockup-image';
           imgEl.draggable = false;
-          imgEl.style.width = 'auto';
-          imgEl.style.height = '100%';
+          if (isSidebar) {
+            imgEl.style.width = '100%';
+            imgEl.style.height = '100%';
+          } else {
+            imgEl.style.width = 'auto';
+            imgEl.style.height = '100%';
+          }
           imgEl.style.objectFit = 'contain';
           imgEl.style.setProperty('pointer-events', 'none', 'important');
           imgContainer.appendChild(imgEl);

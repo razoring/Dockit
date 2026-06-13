@@ -2424,6 +2424,18 @@ class DockitThemeEditor {
       wrappers.forEach(wrapper => {
         const isParent = wrapper.dataset.id === imgData.parentId;
         const clipTarget = wrapper.querySelector('.dockit-in-page') || wrapper.querySelector('.dockit-sidebar') || wrapper;
+        const isSidebar = wrapper.dataset.id === 'sidebar';
+        
+        let scaledWidth = imgData.width;
+        let scaledHeight = imgData.height;
+
+        if (imgData.parentId === 'sidebar' && !isSidebar) {
+           scaledWidth *= 2;
+           scaledHeight *= 2;
+        } else if (imgData.parentId !== 'sidebar' && isSidebar) {
+           scaledWidth *= 0.5;
+           scaledHeight *= 0.5;
+        }
 
         if (imgData.isPattern) {
           const patternLayer = document.createElement('div');
@@ -2438,8 +2450,8 @@ class DockitThemeEditor {
           patternLayer.style.backgroundRepeat = 'repeat';
           patternLayer.style.pointerEvents = 'none';
           patternLayer.style.zIndex = '-1';
-          patternLayer.style.backgroundSize = `${imgData.width}px ${imgData.height}px`;
-          patternLayer.style.backgroundPosition = `calc(50% + ${imgData.offsetX}% + ${imgData.offsetX * imgData.width / 100}px) calc(50% + ${imgData.offsetY}% + ${imgData.offsetY * imgData.height / 100}px)`;
+          patternLayer.style.backgroundSize = `${scaledWidth}px ${scaledHeight}px`;
+          patternLayer.style.backgroundPosition = `calc(50% + ${imgData.offsetX}% + ${imgData.offsetX * scaledWidth / 100}px) calc(50% + ${imgData.offsetY}% + ${imgData.offsetY * scaledHeight / 100}px)`;
 
           clipTarget.insertBefore(patternLayer, clipTarget.firstChild);
         }
@@ -2448,10 +2460,10 @@ class DockitThemeEditor {
         imgContainer.className = `dockit-mockup-image-container ${isParent ? 'is-parent' : 'is-child'}`;
         imgContainer.dataset.imageId = imgData.id;
         
-        imgContainer.style.width = `${imgData.width}px`;
-        imgContainer.style.height = `${imgData.height}px`;
-        imgContainer.style.left = `calc(50% + ${imgData.offsetX}% - ${imgData.width / 2}px)`;
-        imgContainer.style.top = `calc(50% + ${imgData.offsetY}% - ${imgData.height / 2}px)`;
+        imgContainer.style.width = `${scaledWidth}px`;
+        imgContainer.style.height = `${scaledHeight}px`;
+        imgContainer.style.left = `calc(50% + ${imgData.offsetX}% - ${scaledWidth / 2}px)`;
+        imgContainer.style.top = `calc(50% + ${imgData.offsetY}% - ${scaledHeight / 2}px)`;
         
         if (!imgData.isPattern) {
           const imgEl = document.createElement('img');
@@ -3242,18 +3254,46 @@ class DockitThemeEditor {
     grid.querySelectorAll('.dockit-mockup-image-container').forEach(imgContainer => {
       const imgObj = this.theme.images.find(img => img.id === imgContainer.dataset.imageId);
       if (imgObj) {
-        imgContainer.style.width = `${imgObj.width}px`;
-        imgContainer.style.height = `${imgObj.height}px`;
-        imgContainer.style.left = `calc(50% + ${imgObj.offsetX}% - ${imgObj.width / 2}px)`;
-        imgContainer.style.top = `calc(50% + ${imgObj.offsetY}% - ${imgObj.height / 2}px)`;
+        const wrapper = imgContainer.closest('.dockit-mockup-wrapper');
+        const isSidebar = wrapper && wrapper.dataset.id === 'sidebar';
+        
+        let scaledWidth = imgObj.width;
+        let scaledHeight = imgObj.height;
+
+        if (imgObj.parentId === 'sidebar' && !isSidebar) {
+           scaledWidth *= 2;
+           scaledHeight *= 2;
+        } else if (imgObj.parentId !== 'sidebar' && isSidebar) {
+           scaledWidth *= 0.5;
+           scaledHeight *= 0.5;
+        }
+
+        imgContainer.style.width = `${scaledWidth}px`;
+        imgContainer.style.height = `${scaledHeight}px`;
+        imgContainer.style.left = `calc(50% + ${imgObj.offsetX}% - ${scaledWidth / 2}px)`;
+        imgContainer.style.top = `calc(50% + ${imgObj.offsetY}% - ${scaledHeight / 2}px)`;
       }
     });
 
     grid.querySelectorAll('.dockit-mockup-pattern-layer').forEach(patternLayer => {
       const imgObj = this.theme.images.find(img => img.id === patternLayer.dataset.imageId);
       if (imgObj) {
-        patternLayer.style.backgroundSize = `${imgObj.width}px ${imgObj.height}px`;
-        patternLayer.style.backgroundPosition = `calc(50% + ${imgObj.offsetX}% + ${imgObj.offsetX * imgObj.width / 100}px) calc(50% + ${imgObj.offsetY}% + ${imgObj.offsetY * imgObj.height / 100}px)`;
+        const wrapper = patternLayer.closest('.dockit-mockup-wrapper');
+        const isSidebar = wrapper && wrapper.dataset.id === 'sidebar';
+        
+        let scaledWidth = imgObj.width;
+        let scaledHeight = imgObj.height;
+
+        if (imgObj.parentId === 'sidebar' && !isSidebar) {
+           scaledWidth *= 2;
+           scaledHeight *= 2;
+        } else if (imgObj.parentId !== 'sidebar' && isSidebar) {
+           scaledWidth *= 0.5;
+           scaledHeight *= 0.5;
+        }
+
+        patternLayer.style.backgroundSize = `${scaledWidth}px ${scaledHeight}px`;
+        patternLayer.style.backgroundPosition = `calc(50% + ${imgObj.offsetX}% + ${imgObj.offsetX * scaledWidth / 100}px) calc(50% + ${imgObj.offsetY}% + ${imgObj.offsetY * scaledHeight / 100}px)`;
       }
     });
   }

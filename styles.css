@@ -1409,8 +1409,8 @@ body {
   pointer-events: none !important;
 }
 
-/* Pointer Events mapping for isolation */
-.dockit-mockup-wrapper:not(.is-isolated) *:not(.dockit-resize-handle):not(.dockit-mockup-image-container):not(.dockit-mockup-image) {
+/* Pointer Events mapping for mockups */
+.dockit-mockup-wrapper *:not(.dockit-resize-handle):not(.dockit-mockup-image-container):not(.dockit-mockup-image) {
   pointer-events: none !important;
 }
 
@@ -1476,9 +1476,7 @@ body {
   box-shadow: none !important;
 }
 
-.dockit-mockup-wrapper.is-isolated * {
-  pointer-events: auto !important;
-}
+/* Removed overly broad pointer-events: auto rule */
 
 /* Element Hover / Select bounds in isolation mode */
 .dockit-mockup-wrapper.is-isolated .dockit-element-hover {
