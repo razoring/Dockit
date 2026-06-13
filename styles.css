@@ -1328,6 +1328,7 @@ body {
 .dockit-mockup-wrapper.mockup-edit-apps > .dockit-in-page,
 .dockit-mockup-wrapper.mockup-customization > .dockit-in-page {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  z-index: auto;
 }
 
 .dockit-mockup-wrapper>*:not(.dockit-resize-handle) {
