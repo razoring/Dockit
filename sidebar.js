@@ -2365,7 +2365,8 @@ class DockitThemeEditor {
       { id: 'sidebar', title: 'Sidebar', left: 100, top: 150, width: 48, height: 500, node: clones.sidebar },
       { id: 'settings', title: 'Settings', left: 220, top: 150, width: 320, height: 500, node: clones.settings },
       { id: 'edit-apps', title: 'Edit Apps', left: 580, top: 150, width: 320, height: 500, node: clones.editApps },
-      { id: 'customization', title: 'Customization', left: 940, top: 150, width: 320, height: 500, node: clones.customization }
+      { id: 'customization', title: 'Customization', left: 940, top: 150, width: 320, height: 500, node: clones.customization },
+      { id: 'theme-card', title: 'Theme Card', left: 1300, top: 150, width: 280, height: 160, node: clones.themeCard }
     ];
 
     mockupsData.forEach(data => {
@@ -2435,6 +2436,7 @@ class DockitThemeEditor {
     this.theme.images.forEach(imgData => {
       wrappers.forEach(wrapper => {
         const isParent = wrapper.dataset.id === imgData.parentId;
+        if (wrapper.dataset.id === 'theme-card') return; // theme-card handles its own images
         const clipTarget = wrapper.querySelector('.dockit-in-page') || wrapper.querySelector('.dockit-sidebar') || wrapper;
         const isSidebar = wrapper.dataset.id === 'sidebar';
         
@@ -2523,7 +2525,38 @@ class DockitThemeEditor {
           const rect = imgContainer.getBoundingClientRect();
           this.showToolbar(rect, 'image', imgContainer);
         }
-      });
+      }
+    });
+
+    this.updateThemeCardImages();
+  }
+
+  updateThemeCardImages() {
+    const cardImagesContainer = this.container.querySelector('.dockit-theme-card-images');
+    if (!cardImagesContainer) return;
+    
+    cardImagesContainer.innerHTML = '';
+    
+    if (!this.theme.images || this.theme.images.length === 0) return;
+
+    this.theme.images.forEach((imgData, index) => {
+      const offset = index * 4;
+      const img = document.createElement('img');
+      img.src = imgData.src;
+      img.style.cssText = `
+        position: absolute;
+        right: ${offset}px;
+        bottom: ${offset}px;
+        width: 44px;
+        height: 44px;
+        border-radius: 4px;
+        object-fit: cover;
+        box-shadow: -2px 2px 8px rgba(0,0,0,0.2);
+        -webkit-mask-image: linear-gradient(to bottom left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 100%);
+        mask-image: linear-gradient(to bottom left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 100%);
+        pointer-events: none;
+      `;
+      cardImagesContainer.appendChild(img);
     });
   }
 
@@ -2696,7 +2729,8 @@ class DockitThemeEditor {
       sidebar: clonedSidebar,
       settings: this.wrapInPageMockup('Settings', settingsContent),
       editApps: this.wrapInPageMockup('Edit Apps', editAppsContent),
-      customization: this.wrapInPageMockup('Customization', customizationContent)
+      customization: this.wrapInPageMockup('Customization', customizationContent),
+      themeCard: this.createThemeCardMockup()
     };
 
     Object.values(result).forEach(node => {
@@ -2739,6 +2773,111 @@ class DockitThemeEditor {
 
     wrapper.appendChild(contentNode);
     return wrapper;
+  }
+
+  createThemeCardMockup() {
+    const card = document.createElement('div');
+    card.className = 'dockit-theme-card-mockup';
+    card.setAttribute('data-theme-colors', '--color-background, --color-foreground, --color-border');
+    card.style.cssText = `
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-color: var(--color-background);
+      border-radius: 12px;
+      overflow: hidden;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--opacity-value, 1) * 100%), transparent);
+      box-sizing: border-box;
+    `;
+
+    const topSection = document.createElement('div');
+    topSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%;';
+
+    const palette = document.createElement('div');
+    palette.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
+    
+    const colors = [
+      { name: '--color-primary', width: 60 },
+      { name: '--color-accent', width: 50 },
+      { name: '--color-foreground', width: 40 },
+      { name: '--color-border', width: 30 },
+      { name: '--color-secondary', width: 20 }
+    ];
+
+    colors.forEach(c => {
+      const bar = document.createElement('div');
+      bar.setAttribute('data-theme-colors', c.name);
+      bar.style.cssText = `
+        height: 6px;
+        width: ${c.width}px;
+        border-radius: 3px;
+        background-color: var(${c.name});
+      `;
+      palette.appendChild(bar);
+    });
+
+    const dashRect = document.createElement('div');
+    dashRect.setAttribute('data-theme-colors', '--color-border');
+    dashRect.style.cssText = `
+      width: 48px;
+      height: 60px;
+      border: 2px dashed var(--color-border);
+      border-radius: 8px;
+      background-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    `;
+    
+    const dashChild = document.createElement('div');
+    dashChild.setAttribute('data-theme-colors', '--color-secondary');
+    dashChild.style.cssText = `
+      width: calc(100% - (var(--padding-value, 0px) * 2));
+      height: calc(100% - (var(--padding-value, 0px) * 2));
+      border-radius: var(--corner-radius-value, 0px);
+      background-color: var(--color-secondary);
+      box-sizing: border-box;
+    `;
+    dashRect.appendChild(dashChild);
+
+    topSection.appendChild(palette);
+    topSection.appendChild(dashRect);
+
+    const bottomSection = document.createElement('div');
+    bottomSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%; align-items: flex-end;';
+
+    const textContainer = document.createElement('div');
+    textContainer.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
+    
+    const title = document.createElement('div');
+    title.setAttribute('data-theme-colors', '--color-foreground');
+    title.style.cssText = 'font-size: 14px; font-weight: 600; color: var(--color-foreground); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;';
+    title.innerText = this.theme && this.theme.name ? this.theme.name : 'Theme Name';
+
+    const subtitle = document.createElement('div');
+    subtitle.setAttribute('data-theme-colors', '--color-foreground-rgba');
+    subtitle.style.cssText = 'font-size: 11px; color: color-mix(in srgb, var(--color-foreground) 50%, transparent);';
+    subtitle.innerText = '@publisher';
+
+    textContainer.appendChild(title);
+    textContainer.appendChild(subtitle);
+
+    const imagesContainer = document.createElement('div');
+    imagesContainer.className = 'dockit-theme-card-images';
+    imagesContainer.style.cssText = 'position: relative; width: 60px; height: 60px;';
+
+    bottomSection.appendChild(textContainer);
+    bottomSection.appendChild(imagesContainer);
+
+    card.appendChild(topSection);
+    card.appendChild(bottomSection);
+
+    return card;
   }
 
   applyEditingThemeCSS() {

@@ -1323,10 +1323,20 @@ body {
   box-shadow: none !important;
 }
 
+.dockit-mockup-wrapper.mockup-theme-card {
+  padding: 0px;
+  box-sizing: content-box;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
 .dockit-mockup-wrapper.mockup-sidebar > .dockit-sidebar,
 .dockit-mockup-wrapper.mockup-settings > .dockit-in-page,
 .dockit-mockup-wrapper.mockup-edit-apps > .dockit-in-page,
-.dockit-mockup-wrapper.mockup-customization > .dockit-in-page {
+.dockit-mockup-wrapper.mockup-customization > .dockit-in-page,
+.dockit-mockup-wrapper.mockup-theme-card > .dockit-theme-card-mockup {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   z-index: auto;
 }
