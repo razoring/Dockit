@@ -365,7 +365,7 @@ async function init() {
           if (!forceViewList.includes(hostname)) {
             const popup = document.createElement('div');
             popup.className = 'dockit-forceview-popup';
-            popup.style.cssText = 'position: absolute; right: 10px; top: 40px; background: var(--color-background); border: 1px solid var(--color-border); border-radius: 6px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 8px; z-index: 100; min-width: 200px;';
+            popup.style.cssText = 'position: absolute; right: 10px; top: 40px; background: color-mix(in srgb, var(--color-background) calc(var(--menu-opacity-value, 1) * 100%), transparent); border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent); border-radius: 6px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 8px; z-index: 100; min-width: 200px;';
             
             popup.innerHTML = `
               <div style="display: flex; justify-content: space-between; align-items: center; color: var(--color-foreground);">

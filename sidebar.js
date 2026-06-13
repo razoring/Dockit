@@ -248,7 +248,7 @@ class DockitSidebar {
         const isCurrentlyPinned = pinnedAppsInitial.some(app => app.url === tab.url);
 
         contentEl.innerHTML = `
-          <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: var(--color-secondary); border-radius: 12px; padding: 12px; gap: 12px; margin-bottom: 20px; border: 1px solid var(--color-border);" data-theme-colors="--color-border, --color-secondary">
+          <div class="dockit-active-site-container" style="display: flex; align-items: center; background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent); border-radius: 12px; padding: 12px; gap: 12px; margin-bottom: 20px; border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);" data-theme-colors="--color-border, --color-secondary">
             <img class="dockit-active-site-favicon" src="${favIconUrl}" style="width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;" />
             <div class="dockit-active-site-info" style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;">
               <div class="dockit-active-site-title" style="font-weight: 600; font-size: 14px; line-height: 1.15; word-break: break-word;" data-theme-colors="--color-foreground">${title}</div>
@@ -259,20 +259,20 @@ class DockitSidebar {
             </button>
           </div>
           
-          <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-secondary); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;" data-theme-colors="--color-border, --color-secondary">
+          <div class="dockit-grid-card" style="position: relative; z-index: 10001; border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent); border-radius: 12px; background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;" data-theme-colors="--color-border, --color-secondary">
             <div class="dockit-grid-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${_t('pinned_apps')}</div>
             <div class="dockit-apps-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px;">
               <!-- Pinned apps will be rendered here dynamically -->
             </div>
           </div>
 
-          <div class="dockit-search-card" style="border: 1px solid var(--color-border); border-radius: 12px; background-color: var(--color-background); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;" data-theme-colors="--color-border, --color-background">
+          <div class="dockit-search-card" style="border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent); border-radius: 12px; background-color: color-mix(in srgb, var(--color-background) calc(var(--menu-opacity-value, 1) * 100%), transparent); padding: 12px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px; position: relative;" data-theme-colors="--color-border, --color-background">
             <div class="dockit-search-title" style="font-weight: 600; font-size: 14px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${_t('search_title')}</div>
             <div class="dockit-settings-search-wrapper dockit-search-bar-container" data-theme-colors="--color-primary, --color-border, --color-secondary">
               ${searchIconSvg}
               <input class="dockit-settings-search-input dockit-search-input" type="text" placeholder="${_t('search_placeholder')}" data-theme-colors="--color-foreground" />
             </div>
-            <div class="dockit-suggestions-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background-color: var(--color-secondary); border: 1px solid var(--color-border); border-radius: 8px; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); max-height: 250px; overflow-y: auto; padding: 6px 0;" data-theme-colors="--color-border, --color-secondary"></div>
+            <div class="dockit-suggestions-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent); border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent); border-radius: 8px; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); max-height: 250px; overflow-y: auto; padding: 6px 0;" data-theme-colors="--color-border, --color-secondary"></div>
           </div>
 
           <!-- drag-to-delete trash overlay -->
@@ -289,7 +289,7 @@ class DockitSidebar {
           if (pinnedAppsInitial.length === 0) {
             gridContainer.style.display = 'block';
             gridContainer.innerHTML = `
-              <div style="font-size: 13px; opacity: 0.5; text-align: center; padding: 20px 10px; line-height: 1.4; border: 1.5px dashed var(--color-border); border-radius: 8px;">
+              <div style="font-size: 13px; opacity: 0.5; text-align: center; padding: 20px 10px; line-height: 1.4; border: 1.5px dashed color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent); border-radius: 8px;">
                 ${_t('no_pinned_apps')}<br/>${_t('pin_hint')}
               </div>
             `;
@@ -2418,8 +2418,20 @@ class DockitThemeEditor {
     });
 
     if (!this.theme.images || this.theme.images.length === 0) return;
+
+    this.theme.images.sort((a, b) => {
+      if (a.isPattern && !b.isPattern) return -1;
+      if (!a.isPattern && b.isPattern) return 1;
+      return 0;
+    });
     
     const wrappers = Array.from(grid.querySelectorAll('.dockit-mockup-wrapper'));
+    const refNodes = new Map();
+    wrappers.forEach(wrapper => {
+      const clipTarget = wrapper.querySelector('.dockit-in-page') || wrapper.querySelector('.dockit-sidebar') || wrapper;
+      refNodes.set(clipTarget, clipTarget.firstChild);
+    });
+
     this.theme.images.forEach(imgData => {
       wrappers.forEach(wrapper => {
         const isParent = wrapper.dataset.id === imgData.parentId;
@@ -2453,7 +2465,7 @@ class DockitThemeEditor {
           patternLayer.style.backgroundSize = `${scaledWidth}px ${scaledHeight}px`;
           patternLayer.style.backgroundPosition = `calc(50% + ${imgData.offsetX}% + ${imgData.offsetX * scaledWidth / 100}px) calc(50% + ${imgData.offsetY}% + ${imgData.offsetY * scaledHeight / 100}px)`;
 
-          clipTarget.insertBefore(patternLayer, clipTarget.firstChild);
+          clipTarget.insertBefore(patternLayer, refNodes.get(clipTarget));
         }
 
         const imgContainer = document.createElement('div');
@@ -2488,7 +2500,22 @@ class DockitThemeEditor {
           }
         }
         
-        clipTarget.insertBefore(imgContainer, clipTarget.firstChild);
+        if (imgData.isCropped) {
+          let cropWrapper = clipTarget.querySelector(':scope > .dockit-mockup-crop-wrapper');
+          if (!cropWrapper) {
+            cropWrapper = document.createElement('div');
+            cropWrapper.className = 'dockit-mockup-crop-wrapper';
+            cropWrapper.style.position = 'absolute';
+            cropWrapper.style.inset = '0';
+            cropWrapper.style.overflow = 'hidden';
+            cropWrapper.style.borderRadius = 'inherit';
+            cropWrapper.style.zIndex = '0';
+            clipTarget.insertBefore(cropWrapper, refNodes.get(clipTarget));
+          }
+          cropWrapper.appendChild(imgContainer);
+        } else {
+          clipTarget.insertBefore(imgContainer, refNodes.get(clipTarget));
+        }
 
         if (selectedImageId && imgData.id === selectedImageId && wrapper.dataset.id === selectedImageWrapperId) {
           this.selectedElement = imgContainer;
@@ -2624,7 +2651,7 @@ class DockitThemeEditor {
       const plusSvg = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
       const resultsContainer = document.createElement('div');
       resultsContainer.setAttribute('data-theme-colors', '--color-border, --color-secondary');
-      resultsContainer.style.cssText = 'border: 1px solid var(--color-border); border-radius: 8px; background-color: var(--color-secondary); overflow: hidden; margin-bottom: 24px;';
+      resultsContainer.style.cssText = 'border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent); border-radius: 8px; background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent); overflow: hidden; margin-bottom: 24px;';
       resultsContainer.innerHTML = FAKE_APPS.map(app => `
         <div class="dockit-suggestion-row" data-theme-colors="--color-foreground"
           style="display:flex;align-items:center;padding:8px 12px;gap:10px;cursor:pointer;transition:background-color 0.15s;min-height:48px;">
@@ -2699,7 +2726,7 @@ class DockitThemeEditor {
     const wrapper = document.createElement('div');
     wrapper.className = 'dockit-in-page';
     wrapper.setAttribute('data-theme-colors', '--color-background');
-    wrapper.style.cssText = 'position: relative; right: auto; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; pointer-events: none;';
+    wrapper.style.cssText = 'position: relative; right: auto; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden;';
 
     const xIcon = this.lucideIcons['x'] || `<svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
 
@@ -3542,6 +3569,7 @@ class DockitThemeEditor {
 
     const apertureIcon = this.lucideIcons['aperture'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><path d="M14.31 8l5.74 9.94M9.69 8h11.48M7.38 12l5.74-9.94M9.69 16L3.95 6.06M14.31 16H2.83M16.62 12l-5.74 9.94"></path></svg>`;
     const blendIcon = this.lucideIcons['mirror-rectangular'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M12 3v18"></path></svg>`;
+    const panelTransparencyIcon = `<svg viewBox="0 0 22 18" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8,5l-3,3"/><path d="M14,5l-8,8"/><rect x="3" y="-1" width="16" height="20" rx="2" ry="2" transform="translate(20 -2) rotate(90)"/></svg>`;
     const paddingIcon = this.lucideIcons['squares-subtract'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="10" height="10" rx="1" ry="1"></rect></svg>`;
     const radiusIcon = this.lucideIcons['square-round-corner'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9v-2a4 4 0 0 0-4-4h-2M9 3H7a4 4 0 0 0-4 4v2M3 15v2a4 4 0 0 0 4 4h2M15 21h2a4 4 0 0 0 4-4v-2"></path></svg>`;
     const imageIcon = this.lucideIcons['image'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
@@ -3583,7 +3611,7 @@ class DockitThemeEditor {
           </div>
         </div>
         <div class="dockit-toolbar-tool">
-          <button class="dockit-toolbar-icon-btn" title="Menu Transparency">${blendIcon}</button>
+          <button class="dockit-toolbar-icon-btn" title="Menu Transparency">${panelTransparencyIcon}</button>
           <div class="dockit-toolbar-slider-container">
             <input type="range" id="slider-menu-opacity" min="0" max="100" value="${Math.round(parseFloat(this.theme.options['--menu-opacity-value'] ?? 1) * 100)}" />
           </div>
@@ -3609,14 +3637,20 @@ class DockitThemeEditor {
       const trashIcon = this.lucideIcons['trash-2'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
       const patternIcon = this.lucideIcons['brick-wall'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 9v6"/><path d="M16 15v6"/><path d="M16 3v6"/><path d="M3 15h18"/><path d="M3 9h18"/><path d="M8 15v6"/><path d="M8 3v6"/></svg>`;
       const objectIcon = this.lucideIcons['images'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 22H4a2 2 0 0 1-2-2V6"/><rect width="16" height="16" x="6" y="2" rx="2"/></svg>`;
+      const cropIcon = this.lucideIcons['crop'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"></path><path d="M18 22V8a2 2 0 0 0-2-2H2"></path></svg>`;
       const imgObj = this.theme.images.find(img => img.id === target.dataset.imageId);
       const isPatternActive = imgObj && imgObj.isPattern;
+      const isCropActive = imgObj && imgObj.isCropped;
       toolsHtml = `
         <div class="dockit-toolbar-tool">
           <button class="dockit-toolbar-icon-btn ${isPatternActive ? 'is-active' : ''}" id="btn-image-pattern" title="Toggle Pattern Mode">${patternIcon}</button>
         </div>
         <div class="dockit-toolbar-tool">
           <button class="dockit-toolbar-icon-btn ${!isPatternActive ? 'is-active' : ''}" id="btn-image-object" title="Toggle Object Mode">${objectIcon}</button>
+        </div>
+        <div class="dockit-toolbar-divider"></div>
+        <div class="dockit-toolbar-tool">
+          <button class="dockit-toolbar-icon-btn ${isCropActive ? 'is-active' : ''}" id="btn-image-crop" title="Clip to Parent">${cropIcon}</button>
         </div>
         <div class="dockit-toolbar-divider"></div>
         <div class="dockit-toolbar-tool">
@@ -3765,6 +3799,18 @@ class DockitThemeEditor {
           const imgObj = this.theme.images.find(img => img.id === target.dataset.imageId);
           if (imgObj) {
             imgObj.isPattern = false;
+            this.renderImages();
+          }
+        });
+      }
+
+      const btnCrop = toolbar.querySelector('#btn-image-crop');
+      if (btnCrop) {
+        btnCrop.addEventListener('click', () => {
+          if (!this.theme.images) return;
+          const imgObj = this.theme.images.find(img => img.id === target.dataset.imageId);
+          if (imgObj) {
+            imgObj.isCropped = !imgObj.isCropped;
             this.renderImages();
           }
         });
