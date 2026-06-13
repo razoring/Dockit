@@ -2280,6 +2280,11 @@ class DockitThemeEditor {
     const checkIcon = this.lucideIcons['check'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
     const uploadIcon = this.lucideIcons['upload'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>`;
     const discardIcon = this.lucideIcons['x'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+    const plusIcon = this.lucideIcons['plus'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+    const minusIcon = this.lucideIcons['minus'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+    const maximizeIcon = this.lucideIcons['maximize'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
+    const alignTopIcon = this.lucideIcons['align-horizontal-space-around'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect width="6" height="14" x="9" y="5" rx="2"/><path d="M4 22V2m16 20V2"/></svg>`;
+    const stretchVerticalIcon = this.lucideIcons['stretch-vertical'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect width="20" height="16" x="2" y="4" rx="2"/></svg>`;
 
     this.container.innerHTML = `
       <div class="dockit-theme-editor-menubar">
@@ -2318,6 +2323,30 @@ class DockitThemeEditor {
         <div class="dockit-theme-editor-grid"></div>
       </div>
       
+      <div class="dockit-zoom-controls">
+        <button class="dockit-zoom-btn" id="btn-zoom-out" title="Zoom Out">${minusIcon}</button>
+        <div class="dockit-zoom-level-container">
+          <button class="dockit-zoom-level-btn" id="btn-zoom-toggle">${Math.round((this.zoom || 1) * 100)}%</button>
+          <div class="dockit-zoom-menu" style="display: none;">
+            <button class="dockit-dropdown-item" id="btn-zoom-100">
+              <span style="opacity: 0.7; width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center;">1:1</span>
+              <span>Zoom to 100%</span>
+            </button>
+            <button class="dockit-dropdown-item" id="btn-zoom-fit">
+              ${maximizeIcon} <span>Zoom to Fit</span>
+            </button>
+            <div class="dockit-dropdown-divider"></div>
+            <button class="dockit-dropdown-item" id="btn-organize-objects">
+              ${alignTopIcon} <span>Organize Objects</span>
+            </button>
+            <button class="dockit-dropdown-item" id="btn-stretch-objects">
+              ${stretchVerticalIcon} <span>Stretch Objects</span>
+            </button>
+          </div>
+        </div>
+        <button class="dockit-zoom-btn" id="btn-zoom-in" title="Zoom In">${plusIcon}</button>
+      </div>
+
       <div class="dockit-context-toolbar" style="display: none;"></div>
     `;
 
@@ -2363,6 +2392,99 @@ class DockitThemeEditor {
       });
 
       grid.appendChild(wrapper);
+    });
+    
+    this.renderImages();
+  }
+
+  renderImages() {
+    const grid = this.container.querySelector('.dockit-theme-editor-grid');
+    if (!grid) return;
+    
+    let selectedImageId = null;
+    let selectedImageWrapperId = null;
+    if (this.selectedElement && this.selectedElement.classList.contains('dockit-mockup-image-container')) {
+      selectedImageId = this.selectedElement.dataset.imageId;
+      const parentWrapper = this.selectedElement.closest('.dockit-mockup-wrapper');
+      if (parentWrapper) {
+        selectedImageWrapperId = parentWrapper.dataset.id;
+      }
+    }
+
+    grid.querySelectorAll('.dockit-mockup-image-container').forEach(el => el.remove());
+    grid.querySelectorAll('.dockit-mockup-pattern-layer').forEach(el => el.remove());
+    grid.querySelectorAll('.dockit-in-page, .dockit-sidebar').forEach(el => {
+      el.style.removeProperty('overflow');
+    });
+
+    if (!this.theme.images || this.theme.images.length === 0) return;
+    
+    const wrappers = Array.from(grid.querySelectorAll('.dockit-mockup-wrapper'));
+    this.theme.images.forEach(imgData => {
+      wrappers.forEach(wrapper => {
+        const isParent = wrapper.dataset.id === imgData.parentId;
+        const clipTarget = wrapper.querySelector('.dockit-in-page') || wrapper.querySelector('.dockit-sidebar') || wrapper;
+
+        if (imgData.isPattern) {
+          const patternLayer = document.createElement('div');
+          patternLayer.className = 'dockit-mockup-pattern-layer';
+          patternLayer.dataset.imageId = imgData.id;
+          patternLayer.style.position = 'absolute';
+          patternLayer.style.left = '0';
+          patternLayer.style.top = '0';
+          patternLayer.style.width = '100%';
+          patternLayer.style.height = '100%';
+          patternLayer.style.backgroundImage = `url(${imgData.src})`;
+          patternLayer.style.backgroundRepeat = 'repeat';
+          patternLayer.style.pointerEvents = 'none';
+          patternLayer.style.zIndex = '-1';
+          patternLayer.style.backgroundSize = `${imgData.width}px ${imgData.height}px`;
+          patternLayer.style.backgroundPosition = `calc(50% + ${imgData.offsetX}% + ${imgData.offsetX * imgData.width / 100}px) calc(50% + ${imgData.offsetY}% + ${imgData.offsetY * imgData.height / 100}px)`;
+
+          clipTarget.insertBefore(patternLayer, clipTarget.firstChild);
+        }
+
+        const imgContainer = document.createElement('div');
+        imgContainer.className = `dockit-mockup-image-container ${isParent ? 'is-parent' : 'is-child'}`;
+        imgContainer.dataset.imageId = imgData.id;
+        
+        imgContainer.style.width = `${imgData.width}px`;
+        imgContainer.style.height = `${imgData.height}px`;
+        imgContainer.style.left = `calc(50% + ${imgData.offsetX}% - ${imgData.width / 2}px)`;
+        imgContainer.style.top = `calc(50% + ${imgData.offsetY}% - ${imgData.height / 2}px)`;
+        
+        if (!imgData.isPattern) {
+          const imgEl = document.createElement('img');
+          imgEl.src = imgData.src;
+          imgEl.className = 'dockit-mockup-image';
+          imgEl.draggable = false;
+          imgContainer.appendChild(imgEl);
+        } else {
+          imgContainer.dataset.isPattern = "true";
+        }
+        
+        if (isParent) {
+          let directions = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+          directions.forEach(dir => {
+            const handle = document.createElement('div');
+            handle.className = `dockit-resize-handle ${dir}`;
+            handle.dataset.direction = dir;
+            imgContainer.appendChild(handle);
+          });
+          if (clipTarget !== wrapper) {
+            clipTarget.style.setProperty('overflow', 'visible', 'important');
+          }
+        }
+        
+        clipTarget.insertBefore(imgContainer, clipTarget.firstChild);
+
+        if (selectedImageId && imgData.id === selectedImageId && wrapper.dataset.id === selectedImageWrapperId) {
+          this.selectedElement = imgContainer;
+          imgContainer.classList.add('dockit-element-selected');
+          const rect = imgContainer.getBoundingClientRect();
+          this.showToolbar(rect, 'image', imgContainer);
+        }
+      });
     });
   }
 
@@ -2603,6 +2725,131 @@ class DockitThemeEditor {
   setupEvents() {
     const canvas = this.container.querySelector('.dockit-theme-editor-canvas');
     const grid = this.container.querySelector('.dockit-theme-editor-grid');
+
+    // Setup zoom controls
+    const btnZoomIn = this.container.querySelector('#btn-zoom-in');
+    const btnZoomOut = this.container.querySelector('#btn-zoom-out');
+    const btnZoomToggle = this.container.querySelector('#btn-zoom-toggle');
+    const zoomMenu = this.container.querySelector('.dockit-zoom-menu');
+    
+    if (btnZoomIn) {
+      btnZoomIn.addEventListener('click', () => {
+        const rect = canvas.getBoundingClientRect();
+        zoomAtPoint(1.1, rect.width / 2, rect.height / 2);
+      });
+    }
+    
+    if (btnZoomOut) {
+      btnZoomOut.addEventListener('click', () => {
+        const rect = canvas.getBoundingClientRect();
+        zoomAtPoint(1 / 1.1, rect.width / 2, rect.height / 2);
+      });
+    }
+
+    if (btnZoomToggle && zoomMenu) {
+      btnZoomToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = zoomMenu.style.display !== 'none';
+        zoomMenu.style.display = isVisible ? 'none' : 'block';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.dockit-zoom-level-container')) {
+          zoomMenu.style.display = 'none';
+        }
+      });
+    }
+
+    // Zoom to 100%
+    const btnZoom100 = this.container.querySelector('#btn-zoom-100');
+    if (btnZoom100) {
+      btnZoom100.addEventListener('click', () => {
+        zoomMenu.style.display = 'none';
+        const rect = canvas.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const oldZoom = this.zoom;
+        this.zoom = 1.0;
+        const gridX = (centerX - this.panX) / oldZoom;
+        const gridY = (centerY - this.panY) / oldZoom;
+        this.panX = centerX - gridX * this.zoom;
+        this.panY = centerY - gridY * this.zoom;
+        updateTransform();
+      });
+    }
+
+    // Zoom to Fit
+    const btnZoomFit = this.container.querySelector('#btn-zoom-fit');
+    if (btnZoomFit) {
+      btnZoomFit.addEventListener('click', () => {
+        zoomMenu.style.display = 'none';
+        const mockups = Array.from(grid.querySelectorAll('.dockit-mockup-wrapper'));
+        if (mockups.length === 0) return;
+        
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        mockups.forEach(m => {
+          const l = parseFloat(m.style.left) || 0;
+          const t = parseFloat(m.style.top) || 0;
+          const w = parseFloat(m.style.width) || 0;
+          const h = parseFloat(m.style.height) || 0;
+          minX = Math.min(minX, l);
+          minY = Math.min(minY, t);
+          maxX = Math.max(maxX, l + w);
+          maxY = Math.max(maxY, t + h);
+        });
+        
+        const contentWidth = maxX - minX;
+        const contentHeight = maxY - minY;
+        const rect = canvas.getBoundingClientRect();
+        const padding = 40;
+        
+        const scaleX = (rect.width - padding * 2) / contentWidth;
+        const scaleY = (rect.height - padding * 2) / contentHeight;
+        this.zoom = Math.max(0.3, Math.min(Math.min(scaleX, scaleY), 3.0));
+        
+        const contentCenterX = minX + contentWidth / 2;
+        const contentCenterY = minY + contentHeight / 2;
+        this.panX = (rect.width / 2) - (contentCenterX * this.zoom);
+        this.panY = (rect.height / 2) - (contentCenterY * this.zoom);
+        
+        updateTransform();
+      });
+    }
+
+    // Organize Objects
+    const btnOrganize = this.container.querySelector('#btn-organize-objects');
+    if (btnOrganize) {
+      btnOrganize.addEventListener('click', () => {
+        zoomMenu.style.display = 'none';
+        const mockups = Array.from(grid.querySelectorAll('.dockit-mockup-wrapper'));
+        mockups.sort((a, b) => (parseFloat(a.style.left) || 0) - (parseFloat(b.style.left) || 0));
+        
+        let currentLeft = 100;
+        const topY = 150;
+        const gap = 40;
+        
+        mockups.forEach(m => {
+          m.style.top = `${topY}px`;
+          m.style.left = `${currentLeft}px`;
+          currentLeft += (parseFloat(m.style.width) || 320) + gap;
+        });
+      });
+    }
+
+    // Stretch Objects
+    const btnStretch = this.container.querySelector('#btn-stretch-objects');
+    if (btnStretch) {
+      btnStretch.addEventListener('click', () => {
+        zoomMenu.style.display = 'none';
+        const mockups = Array.from(grid.querySelectorAll('.dockit-mockup-wrapper:not(.mockup-sidebar)'));
+        mockups.forEach(m => {
+          const originalHeight = m.style.height;
+          m.style.height = 'auto';
+          const newHeight = m.scrollHeight;
+          m.style.height = `${Math.max(500, newHeight)}px`;
+        });
+      });
+    }
     canvas.addEventListener('contextmenu', e => e.preventDefault());
     const triggerBtn = this.container.querySelector('.dockit-menu-trigger-btn');
     const dropdown = this.container.querySelector('.dockit-theme-dropdown');
@@ -2661,30 +2908,32 @@ class DockitThemeEditor {
       const scaledGrid = BASE_GRID_SIZE * this.zoom;
       canvas.style.backgroundSize = `${scaledGrid}px ${scaledGrid}px`;
       canvas.style.backgroundPosition = `${this.panX}px ${this.panY}px`;
+      
+      const zoomTextBtn = this.container.querySelector('#btn-zoom-toggle');
+      if (zoomTextBtn) {
+        zoomTextBtn.textContent = `${Math.round((this.zoom || 1) * 100)}%`;
+      }
+
       updateToolbarPosition();
+    };
+
+    const zoomAtPoint = (zoomFactor, centerX, centerY) => {
+      const oldZoom = this.zoom;
+      this.zoom = Math.max(0.3, Math.min(this.zoom * zoomFactor, 3.0));
+      const gridX = (centerX - this.panX) / oldZoom;
+      const gridY = (centerY - this.panY) / oldZoom;
+      this.panX = centerX - gridX * this.zoom;
+      this.panY = centerY - gridY * this.zoom;
+      updateTransform();
     };
 
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const zoomFactor = 1.1;
-      const oldZoom = this.zoom;
-      if (e.deltaY < 0) {
-        this.zoom = Math.min(this.zoom * zoomFactor, 3.0);
-      } else {
-        this.zoom = Math.max(this.zoom / zoomFactor, 0.3);
-      }
-
       const rect = canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-
-      const gridX = (mouseX - this.panX) / oldZoom;
-      const gridY = (mouseY - this.panY) / oldZoom;
-
-      this.panX = mouseX - gridX * this.zoom;
-      this.panY = mouseY - gridY * this.zoom;
-
-      updateTransform();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : (1 / 1.1);
+      zoomAtPoint(zoomFactor, mouseX, mouseY);
     });
 
     canvas.addEventListener('mousedown', (e) => {
@@ -2723,8 +2972,9 @@ class DockitThemeEditor {
     grid.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
 
-      const wrapper = e.target.closest('.dockit-mockup-wrapper');
+      const imageContainer = e.target.closest('.dockit-mockup-image-container');
       const handle = e.target.closest('.dockit-resize-handle');
+      const wrapper = e.target.closest('.dockit-mockup-wrapper');
 
       if (this.isIsolated) {
         if (wrapper !== this.isolatedMockup) {
@@ -2733,7 +2983,64 @@ class DockitThemeEditor {
         return;
       }
 
+      if (imageContainer) {
+        e.stopPropagation();
+        this.selectImage(imageContainer);
+
+        if (handle) {
+          this.initImageResizing(e, imageContainer, handle.dataset.direction);
+        } else {
+          this.dragImage = imageContainer;
+          this.dragStartX = e.clientX;
+          this.dragStartY = e.clientY;
+          const imgObj = this.theme.images.find(img => img.id === imageContainer.dataset.imageId);
+          if (imgObj) {
+            this.dragStartOffsetX = imgObj.offsetX;
+            this.dragStartOffsetY = imgObj.offsetY;
+          }
+        }
+        return;
+      }
+
       if (wrapper) {
+        const patternImg = this.theme.images ? this.theme.images.find(img => img.parentId === wrapper.dataset.id && img.isPattern) : null;
+        if (patternImg && !handle) {
+          const clipTarget = wrapper.querySelector('.dockit-in-page') || wrapper.querySelector('.dockit-sidebar') || wrapper;
+          const rect = clipTarget.getBoundingClientRect();
+          const mouseX = (e.clientX - rect.left) / this.zoom;
+          const mouseY = (e.clientY - rect.top) / this.zoom;
+
+          const containerWidth = clipTarget.offsetWidth;
+          const containerHeight = clipTarget.offsetHeight;
+
+          const currentX = (containerWidth / 2) + (containerWidth * patternImg.offsetX / 100);
+          const currentY = (containerHeight / 2) + (containerHeight * patternImg.offsetY / 100);
+
+          const deltaX = mouseX - currentX;
+          const deltaY = mouseY - currentY;
+
+          const colShift = Math.round(deltaX / patternImg.width);
+          const rowShift = Math.round(deltaY / patternImg.height);
+
+          if (colShift !== 0 || rowShift !== 0) {
+            patternImg.offsetX += (colShift * patternImg.width / containerWidth) * 100;
+            patternImg.offsetY += (rowShift * patternImg.height / containerHeight) * 100;
+            this.updateImagesDOM();
+          }
+
+          const realContainer = clipTarget.querySelector(`.dockit-mockup-image-container[data-image-id="${patternImg.id}"]`);
+          if (realContainer) {
+            e.stopPropagation();
+            this.selectImage(realContainer);
+            this.dragImage = realContainer;
+            this.dragStartX = e.clientX;
+            this.dragStartY = e.clientY;
+            this.dragStartOffsetX = patternImg.offsetX;
+            this.dragStartOffsetY = patternImg.offsetY;
+            return;
+          }
+        }
+
         e.stopPropagation();
         this.selectMockup(wrapper);
 
@@ -2757,12 +3064,47 @@ class DockitThemeEditor {
         const deltaY = (e.clientY - this.dragStartY) / this.zoom;
         this.dragMockup.style.left = `${this.dragStartLeft + deltaX}px`;
         this.dragMockup.style.top = `${this.dragStartTop + deltaY}px`;
+        if (this.selectedMockupWrapper === this.dragMockup) {
+          const rect = this.dragMockup.getBoundingClientRect();
+          this.showToolbar(rect, 'wrapper', this.dragMockup);
+        }
+      } else if (this.dragImage && !this.isIsolated) {
+        const deltaX = (e.clientX - this.dragStartX) / this.zoom;
+        const deltaY = (e.clientY - this.dragStartY) / this.zoom;
+        
+        const imgObj = this.theme.images.find(img => img.id === this.dragImage.dataset.imageId);
+        if (imgObj) {
+           const wrapper = this.dragImage.closest('.dockit-mockup-wrapper');
+           const wrapperWidth = parseInt(wrapper.style.width) || wrapper.offsetWidth;
+           const wrapperHeight = parseInt(wrapper.style.height) || wrapper.offsetHeight;
+           
+           imgObj.offsetX = this.dragStartOffsetX + (deltaX / wrapperWidth) * 100;
+           imgObj.offsetY = this.dragStartOffsetY + (deltaY / wrapperHeight) * 100;
+           
+           this.updateImagesDOM();
+
+           if (this.selectedElement === this.dragImage) {
+             const rect = this.dragImage.getBoundingClientRect();
+             this.showToolbar(rect, 'image', this.dragImage);
+           }
+        }
       }
     });
 
     window.addEventListener('mouseup', () => {
       if (this.dragMockup) {
+        if (this.selectedMockupWrapper === this.dragMockup) {
+          const rect = this.dragMockup.getBoundingClientRect();
+          this.showToolbar(rect, 'wrapper', this.dragMockup);
+        }
         this.dragMockup = null;
+      }
+      if (this.dragImage) {
+        if (this.selectedElement === this.dragImage) {
+          const rect = this.dragImage.getBoundingClientRect();
+          this.showToolbar(rect, 'image', this.dragImage);
+        }
+        this.dragImage = null;
       }
     });
 
@@ -2833,6 +3175,24 @@ class DockitThemeEditor {
     });
     this.container.querySelector('#btn-discard-theme').addEventListener('click', () => this.discard());
 
+    window.addEventListener('keydown', (e) => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+
+      if ((e.key === 'Backspace' || e.key === 'Delete') && this.selectedElement && this.selectedElement.classList.contains('dockit-mockup-image-container')) {
+        e.preventDefault();
+        const imageId = this.selectedElement.dataset.imageId;
+        if (this.theme.images) {
+          this.theme.images = this.theme.images.filter(img => img.id !== imageId);
+          this.removeSelectionBorder();
+          const toolbar = this.container.querySelector('.dockit-context-toolbar');
+          if (toolbar) toolbar.style.display = 'none';
+          this.renderImages();
+        }
+      }
+    });
+
     updateTransform();
   }
 
@@ -2855,8 +3215,147 @@ class DockitThemeEditor {
 
     this.exitIsolationMode();
 
+    if (this.selectedElement && this.selectedElement.classList.contains('dockit-mockup-image-container')) {
+      this.selectedElement.classList.remove('dockit-element-selected');
+      this.selectedElement = null;
+    }
+
     const toolbar = this.container.querySelector('.dockit-context-toolbar');
     if (toolbar) toolbar.style.display = 'none';
+  }
+
+  selectImage(imageContainer) {
+    if (this.selectedElement === imageContainer) return;
+    this.deselectAll();
+
+    this.selectedElement = imageContainer;
+    imageContainer.classList.add('dockit-element-selected');
+
+    const rect = imageContainer.getBoundingClientRect();
+    this.showToolbar(rect, 'image', imageContainer);
+  }
+
+  updateImagesDOM() {
+    const grid = this.container.querySelector('.dockit-theme-editor-grid');
+    if (!grid || !this.theme.images) return;
+    
+    grid.querySelectorAll('.dockit-mockup-image-container').forEach(imgContainer => {
+      const imgObj = this.theme.images.find(img => img.id === imgContainer.dataset.imageId);
+      if (imgObj) {
+        imgContainer.style.width = `${imgObj.width}px`;
+        imgContainer.style.height = `${imgObj.height}px`;
+        imgContainer.style.left = `calc(50% + ${imgObj.offsetX}% - ${imgObj.width / 2}px)`;
+        imgContainer.style.top = `calc(50% + ${imgObj.offsetY}% - ${imgObj.height / 2}px)`;
+      }
+    });
+
+    grid.querySelectorAll('.dockit-mockup-pattern-layer').forEach(patternLayer => {
+      const imgObj = this.theme.images.find(img => img.id === patternLayer.dataset.imageId);
+      if (imgObj) {
+        patternLayer.style.backgroundSize = `${imgObj.width}px ${imgObj.height}px`;
+        patternLayer.style.backgroundPosition = `calc(50% + ${imgObj.offsetX}% + ${imgObj.offsetX * imgObj.width / 100}px) calc(50% + ${imgObj.offsetY}% + ${imgObj.offsetY * imgObj.height / 100}px)`;
+      }
+    });
+  }
+
+  initImageResizing(e, imageContainer, direction) {
+    e.stopPropagation();
+    e.preventDefault();
+    const imgObj = this.theme.images.find(img => img.id === imageContainer.dataset.imageId);
+    if (!imgObj) return;
+
+    const startWidth = imgObj.width;
+    const startHeight = imgObj.height;
+    const startOffsetX = imgObj.offsetX;
+    const startOffsetY = imgObj.offsetY;
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    const wrapper = imageContainer.closest('.dockit-mockup-wrapper');
+    const wrapperWidth = parseInt(wrapper.style.width) || wrapper.offsetWidth;
+    const wrapperHeight = parseInt(wrapper.style.height) || wrapper.offsetHeight;
+    const aspectRatio = startWidth / startHeight;
+
+    const onMouseMove = (moveEvent) => {
+      const deltaX = (moveEvent.clientX - startX) / this.zoom;
+      const deltaY = (moveEvent.clientY - startY) / this.zoom;
+
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+
+      if (direction.includes('e')) {
+        newWidth = startWidth + deltaX;
+      }
+      if (direction.includes('w')) {
+        newWidth = startWidth - deltaX;
+      }
+      if (direction.includes('s')) {
+        newHeight = startHeight + deltaY;
+      }
+      if (direction.includes('n')) {
+        newHeight = startHeight - deltaY;
+      }
+
+      if (moveEvent.shiftKey) {
+        if (direction === 'e' || direction === 'w') {
+          newHeight = newWidth / aspectRatio;
+        } else if (direction === 'n' || direction === 's') {
+          newWidth = newHeight * aspectRatio;
+        } else {
+          const scaleX = newWidth / startWidth;
+          const scaleY = newHeight / startHeight;
+          const scale = Math.abs(newWidth - startWidth) > Math.abs(newHeight - startHeight) ? scaleX : scaleY;
+          newWidth = startWidth * scale;
+          newHeight = startHeight * scale;
+        }
+      }
+
+      if (newWidth < 20) {
+        newWidth = 20;
+        if (moveEvent.shiftKey) newHeight = newWidth / aspectRatio;
+      }
+      if (newHeight < 20) {
+        newHeight = 20;
+        if (moveEvent.shiftKey) newWidth = newHeight * aspectRatio;
+      }
+
+      let newOffsetX = startOffsetX;
+      let newOffsetY = startOffsetY;
+
+      if (direction.includes('e')) {
+        newOffsetX = startOffsetX + ((newWidth - startWidth) / 2 / wrapperWidth) * 100;
+      }
+      if (direction.includes('w')) {
+        newOffsetX = startOffsetX - ((newWidth - startWidth) / 2 / wrapperWidth) * 100;
+      }
+      if (direction.includes('s')) {
+        newOffsetY = startOffsetY + ((newHeight - startHeight) / 2 / wrapperHeight) * 100;
+      }
+      if (direction.includes('n')) {
+        newOffsetY = startOffsetY - ((newHeight - startHeight) / 2 / wrapperHeight) * 100;
+      }
+
+      imgObj.width = newWidth;
+      imgObj.height = newHeight;
+      imgObj.offsetX = newOffsetX;
+      imgObj.offsetY = newOffsetY;
+
+      this.updateImagesDOM();
+
+      const rect = imageContainer.getBoundingClientRect();
+      this.showToolbar(rect, 'image', imageContainer);
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      
+      const rect = imageContainer.getBoundingClientRect();
+      this.showToolbar(rect, 'image', imageContainer);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
   }
 
   initResizing(e, wrapper, direction) {
@@ -2868,30 +3367,62 @@ class DockitThemeEditor {
     const startY = e.clientY;
     const startLeft = parseInt(wrapper.style.left) || 0;
     const startTop = parseInt(wrapper.style.top) || 0;
+    const aspectRatio = startWidth / startHeight;
 
     const onMouseMove = (moveEvent) => {
       const deltaX = (moveEvent.clientX - startX) / this.zoom;
       const deltaY = (moveEvent.clientY - startY) / this.zoom;
 
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+
       if (direction.includes('e')) {
-        wrapper.style.width = `${Math.max(64, startWidth + deltaX)}px`;
-      }
-      if (direction.includes('s')) {
-        wrapper.style.height = `${Math.max(100, startHeight + deltaY)}px`;
+        newWidth = startWidth + deltaX;
       }
       if (direction.includes('w')) {
-        const newWidth = Math.max(64, startWidth - deltaX);
-        if (newWidth !== 64) {
-          wrapper.style.width = `${newWidth}px`;
-          wrapper.style.left = `${startLeft + deltaX}px`;
-        }
+        newWidth = startWidth - deltaX;
+      }
+      if (direction.includes('s')) {
+        newHeight = startHeight + deltaY;
       }
       if (direction.includes('n')) {
-        const newHeight = Math.max(100, startHeight - deltaY);
-        if (newHeight !== 100) {
-          wrapper.style.height = `${newHeight}px`;
-          wrapper.style.top = `${startTop + deltaY}px`;
+        newHeight = startHeight - deltaY;
+      }
+
+      if (moveEvent.shiftKey) {
+        if (direction === 'e' || direction === 'w') {
+          newHeight = newWidth / aspectRatio;
+        } else if (direction === 'n' || direction === 's') {
+          newWidth = newHeight * aspectRatio;
+        } else {
+          const scaleX = newWidth / startWidth;
+          const scaleY = newHeight / startHeight;
+          const scale = Math.abs(newWidth - startWidth) > Math.abs(newHeight - startHeight) ? scaleX : scaleY;
+          newWidth = startWidth * scale;
+          newHeight = startHeight * scale;
         }
+      }
+
+      const minWidth = Math.min(startWidth, 32);
+      const minHeight = Math.min(startHeight, 32);
+
+      if (newWidth < minWidth) {
+        newWidth = minWidth;
+        if (moveEvent.shiftKey) newHeight = newWidth / aspectRatio;
+      }
+      if (newHeight < minHeight) {
+        newHeight = minHeight;
+        if (moveEvent.shiftKey) newWidth = newHeight * aspectRatio;
+      }
+
+      wrapper.style.width = `${newWidth}px`;
+      wrapper.style.height = `${newHeight}px`;
+
+      if (direction.includes('w')) {
+        wrapper.style.left = `${startLeft + (startWidth - newWidth)}px`;
+      }
+      if (direction.includes('n')) {
+        wrapper.style.top = `${startTop + (startHeight - newHeight)}px`;
       }
 
       if (this.selectedMockupWrapper === wrapper) {
@@ -2963,22 +3494,11 @@ class DockitThemeEditor {
     const toolbar = this.container.querySelector('.dockit-context-toolbar');
     if (!toolbar) return;
 
-    toolbar.style.display = 'flex';
-
-    const editorRect = this.container.getBoundingClientRect();
-    const top = rect.top - editorRect.top;
-    const left = rect.left - editorRect.left;
-
-    let toolbarTop = top - 45;
-    if (toolbarTop < 50) {
-      toolbarTop = top + rect.height + 10;
+    if (target && target.classList.contains('dockit-mockup-image-container')) {
+      type = 'image';
     }
 
-    let toolbarLeft = left + (rect.width - 240) / 2;
-    toolbarLeft = Math.max(10, Math.min(toolbarLeft, editorRect.width - 250));
-
-    toolbar.style.top = `${toolbarTop}px`;
-    toolbar.style.left = `${toolbarLeft}px`;
+    toolbar.style.display = 'flex';
 
     const apertureIcon = this.lucideIcons['aperture'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><path d="M14.31 8l5.74 9.94M9.69 8h11.48M7.38 12l5.74-9.94M9.69 16L3.95 6.06M14.31 16H2.83M16.62 12l-5.74 9.94"></path></svg>`;
     const blendIcon = this.lucideIcons['mirror-rectangular'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M12 3v18"></path></svg>`;
@@ -2992,6 +3512,8 @@ class DockitThemeEditor {
     } else if (type === 'element') {
       const vars = this.getThemeVariableForElement(target);
       swatches = vars.filter(v => !v.includes('--color-background')).slice(0, 3);
+    } else if (type === 'image') {
+      swatches = [];
     }
 
     let swatchesHtml = '';
@@ -3037,17 +3559,40 @@ class DockitThemeEditor {
           </div>
         `;
       }
+    } else if (type === 'image') {
+      const trashIcon = this.lucideIcons['trash-2'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+      const patternIcon = this.lucideIcons['brick-wall'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 9v6"/><path d="M16 15v6"/><path d="M16 3v6"/><path d="M3 15h18"/><path d="M3 9h18"/><path d="M8 15v6"/><path d="M8 3v6"/></svg>`;
+      const objectIcon = this.lucideIcons['images'] || `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 22H4a2 2 0 0 1-2-2V6"/><rect width="16" height="16" x="6" y="2" rx="2"/></svg>`;
+      const imgObj = this.theme.images.find(img => img.id === target.dataset.imageId);
+      const isPatternActive = imgObj && imgObj.isPattern;
+      toolsHtml = `
+        <div class="dockit-toolbar-tool">
+          <button class="dockit-toolbar-icon-btn ${isPatternActive ? 'is-active' : ''}" id="btn-image-pattern" title="Toggle Pattern Mode">${patternIcon}</button>
+        </div>
+        <div class="dockit-toolbar-tool">
+          <button class="dockit-toolbar-icon-btn ${!isPatternActive ? 'is-active' : ''}" id="btn-image-object" title="Toggle Object Mode">${objectIcon}</button>
+        </div>
+        <div class="dockit-toolbar-divider"></div>
+        <div class="dockit-toolbar-tool">
+          <button class="dockit-toolbar-icon-btn" id="btn-image-delete" title="Delete Image">${trashIcon}</button>
+        </div>
+      `;
     }
 
     toolbar.innerHTML = `
-      <div class="dockit-toolbar-colors">
-        ${swatchesHtml}
-      </div>
-      ${type === 'wrapper' ? '<div class="dockit-toolbar-divider"></div>' + toolsHtml : ''}
-      <div class="dockit-toolbar-divider"></div>
-      <button class="dockit-toolbar-icon-btn dockit-toolbar-img-btn" id="btn-img-importer" title="Import Image">
-        ${imageIcon}
-      </button>
+      ${swatches.length > 0 ? `
+        <div class="dockit-toolbar-colors">
+          ${swatchesHtml}
+        </div>
+      ` : ''}
+      ${(type === 'wrapper') ? '<div class="dockit-toolbar-divider"></div>' + toolsHtml : ''}
+      ${(type === 'image') ? toolsHtml : ''}
+      ${type === 'wrapper' ? `
+        <div class="dockit-toolbar-divider"></div>
+        <button class="dockit-toolbar-icon-btn dockit-toolbar-img-btn" id="btn-img-importer" title="Import Image">
+          ${imageIcon}
+        </button>
+      ` : ''}
     `;
 
     swatches.forEach(v => {
@@ -3104,9 +3649,97 @@ class DockitThemeEditor {
     const btnImgImporter = toolbar.querySelector('#btn-img-importer');
     if (btnImgImporter) {
       btnImgImporter.addEventListener('click', () => {
-        this.sidebar.showDialog({ message: 'Image Importer is currently a placeholder!' });
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const src = ev.target.result;
+            const img = new Image();
+            img.onload = () => {
+              if (!this.theme.images) this.theme.images = [];
+              const w = img.naturalWidth > 300 ? 300 : img.naturalWidth;
+              const h = img.naturalWidth > 300 ? (img.naturalHeight * 300 / img.naturalWidth) : img.naturalHeight;
+              this.theme.images.push({
+                id: 'img-' + Date.now(),
+                src: src,
+                parentId: target.dataset.id,
+                width: w,
+                height: h,
+                offsetX: 0,
+                offsetY: 0,
+                isPattern: false
+              });
+              this.renderImages();
+            };
+            img.src = src;
+          };
+          reader.readAsDataURL(file);
+        };
+        input.click();
       });
     }
+
+    if (type === 'image') {
+      const btnDelete = toolbar.querySelector('#btn-image-delete');
+      if (btnDelete) {
+        btnDelete.addEventListener('click', () => {
+          if (!this.theme.images) return;
+          this.theme.images = this.theme.images.filter(img => img.id !== target.dataset.imageId);
+          this.removeSelectionBorder();
+          toolbar.style.display = 'none';
+          this.renderImages();
+        });
+      }
+      
+      const btnPattern = toolbar.querySelector('#btn-image-pattern');
+      if (btnPattern) {
+        btnPattern.addEventListener('click', () => {
+          if (!this.theme.images) return;
+          const imgObj = this.theme.images.find(img => img.id === target.dataset.imageId);
+          if (imgObj) {
+            this.theme.images.forEach(img => {
+              if (img.id !== imgObj.id) {
+                img.isPattern = false;
+              }
+            });
+            imgObj.isPattern = true;
+            this.renderImages();
+          }
+        });
+      }
+
+      const btnObject = toolbar.querySelector('#btn-image-object');
+      if (btnObject) {
+        btnObject.addEventListener('click', () => {
+          if (!this.theme.images) return;
+          const imgObj = this.theme.images.find(img => img.id === target.dataset.imageId);
+          if (imgObj) {
+            imgObj.isPattern = false;
+            this.renderImages();
+          }
+        });
+      }
+    }
+
+    const toolbarWidth = toolbar.offsetWidth || 240;
+    const editorRect = this.container.getBoundingClientRect();
+    const top = rect.top - editorRect.top;
+    const left = rect.left - editorRect.left;
+
+    let toolbarTop = top - 45;
+    if (toolbarTop < 50) {
+      toolbarTop = top + rect.height + 10;
+    }
+
+    let toolbarLeft = left + (rect.width - toolbarWidth) / 2;
+    toolbarLeft = Math.max(10, Math.min(toolbarLeft, editorRect.width - toolbarWidth - 10));
+
+    toolbar.style.top = `${toolbarTop}px`;
+    toolbar.style.left = `${toolbarLeft}px`;
   }
 
   normalizeColorForPicker(colorStr) {
@@ -3179,16 +3812,228 @@ class DockitThemeEditor {
     }
   }
 
+  async _computeDHash(dataUrl) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 9;
+        canvas.height = 8;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 9, 8);
+        const data = ctx.getImageData(0, 0, 9, 8).data;
+        
+        let hash = '';
+        for (let y = 0; y < 8; y++) {
+          for (let x = 0; x < 8; x++) {
+            const idx1 = (y * 9 + x) * 4;
+            const idx2 = (y * 9 + x + 1) * 4;
+            const gray1 = data[idx1] * 0.299 + data[idx1+1] * 0.587 + data[idx1+2] * 0.114;
+            const gray2 = data[idx2] * 0.299 + data[idx2+1] * 0.587 + data[idx2+2] * 0.114;
+            hash += gray1 > gray2 ? '1' : '0';
+          }
+        }
+        
+        let hex = '';
+        for (let i = 0; i < 64; i += 4) {
+          hex += parseInt(hash.substr(i, 4), 2).toString(16);
+        }
+        resolve(hex);
+      };
+      img.onerror = () => resolve('0000000000000000');
+      img.src = dataUrl;
+    });
+  }
+
+  _hammingDistance(hex1, hex2) {
+    if (hex1.length !== 16 || hex2.length !== 16) return 64;
+    let dist = 0;
+    for (let i = 0; i < 16; i++) {
+      const n1 = parseInt(hex1[i], 16);
+      const n2 = parseInt(hex2[i], 16);
+      let xor = n1 ^ n2;
+      while (xor > 0) {
+        dist += xor & 1;
+        xor >>= 1;
+      }
+    }
+    return dist;
+  }
+
+  async _convertToWebP(dataUrl, maxWidth = 1200) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.floor(height * (maxWidth / width));
+          width = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          resolve(blob);
+        }, 'image/webp', 0.8);
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
+  }
+
+  _dataURLtoBlob(dataurl) {
+    const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  }
+
   async applyTheme() {
-    await chrome.storage.local.set({ dockitTheme: this.theme });
-    this.originalThemeStr = JSON.stringify(this.theme);
     const applyBtn = this.container.querySelector('#btn-apply-theme');
+    const originalText = applyBtn ? applyBtn.innerHTML : '<span>Apply Theme</span>';
+
+    const hasNewImages = this.theme.images && this.theme.images.some(img => img.src.startsWith('data:image/'));
+
+    if (hasNewImages) {
+      let storage = await chrome.storage.local.get(['appwriteSession']);
+      if (!storage.appwriteSession) {
+        if (applyBtn) applyBtn.innerHTML = originalText;
+        
+        const userProceeds = await new Promise((resolve) => {
+          this.sidebar.showDialog({
+            title: 'Account Required',
+            message: 'You need an account to save custom images. Would you like to log in now?',
+            type: 'confirm',
+            confirmText: 'Log In',
+            onConfirm: () => resolve(true),
+            onCancel: () => resolve(false)
+          });
+        });
+
+        if (!userProceeds) return;
+
+        const authRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_LOGIN' });
+        if (!authRes || !authRes.success) return; // Wait for login
+      }
+    }
+
+    try {
+      await chrome.storage.local.set({ dockitTheme: this.theme });
+      this.originalThemeStr = JSON.stringify(this.theme);
+    } catch (e) {
+      console.warn("Dockit: Failed to save to local storage immediately, quota exceeded?", e);
+    }
+    
     if (applyBtn) {
-      const originalText = applyBtn.innerHTML;
       applyBtn.innerHTML = `<span>Applied!</span>`;
       setTimeout(() => {
         applyBtn.innerHTML = originalText;
       }, 1500);
+    }
+
+    if (hasNewImages) {
+      this._processImagesInBackground().catch(e => console.error("Dockit: Background processing error", e));
+    }
+  }
+
+  async _processImagesInBackground() {
+    let storage = await chrome.storage.local.get(['appwriteSession']);
+    if (!storage.appwriteSession) return;
+    const session = storage.appwriteSession;
+    const { secret, userId } = session;
+
+    const projectId = '6a0a1cc000178886bfaf';
+    const bucketId = 'theme-assets';
+    const headers = {
+      'X-Appwrite-Project': projectId,
+      'X-Fallback-Cookies': `a_session_${projectId}=${secret}`
+    };
+
+    let existingHashes = [];
+    try {
+      let after = null;
+      for (let i = 0; i < 5; i++) {
+        let url = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files?limit=100`;
+        if (after) url += `&cursorAfter=${after}`;
+        const listRes = await fetch(url, { headers });
+        const listData = await listRes.json();
+        if (listData.files) {
+          existingHashes.push(...listData.files.map(f => f.$id));
+          if (listData.files.length < 100) break;
+          after = listData.files[listData.files.length - 1].$id;
+        } else {
+          break;
+        }
+      }
+    } catch (err) {
+      console.error('Dockit: Failed to fetch existing files for deduplication scan', err);
+    }
+
+    let modified = false;
+
+    for (const img of this.theme.images) {
+      if (img.src.startsWith('data:image/')) {
+        try {
+          const dHash = await this._computeDHash(img.src);
+          let matchFound = null;
+
+          for (const existingId of existingHashes) {
+            if (this._hammingDistance(dHash, existingId) <= 3) {
+              matchFound = existingId;
+              break;
+            }
+          }
+
+          if (matchFound) {
+            console.log(`Dockit: Deduplicated image to existing hash ${matchFound}`);
+            img.src = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${matchFound}/view?project=${projectId}`;
+            modified = true;
+          } else {
+            console.log(`Dockit: Compressing and uploading new image with hash ${dHash}`);
+            const webpBlob = await this._convertToWebP(img.src);
+            if (!webpBlob) continue;
+
+            const formData = new FormData();
+            formData.append('fileId', dHash);
+            formData.append('file', webpBlob, `${dHash}.webp`);
+            formData.append('permissions[]', `read("any")`);
+            formData.append('permissions[]', `update("user:${userId}")`);
+            formData.append('permissions[]', `delete("user:${userId}")`);
+            
+            const res = await fetch(`https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files`, {
+              method: 'POST',
+              headers,
+              body: formData
+            });
+            
+            const data = await res.json();
+            
+            if (data.$id || data.code === 409) {
+              const finalId = data.$id || dHash;
+              img.src = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${finalId}/view?project=${projectId}`;
+              existingHashes.push(finalId);
+              modified = true;
+            } else {
+              console.error('Dockit: Upload failed with response:', data);
+            }
+          }
+        } catch (err) {
+          console.error('Dockit: Background image processing error', err);
+        }
+      }
+    }
+
+    if (modified) {
+      await chrome.storage.local.set({ dockitTheme: this.theme });
+      this.originalThemeStr = JSON.stringify(this.theme);
+      console.log('Dockit: Background image processing complete.');
     }
   }
 

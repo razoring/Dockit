@@ -58,7 +58,7 @@ body {
 .dockit-sidebar {
   width: 48px;
   height: 100%;
-  background-color: color-mix(in srgb, var(--color-background) calc(var(--opacity-value, 1) * 100%), transparent);
+  background-color: transparent !important;
   border-left: 1px solid color-mix(in srgb, var(--color-border) calc(var(--opacity-value, 1) * 100%), transparent);
   display: flex;
   flex-direction: column;
@@ -69,6 +69,22 @@ body {
   gap: 8px;
   backdrop-filter: blur(var(--blur-value, 0px));
   border-radius: var(--corner-radius-value, 0px);
+  isolation: isolate;
+}
+
+.dockit-sidebar::before,
+.dockit-in-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--color-background) calc(var(--opacity-value, 1) * 100%), transparent);
+  border-radius: inherit;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.dockit-in-page {
+  background-color: transparent !important;
 }
 
 
@@ -293,9 +309,10 @@ body {
   backdrop-filter: blur(var(--blur-value, 0px));
   border-radius: var(--corner-radius-value, 0px);
   pointer-events: none;
+  isolation: isolate;
 }
 
-.dockit-in-page > * {
+.dockit-in-page>* {
   pointer-events: auto;
 }
 
@@ -1258,7 +1275,7 @@ body {
 /* Canvas Viewport */
 .dockit-theme-editor-canvas {
   flex: 1;
-  background-color: var(--color-background);
+  background-color: var(--color-secondary);
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
@@ -1280,6 +1297,7 @@ body {
   height: 4000px;
   transform-origin: 0 0;
   pointer-events: none;
+  color: var(--color-foreground);
 }
 
 .dockit-mockup-wrapper {
@@ -1293,7 +1311,10 @@ body {
   box-sizing: border-box;
 }
 
-.dockit-mockup-wrapper.mockup-sidebar {
+.dockit-mockup-wrapper.mockup-sidebar,
+.dockit-mockup-wrapper.mockup-settings,
+.dockit-mockup-wrapper.mockup-edit-apps,
+.dockit-mockup-wrapper.mockup-customization {
   padding: var(--padding-value, 0px);
   box-sizing: content-box;
   background-color: transparent !important;
@@ -1302,7 +1323,10 @@ body {
   box-shadow: none !important;
 }
 
-.dockit-mockup-wrapper.mockup-sidebar>.dockit-sidebar {
+.dockit-mockup-wrapper.mockup-sidebar > .dockit-sidebar,
+.dockit-mockup-wrapper.mockup-settings > .dockit-in-page,
+.dockit-mockup-wrapper.mockup-edit-apps > .dockit-in-page,
+.dockit-mockup-wrapper.mockup-customization > .dockit-in-page {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
@@ -1386,8 +1410,70 @@ body {
 }
 
 /* Pointer Events mapping for isolation */
-.dockit-mockup-wrapper:not(.is-isolated) *:not(.dockit-resize-handle) {
+.dockit-mockup-wrapper:not(.is-isolated) *:not(.dockit-resize-handle):not(.dockit-mockup-image-container):not(.dockit-mockup-image) {
   pointer-events: none !important;
+}
+
+/* Mockup Pattern Layer */
+.dockit-mockup-pattern-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  background-repeat: repeat;
+}
+
+/* Mockup Images */
+.dockit-mockup-image-container {
+  position: absolute;
+  pointer-events: auto !important;
+  z-index: -1;
+  box-sizing: border-box;
+}
+
+.dockit-mockup-image-container[data-is-pattern="true"].dockit-element-selected {
+  border: 1.5px dashed rgba(59, 130, 246, 0.6) !important;
+  outline: none !important;
+  z-index: 1000 !important;
+}
+
+.dockit-mockup-image-container:not([data-is-pattern="true"]).dockit-element-selected {
+  outline: 2px solid var(--color-primary) !important;
+  outline-offset: -1px;
+  z-index: 1000 !important;
+}
+
+.dockit-mockup-image-container.is-parent {
+  overflow: visible;
+}
+
+.dockit-mockup-image-container.is-child {
+  cursor: move;
+}
+
+.dockit-mockup-image-container .dockit-mockup-image {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.dockit-mockup-image-container .dockit-resize-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dockit-mockup-image-container.dockit-element-selected .dockit-resize-handle {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.dockit-mockup-wrapper.is-isolated {
+  box-shadow: none !important;
 }
 
 .dockit-mockup-wrapper.is-isolated * {
@@ -1416,23 +1502,27 @@ body {
   }
 }
 
-.dockit-mockup-wrapper.is-isolated::before {
+.dockit-mockup-wrapper.is-isolated::after {
   content: '';
   position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
+  top: -30px;
+  left: -30px;
+  right: -30px;
+  bottom: -30px;
   background: linear-gradient(90deg,
       var(--color-primary) 0%,
       hsl(from var(--color-primary) calc(h + 50) s l) 50%,
-      var(--color-primary) 100%);
+      var(--color-primary) 100%) content-box;
   background-size: 300px 300px;
-  border-radius: inherit;
+  border-radius: calc(var(--corner-radius-value, 0px) + 30px);
+  padding: 30px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   z-index: -1;
-  filter: blur(12px);
   animation: dockit-isolation-glow 6s linear infinite;
   pointer-events: none;
+  filter: blur(10px);
 }
 
 /* Context Floating Toolbar */
@@ -1614,8 +1704,8 @@ body {
 :host(.dockit-host-panel-open) .dockit-sidebar,
 #dockit-host-root.dockit-theme-editor-active .dockit-sidebar,
 :host(.dockit-theme-editor-active) .dockit-sidebar,
-#dockit-host-root.dockit-host-panel-open .dockit-in-page > *,
-:host(.dockit-host-panel-open) .dockit-in-page > * {
+#dockit-host-root.dockit-host-panel-open .dockit-in-page>*,
+:host(.dockit-host-panel-open) .dockit-in-page>* {
   pointer-events: auto !important;
 }
 
@@ -1696,4 +1786,83 @@ body.dockit-theme-editor-active {
 .dockit-dialog-btn.confirm-btn {
   background-color: var(--color-primary);
   color: #fff;
+}
+
+/* Zoom Controls */
+.dockit-zoom-controls {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10000200;
+  display: flex;
+  align-items: center;
+  background-color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  gap: 2px;
+}
+
+.dockit-zoom-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-foreground);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  opacity: 0.8;
+}
+
+.dockit-zoom-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  opacity: 1;
+}
+
+.dockit-zoom-level-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dockit-zoom-level-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-foreground);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 8px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.dockit-zoom-level-btn:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dockit-zoom-menu {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 50%;
+  transform: translateX(50%);
+  background-color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 6px 0;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 10000300;
 }

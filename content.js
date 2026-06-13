@@ -57,6 +57,121 @@ function applyTheme(themeObj) {
   }
   css += '}';
   styleEl.textContent = css;
+
+  const shadow = _hostElement.shadowRoot;
+  const sidebarEl = shadow.querySelector('.dockit-sidebar');
+  const inPageEl = shadow.querySelector('.dockit-in-page');
+  
+  if (sidebarEl) {
+    sidebarEl.querySelectorAll('.dockit-mockup-container').forEach(el => el.remove());
+  }
+  if (inPageEl) {
+    inPageEl.querySelectorAll('.dockit-mockup-container').forEach(el => el.remove());
+  }
+
+  if (themeObj.images && themeObj.images.length > 0) {
+    const origSidebarWidth = 48;
+    const origInPageWidth = 320;
+    const origHeight = 500;
+    
+    let sidebarMockupContainer = null;
+    let inPageMockupContainer = null;
+    
+    themeObj.images.forEach(imgData => {
+      const targets = [];
+      if (sidebarEl) targets.push({ clipTarget: sidebarEl, origWidth: origSidebarWidth, isSidebar: true });
+      if (inPageEl) targets.push({ clipTarget: inPageEl, origWidth: origInPageWidth, isSidebar: false });
+
+      targets.forEach(({ clipTarget, origWidth, isSidebar }) => {
+        let targetContainer = null;
+        if (isSidebar) {
+          if (!sidebarMockupContainer) {
+            sidebarMockupContainer = document.createElement('div');
+            sidebarMockupContainer.className = 'dockit-mockup-container';
+            sidebarMockupContainer.style.position = 'absolute';
+            sidebarMockupContainer.style.inset = '0';
+            sidebarMockupContainer.style.overflow = 'hidden';
+            sidebarMockupContainer.style.zIndex = '-1';
+            sidebarMockupContainer.style.borderRadius = 'inherit';
+            sidebarMockupContainer.style.setProperty('pointer-events', 'none', 'important');
+            sidebarEl.insertBefore(sidebarMockupContainer, sidebarEl.firstChild);
+          }
+          targetContainer = sidebarMockupContainer;
+        } else {
+          if (!inPageMockupContainer) {
+            inPageMockupContainer = document.createElement('div');
+            inPageMockupContainer.className = 'dockit-mockup-container';
+            inPageMockupContainer.style.position = 'absolute';
+            inPageMockupContainer.style.inset = '0';
+            inPageMockupContainer.style.overflow = 'hidden';
+            inPageMockupContainer.style.zIndex = '-1';
+            inPageMockupContainer.style.borderRadius = 'inherit';
+            inPageMockupContainer.style.setProperty('pointer-events', 'none', 'important');
+            inPageEl.insertBefore(inPageMockupContainer, inPageEl.firstChild);
+          }
+          targetContainer = inPageMockupContainer;
+        }
+
+        const applyEdgeStickiness = (offset) => {
+          const normalized = offset / 50; 
+          const curved = Math.sign(normalized) * Math.pow(Math.abs(normalized), 0.35);
+          return curved * 50;
+        };
+
+        const widthPct = (imgData.width / origWidth) * 100;
+        const heightPct = (imgData.height / origHeight) * 100;
+        
+        const rawOffsetX = imgData.offsetX !== undefined ? imgData.offsetX : (imgData.x ? ((imgData.x + (imgData.width / 2) - (origWidth / 2)) / origWidth) * 100 : 0);
+        const rawOffsetY = imgData.offsetY !== undefined ? imgData.offsetY : (imgData.y ? ((imgData.y + (imgData.height / 2) - (origHeight / 2)) / origHeight) * 100 : 0);
+        
+        const stickyX = applyEdgeStickiness(rawOffsetX);
+        const stickyY = applyEdgeStickiness(rawOffsetY);
+
+        if (imgData.isPattern) {
+          const patternLayer = document.createElement('div');
+          patternLayer.className = 'dockit-mockup-pattern-layer';
+          patternLayer.style.position = 'absolute';
+          patternLayer.style.left = '0';
+          patternLayer.style.top = '0';
+          patternLayer.style.width = '100%';
+          patternLayer.style.height = '100%';
+          patternLayer.style.backgroundImage = `url("${imgData.src}")`;
+          patternLayer.style.backgroundRepeat = 'repeat';
+          patternLayer.style.setProperty('pointer-events', 'none', 'important');
+          patternLayer.style.zIndex = '-1';
+          patternLayer.style.backgroundSize = `auto ${heightPct}%`;
+          patternLayer.style.backgroundPosition = `calc(50% + ${stickyX}%) calc(50% + ${stickyY}%)`;
+          targetContainer.appendChild(patternLayer);
+        } else {
+          const imgContainer = document.createElement('div');
+          imgContainer.className = 'dockit-mockup-image-container';
+          imgContainer.style.position = 'absolute';
+          imgContainer.style.width = 'auto';
+          imgContainer.style.height = `${heightPct}%`;
+          imgContainer.style.left = `calc(50% + ${stickyX}%)`;
+          imgContainer.style.top = `calc(50% + ${stickyY}%)`;
+          imgContainer.style.transform = 'translate(-50%, -50%)';
+          imgContainer.style.setProperty('pointer-events', 'none', 'important');
+          imgContainer.style.zIndex = '0';
+          imgContainer.style.display = 'flex';
+          imgContainer.style.alignItems = 'center';
+          imgContainer.style.justifyContent = 'center';
+          
+          const imgEl = document.createElement('img');
+          imgEl.src = imgData.src;
+          imgEl.className = 'dockit-mockup-image';
+          imgEl.draggable = false;
+          imgEl.style.width = 'auto';
+          imgEl.style.height = '100%';
+          imgEl.style.objectFit = 'contain';
+          imgEl.style.setProperty('pointer-events', 'none', 'important');
+          imgContainer.appendChild(imgEl);
+          
+          targetContainer.appendChild(imgContainer);
+        }
+      });
+    });
+  }
 }
 
 async function _createSidebar() {
@@ -111,12 +226,13 @@ async function _createSidebar() {
       shadowRoot.appendChild(fontStyle);
     }
 
-    if (styleStorage.dockitTheme) {
-      applyTheme(styleStorage.dockitTheme);
-    }
     _sidebar = new DockitSidebar(false);
     const sidebarEl = await _sidebar.render();
     shadowRoot.appendChild(sidebarEl);
+
+    if (styleStorage.dockitTheme) {
+      applyTheme(styleStorage.dockitTheme);
+    }
     document.documentElement.appendChild(_hostElement);
   } catch (err) {
     if (err.message && err.message.includes('Extension context invalidated')) {
@@ -824,7 +940,8 @@ function initAutoHideTracking() {
         stopHoverTracking();
       }
     } else {
-      if (distance > 48) {
+      const isOverSidebar = e.composedPath().includes(_hostElement);
+      if (!isOverSidebar) {
         hideSidebar();
       }
     }

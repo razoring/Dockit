@@ -9,6 +9,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     contexts: ["page", "link"]
   });
 
+  /*
   // Clear all local data on install for a fresh start
   await chrome.storage.local.clear();
 
@@ -16,7 +17,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   await chrome.storage.local.set({
     pinnedApps: [],
     temporaryApps: []
-  });
+  });*/
 
   // Register main world content script
   await registerScrollScript();
@@ -160,7 +161,7 @@ chrome.runtime.onConnect.addListener((port) => {
           const contexts = await chrome.runtime.getContexts({ contextTypes: ['SIDE_PANEL'] });
           const hasContext = contexts.some(c => c.windowId === panelWindowId);
           if (hasContext) return;
-        } catch (e) {}
+        } catch (e) { }
         chrome.storage.local.set({
           [`sidePanelOpen_${panelWindowId}`]: false,
           temporaryApps: []
@@ -184,7 +185,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse(true);
         return false;
       }
-      
+
       //check active side panel contexts
       chrome.runtime.getContexts({ contextTypes: ['SIDE_PANEL'] })
         .then((contexts) => {
@@ -227,14 +228,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (changeInfo.url && changeInfo.url.startsWith(redirectUrl)) {
         chrome.tabs.onUpdated.removeListener(listener);
         chrome.tabs.remove(tabId);
-        
+
         try {
           const cookie = await chrome.cookies.get({ url: 'https://nyc.cloud.appwrite.io', name: `a_session_${projectId}` });
           if (!cookie) throw new Error('Cookie not found after login');
-          
+
           const secret = cookie.value;
           const fallbackCookie = `a_session_${projectId}=${secret}`;
-          
+
           const res = await fetch('https://nyc.cloud.appwrite.io/v1/account', {
             headers: {
               'X-Appwrite-Project': projectId,
@@ -243,7 +244,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           });
           const account = await res.json();
           if (account.code) throw new Error(account.message);
-          
+
           const userId = account.$id;
           await chrome.storage.local.set({ appwriteSession: { secret, userId } });
           sendResponse({ success: true, userId });
@@ -274,7 +275,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             'X-Fallback-Cookies': fallbackCookie
           }
         });
-        
+
         if (res.status === 404) {
           sendResponse({ success: true, settings: null });
         } else {
@@ -428,7 +429,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
         }).catch(() => { });
       }).catch(() => { });
     }
-  } catch (err) {}
+  } catch (err) { }
 });
 
 async function _pushSync() {
@@ -468,7 +469,7 @@ async function _pushSync() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ documentId: userId, data: { username: 'user_' + userId, updated: new Date().toISOString(), created: new Date().toISOString() } })
-        }).catch(() => {});
+        }).catch(() => { });
 
         const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents/${userId}`, {
           method: 'PATCH',
@@ -512,7 +513,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       clearTimeout(_syncTimeout);
     }
     _syncTimeout = setTimeout(async () => {
-      await _pushSync().catch(() => {});
+      await _pushSync().catch(() => { });
     }, 20000);
   }
 });
