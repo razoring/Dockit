@@ -36,7 +36,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 3px;
   transition: background-color 0.2s;
 }
@@ -153,7 +153,7 @@ body {
 .dockit-divider {
   width: 24px;
   height: 2px;
-  background-color: var(--color-border);
+  background-color: color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 1px;
   flex-shrink: 0;
   margin: 0;
@@ -191,7 +191,7 @@ body {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 2px dashed var(--color-border);
+  border: 2px dashed color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   flex-shrink: 0;
   box-sizing: border-box;
   color: var(--color-foreground);
@@ -241,7 +241,7 @@ body {
 
 .dockit-action-btn:hover {
   opacity: 1;
-  background-color: var(--color-secondary);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
 }
 
 /* Trash State */
@@ -423,7 +423,7 @@ body {
   align-items: center;
   height: 38px;
   background-color: var(--color-background);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   padding: 0 10px;
   gap: 6px;
   flex-shrink: 0;
@@ -483,8 +483,8 @@ body {
   left: 10px;
   z-index: 100000;
   width: 250px;
-  background-color: var(--color-secondary);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 8px;
   padding: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
@@ -527,7 +527,7 @@ body {
 
 .dockit-menu-btn {
   background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 11px;
@@ -548,7 +548,7 @@ body {
 
 .dockit-menu-divider {
   height: 1px;
-  background-color: var(--color-border);
+  background-color: color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   width: 100%;
 }
 
@@ -630,8 +630,8 @@ body {
   flex: 1;
   display: flex;
   align-items: center;
-  background-color: var(--color-secondary);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 8px;
   padding: 6px 10px;
   gap: 8px;
@@ -676,10 +676,10 @@ body {
   appearance: none;
   width: 16px;
   height: 16px;
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 4px;
   outline: none;
-  background-color: var(--color-secondary);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   cursor: pointer;
   position: relative;
   transition: background-color 0.2s, border-color 0.2s;
@@ -713,9 +713,9 @@ body {
 
 /* category sections */
 .dockit-settings-category {
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 12px;
-  background-color: var(--color-secondary);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   display: flex;
   flex-direction: column;
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -735,7 +735,7 @@ body {
 .dockit-settings-category:not(.is-collapsed) .dockit-settings-category-header {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
-  background-color: var(--color-secondary);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
 }
 
 .dockit-settings-category-header:hover {
@@ -766,7 +766,7 @@ body {
 }
 
 .dockit-settings-category-content {
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   padding: 8px 14px 14px 14px;
   display: flex;
   flex-direction: column;
@@ -849,7 +849,7 @@ body {
   right: 0;
   bottom: 0;
   background-color: var(--color-background);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 20px;
 }
@@ -887,7 +887,7 @@ body {
   display: flex;
   align-items: center;
   background-color: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 6px;
   padding: 4px 8px;
   gap: 6px;
@@ -930,7 +930,7 @@ body {
   align-items: center;
   gap: 4px;
   background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 6px;
   padding: 2px 6px;
   font-size: 10px;
@@ -964,7 +964,7 @@ body {
 /* settings actions */
 .dockit-settings-btn {
   background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   color: var(--color-foreground);
   border-radius: 8px;
   padding: 6px 12px;
@@ -1007,8 +1007,8 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: var(--color-secondary);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 6px;
   padding: 6px 10px;
   cursor: pointer;
@@ -1037,8 +1037,8 @@ body {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background-color: var(--color-secondary);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 6px;
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -1171,7 +1171,7 @@ body {
 
 .dockit-menu-trigger-btn {
   background: transparent;
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 6px;
   color: var(--color-foreground);
   width: 32px;
@@ -1202,8 +1202,8 @@ body {
 }
 
 .dockit-theme-name-input {
-  background: var(--color-secondary);
-  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 4px;
   color: var(--color-foreground);
   font-weight: 600;
@@ -1227,8 +1227,8 @@ body {
   position: absolute;
   top: 45px;
   left: 16px;
-  background-color: var(--color-secondary);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 8px;
   padding: 6px 0;
   min-width: 160px;
@@ -1268,14 +1268,14 @@ body {
 
 .dockit-dropdown-divider {
   height: 1px;
-  background-color: var(--color-border);
+  background-color: color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   margin: 6px 24px;
 }
 
 /* Canvas Viewport */
 .dockit-theme-editor-canvas {
   flex: 1;
-  background-color: var(--color-secondary);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
@@ -1526,8 +1526,8 @@ body {
 /* Context Floating Toolbar */
 .dockit-context-toolbar {
   position: absolute;
-  background-color: var(--color-secondary);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 8px;
   padding: 8px 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
@@ -1542,7 +1542,7 @@ body {
 .dockit-toolbar-divider {
   width: 1px;
   height: 20px;
-  background-color: var(--color-border);
+  background-color: color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   margin: 0 4px;
 }
 
@@ -1574,7 +1574,7 @@ body {
 
 .dockit-toolbar-icon-btn:hover {
   opacity: 1;
-  background: var(--color-border);
+  background: color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
 }
 
 .dockit-toolbar-icon-btn.is-active {
@@ -1646,7 +1646,7 @@ body {
 .dockit-color-field input[type="color"] {
   width: 20px;
   height: 20px;
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 50%;
   background: transparent;
   padding: 0;
@@ -1665,7 +1665,7 @@ body {
 
 .dockit-toolbar-img-btn {
   background: transparent;
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 4px;
   color: var(--color-foreground);
   width: 24px;
@@ -1731,7 +1731,7 @@ body.dockit-theme-editor-active {
 
 .dockit-dialog-box {
   background-color: var(--color-background);
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 12px;
   padding: 24px;
   width: 320px;
@@ -1777,7 +1777,7 @@ body.dockit-theme-editor-active {
 
 .dockit-dialog-btn.cancel-btn {
   background-color: transparent;
-  border: 1px solid var(--color-border);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   color: var(--color-foreground);
 }
 
@@ -1794,8 +1794,8 @@ body.dockit-theme-editor-active {
   z-index: 10000200;
   display: flex;
   align-items: center;
-  background-color: var(--color-secondary);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 20px;
   padding: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -1856,8 +1856,8 @@ body.dockit-theme-editor-active {
   bottom: calc(100% + 12px);
   right: 50%;
   transform: translateX(50%);
-  background-color: var(--color-secondary);
-  border: 1px solid var(--color-border);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   border-radius: 8px;
   padding: 6px 0;
   min-width: 180px;

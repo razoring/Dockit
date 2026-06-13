@@ -3582,6 +3582,12 @@ class DockitThemeEditor {
             <input type="range" id="slider-opacity" min="10" max="100" value="${Math.round(parseFloat(this.theme.options['--opacity-value']) * 100) || 100}" />
           </div>
         </div>
+        <div class="dockit-toolbar-tool">
+          <button class="dockit-toolbar-icon-btn" title="Menu Transparency">${blendIcon}</button>
+          <div class="dockit-toolbar-slider-container">
+            <input type="range" id="slider-menu-opacity" min="0" max="100" value="${Math.round(parseFloat(this.theme.options['--menu-opacity-value'] ?? 1) * 100)}" />
+          </div>
+        </div>
       `;
       if (target.dataset.id === 'sidebar') {
         toolsHtml += `
@@ -3655,13 +3661,13 @@ class DockitThemeEditor {
       }
     });
 
-    ['blur', 'opacity', 'padding', 'corners'].forEach(type => {
+    ['blur', 'opacity', 'menu-opacity', 'padding', 'corners'].forEach(type => {
       const slider = toolbar.querySelector(`#slider-${type}`);
       if (slider) {
         slider.addEventListener('input', (e) => {
           let val = e.target.value;
-          if (type === 'opacity') {
-            this.theme.options['--opacity-value'] = (val / 100).toString();
+          if (type === 'opacity' || type === 'menu-opacity') {
+            this.theme.options[`--${type}-value`] = (val / 100).toString();
           } else if (type === 'blur' || type === 'padding') {
             this.theme.options[`--${type}-value`] = val + 'px';
           } else if (type === 'corners') {
