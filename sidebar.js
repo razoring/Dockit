@@ -4624,6 +4624,35 @@ class DockitThemeEditor {
       
       const payloadString = JSON.stringify(this.theme);
       
+      if (!this.theme.publishedId) {
+        try {
+          const themeName = this.theme.name || 'My Custom Theme';
+          const checkQueries = [
+            JSON.stringify({ method: 'equal', attribute: 'profile', values: [userId] }),
+            JSON.stringify({ method: 'equal', attribute: 'name', values: [themeName] }),
+            JSON.stringify({ method: 'limit', values: [1] })
+          ];
+          let checkUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents?`;
+          checkQueries.forEach(q => checkUrl += `queries[]=${encodeURIComponent(q)}&`);
+          
+          const checkRes = await fetch(checkUrl, {
+            headers: {
+              'X-Appwrite-Project': projectId,
+              'X-Fallback-Cookies': `a_session_${projectId}=${secret}`
+            }
+          });
+          
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            if (checkData.documents && checkData.documents.length > 0) {
+              this.theme.publishedId = checkData.documents[0].$id;
+            }
+          }
+        } catch (e) {
+          console.warn("Error checking existing themes:", e);
+        }
+      }
+
       const method = this.theme.publishedId ? 'PATCH' : 'POST';
       const endpoint = this.theme.publishedId 
         ? `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents/${this.theme.publishedId}`
