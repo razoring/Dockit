@@ -3089,7 +3089,13 @@ class DockitSidebar {
           const prefsRes = await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', { headers });
           if (prefsRes.ok) {
             const prefs = await prefsRes.json();
-            if (prefs.avatarUrl) customAvatar = prefs.avatarUrl;
+            if (prefs.avatarUrl) {
+              if (prefs.avatarUrl.startsWith('http')) {
+                customAvatar = prefs.avatarUrl;
+              } else {
+                customAvatar = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${prefs.avatarUrl}/view?project=${projectId}`;
+              }
+            }
           }
         } catch (e) {}
 
@@ -3240,9 +3246,14 @@ class DockitSidebar {
             try {
               const base64Response = await fetch(this._pendingProfileUpdates.avatarUrl);
               const blob = await base64Response.blob();
+              
+              const mimeMatch = this._pendingProfileUpdates.avatarUrl.match(/:(.*?);/);
+              const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+              const ext = mime.split('/')[1] || 'jpg';
+
               const formData = new FormData();
               formData.append('fileId', 'unique()');
-              formData.append('file', blob, 'avatar.jpg');
+              formData.append('file', blob, `upload.${ext}`);
               formData.append('permissions[]', 'read("any")');
               formData.append('permissions[]', `update("user:${sessionData.userId}")`);
               formData.append('permissions[]', `delete("user:${sessionData.userId}")`);
@@ -3258,7 +3269,36 @@ class DockitSidebar {
               
               if (uploadRes.ok) {
                 const uploadData = await uploadRes.json();
-                const actualFileId = uploadData.$id;
+                let actualFileId = uploadData.$id;
+                let finalUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${actualFileId}/view?project=6a0a1cc000178886bfaf`;
+                
+                try {
+                  const funcRes = await fetch(`https://nyc.cloud.appwrite.io/v1/functions/process-image/executions`, {
+                    method: 'POST',
+                    headers: {
+                      'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+                      'X-Fallback-Cookies': headers['X-Fallback-Cookies'],
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      body: JSON.stringify({ fileId: actualFileId, bucketId: 'Cloud-Drive', userId: sessionData.userId }),
+                      async: false,
+                      path: '/',
+                      method: 'POST',
+                      headers: {}
+                    })
+                  });
+                  const funcData = await funcRes.json();
+                  if (funcData.responseBody) {
+                    const result = JSON.parse(funcData.responseBody);
+                    if (result.success && result.fileId) {
+                      actualFileId = result.fileId;
+                      finalUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${actualFileId}/view?project=6a0a1cc000178886bfaf`;
+                    }
+                  }
+                } catch(e) {
+                   console.error('Dockit: Server deduplication failed for avatar:', e);
+                }
                 
                 let existingPrefs = {};
                 const pRes = await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', { headers, keepalive: true });
@@ -3268,14 +3308,14 @@ class DockitSidebar {
                   method: 'PATCH',
                   headers,
                   keepalive: true,
-                  body: JSON.stringify({ prefs: { ...existingPrefs, avatarUrl: actualFileId } })
+                  body: JSON.stringify({ prefs: { ...existingPrefs, avatarUrl: finalUrl } })
                 });
 
                 await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents/${sessionData.userId}`, {
                   method: 'PATCH',
                   headers,
                   keepalive: true,
-                  body: JSON.stringify({ data: { avatar: actualFileId, updated: new Date().toISOString() } })
+                  body: JSON.stringify({ data: { avatar: finalUrl, updated: new Date().toISOString() } })
                 }).catch(() => {});
               } else {
                 console.error('Failed to upload avatar to storage', await uploadRes.text());
@@ -5202,77 +5242,6 @@ class DockitThemeEditor {
     }
   }
 
-  async _computeDHash(dataUrl) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 9;
-        canvas.height = 8;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, 9, 8);
-        const data = ctx.getImageData(0, 0, 9, 8).data;
-
-        let hash = '';
-        for (let y = 0; y < 8; y++) {
-          for (let x = 0; x < 8; x++) {
-            const idx1 = (y * 9 + x) * 4;
-            const idx2 = (y * 9 + x + 1) * 4;
-            const gray1 = data[idx1] * 0.299 + data[idx1 + 1] * 0.587 + data[idx1 + 2] * 0.114;
-            const gray2 = data[idx2] * 0.299 + data[idx2 + 1] * 0.587 + data[idx2 + 2] * 0.114;
-            hash += gray1 > gray2 ? '1' : '0';
-          }
-        }
-
-        let hex = '';
-        for (let i = 0; i < 64; i += 4) {
-          hex += parseInt(hash.substr(i, 4), 2).toString(16);
-        }
-        resolve(hex);
-      };
-      img.onerror = () => resolve('0000000000000000');
-      img.src = dataUrl;
-    });
-  }
-
-  _hammingDistance(hex1, hex2) {
-    if (hex1.length !== 16 || hex2.length !== 16) return 64;
-    let dist = 0;
-    for (let i = 0; i < 16; i++) {
-      const n1 = parseInt(hex1[i], 16);
-      const n2 = parseInt(hex2[i], 16);
-      let xor = n1 ^ n2;
-      while (xor > 0) {
-        dist += xor & 1;
-        xor >>= 1;
-      }
-    }
-    return dist;
-  }
-
-  async _convertToWebP(dataUrl, maxWidth = 1200) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth) {
-          height = Math.floor(height * (maxWidth / width));
-          width = maxWidth;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => {
-          resolve(blob);
-        }, 'image/webp', 0.8);
-      };
-      img.onerror = () => resolve(null);
-      img.src = dataUrl;
-    });
-  }
 
   _dataURLtoBlob(dataurl) {
     const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
@@ -5504,55 +5473,28 @@ class DockitThemeEditor {
       'X-Fallback-Cookies': `a_session_${projectId}=${secret}`
     };
 
-    let existingHashes = [];
-    try {
-      let after = null;
-      for (let i = 0; i < 5; i++) {
-        let url = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files?queries[]=${encodeURIComponent(JSON.stringify({ method: 'limit', values: [100] }))}`;
-        if (after) {
-          url += `&queries[]=${encodeURIComponent(JSON.stringify({ method: 'cursorAfter', values: [after] }))}`;
-        }
-        const listRes = await fetch(url, { headers });
-        const listData = await listRes.json();
-        if (listData.files) {
-          existingHashes.push(...listData.files.map(f => f.$id));
-          if (listData.files.length < 100) break;
-          after = listData.files[listData.files.length - 1].$id;
-        } else {
-          break;
-        }
-      }
-    } catch (err) {
-      console.error('Dockit: Failed to fetch existing files for deduplication scan', err);
-    }
-
     let modified = false;
 
-    for (const img of this.theme.images) {
-      if (img.src.startsWith('data:image/')) {
-        try {
-          const dHash = await this._computeDHash(img.src);
-          let matchFound = null;
-
-          for (const existingId of existingHashes) {
-            if (this._hammingDistance(dHash, existingId) <= 3) {
-              matchFound = existingId;
-              break;
+    if (this.theme.images && this.theme.images.length > 0) {
+      for (const img of this.theme.images) {
+        if (img.src.startsWith('data:image/')) {
+          try {
+            const parts = img.src.split(',');
+            const mimeMatch = parts[0].match(/:(.*?);/);
+            if (!mimeMatch) continue;
+            const mime = mimeMatch[1];
+            const bstr = atob(parts[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+              u8arr[n] = bstr.charCodeAt(n);
             }
-          }
+            const blob = new Blob([u8arr], { type: mime });
 
-          if (matchFound) {
-            console.log(`Dockit: Deduplicated image to existing hash ${matchFound}`);
-            img.src = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${matchFound}/view?project=${projectId}`;
-            modified = true;
-          } else {
-            console.log(`Dockit: Compressing and uploading new image with hash ${dHash}`);
-            const webpBlob = await this._convertToWebP(img.src);
-            if (!webpBlob) continue;
-
+            console.log('Dockit: Uploading raw image to storage...');
             const formData = new FormData();
-            formData.append('fileId', dHash);
-            formData.append('file', webpBlob, `${dHash}.webp`);
+            formData.append('fileId', 'unique()');
+            formData.append('file', blob, `upload.${mime.split('/')[1]}`);
             formData.append('permissions[]', `read("any")`);
             formData.append('permissions[]', `update("user:${userId}")`);
             formData.append('permissions[]', `delete("user:${userId}")`);
@@ -5563,19 +5505,47 @@ class DockitThemeEditor {
               body: formData
             });
 
-            const data = await res.json();
+            const uploadData = await res.json();
+            if (uploadData.$id) {
+              console.log(`Dockit: Calling process-image function for ${uploadData.$id}...`);
+              const funcRes = await fetch(`https://nyc.cloud.appwrite.io/v1/functions/process-image/executions`, {
+                method: 'POST',
+                headers: {
+                  ...headers,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  body: JSON.stringify({ fileId: uploadData.$id, bucketId, userId }),
+                  async: false,
+                  path: '/',
+                  method: 'POST',
+                  headers: {}
+                })
+              });
 
-            if (data.$id || data.code === 409) {
-              const finalId = data.$id || dHash;
-              img.src = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${finalId}/view?project=${projectId}`;
-              existingHashes.push(finalId);
-              modified = true;
+              const funcData = await funcRes.json();
+              if (funcData.responseBody) {
+                try {
+                  const result = JSON.parse(funcData.responseBody);
+                  if (result.success && result.fileId) {
+                    console.log(`Dockit: Backend process complete. Final file ID: ${result.fileId}`);
+                    img.src = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${result.fileId}/view?project=${projectId}`;
+                    modified = true;
+                  } else {
+                    console.error('Dockit: Server deduplication failed:', result.error);
+                  }
+                } catch(e) {
+                  console.error('Dockit: Failed to parse function response', funcData.responseBody);
+                }
+              } else {
+                console.error('Dockit: Function execution failed:', funcData);
+              }
             } else {
-              console.error('Dockit: Upload failed with response:', data);
+               console.error('Dockit: Upload failed:', uploadData);
             }
+          } catch (err) {
+            console.error('Dockit: Image processing error', err);
           }
-        } catch (err) {
-          console.error('Dockit: Background image processing error', err);
         }
       }
     }
@@ -5583,7 +5553,7 @@ class DockitThemeEditor {
     if (modified) {
       await chrome.storage.local.set({ dockitTheme: this.theme });
       this.originalThemeStr = JSON.stringify(this.theme);
-      console.log('Dockit: Background image processing complete.');
+      console.log('Dockit: Image processing and deduplication complete.');
     }
   }
 
