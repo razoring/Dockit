@@ -57,15 +57,28 @@ const I18N_STRINGS_DEFAULT = {
 
 class DockitSidebar {
   static createThemeCardDOM(theme) {
-    const card = document.createElement('div');
-    card.className = 'dockit-theme-card-mockup';
-    card.setAttribute('data-theme-colors', '--color-background, --color-foreground, --color-border');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dockit-theme-card-wrapper';
     
-    card.style.cssText = `
+    const inner = document.createElement('div');
+    inner.className = 'dockit-theme-card-inner';
+    
+    const card = document.createElement('div');
+    card.className = 'dockit-theme-card-front dockit-theme-card-mockup';
+    card.setAttribute('data-theme-colors', '--color-background, --color-foreground, --color-border');
+
+    const back = document.createElement('div');
+    back.className = 'dockit-theme-card-back';
+    back.setAttribute('data-theme-colors', '--color-background, --color-foreground, --color-border');
+
+    wrapper.style.cssText = `
       position: relative;
       width: 100%;
-      height: 100%;
       aspect-ratio: 1.75;
+      container-type: size;
+    `;
+    
+    card.style.cssText = `
       background-color: var(--color-background);
       border-radius: 4.28cqw;
       overflow: hidden;
@@ -75,16 +88,32 @@ class DockitSidebar {
       justify-content: space-between;
       border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--opacity-value, 1) * 100%), transparent);
       box-sizing: border-box;
-      container-type: size;
+    `;
+
+    back.style.cssText = `
+      background-color: var(--color-background);
+      border-radius: 4.28cqw;
+      overflow: hidden;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--opacity-value, 1) * 100%), transparent);
+      box-sizing: border-box;
+      pointer-events: auto;
     `;
 
     if (theme && theme.colors) {
       for (const [key, val] of Object.entries(theme.colors)) {
+        wrapper.style.setProperty(key, val);
         card.style.setProperty(key, val);
       }
     }
     if (theme && theme.options) {
       for (const [key, val] of Object.entries(theme.options)) {
+        wrapper.style.setProperty(key, val);
         card.style.setProperty(key, val);
       }
     }
@@ -233,7 +262,187 @@ class DockitSidebar {
       }
     }
 
-    return card;
+    // Top layout (profile on left, stats on right)
+    const topRow = document.createElement('div');
+    topRow.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin-bottom: auto; pointer-events: none;';
+    
+    // Profile Info
+    const profileInfo = document.createElement('div');
+    profileInfo.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+    
+    const profileImg = document.createElement('img');
+    profileImg.className = 'dockit-theme-card-avatar';
+    profileImg.style.cssText = 'width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: color-mix(in srgb, var(--color-foreground) 20%, transparent); flex-shrink: 0;';
+    if (theme && theme.publisherAvatar) {
+      if (theme.publisherAvatar.startsWith('data:')) {
+        profileImg.src = theme.publisherAvatar;
+      } else {
+        const projectId = '6a0a1cc000178886bfaf';
+        profileImg.src = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${theme.publisherAvatar}/view?project=${projectId}`;
+      }
+    } else {
+      const projectId = '6a0a1cc000178886bfaf';
+      const safeName = encodeURIComponent(theme && theme.publisherName ? theme.publisherName : 'User');
+      profileImg.src = `https://nyc.cloud.appwrite.io/v1/avatars/initials?name=${safeName}&width=80&height=80&project=${projectId}`;
+    }
+
+    const profileTextCol = document.createElement('div');
+    profileTextCol.style.cssText = 'display: flex; flex-direction: column; text-align: left;';
+    
+    const profileNameStr = (theme && theme.publisherName) ? theme.publisherName : (theme && theme.publisherId ? `@${theme.publisherId}` : 'User');
+    const profileName = document.createElement('span');
+    profileName.style.cssText = 'font-size: 13px; font-weight: 600; color: var(--color-foreground); max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+    profileName.innerText = profileNameStr;
+    
+    const publishDate = document.createElement('span');
+    publishDate.style.cssText = 'font-size: 11px; opacity: 0.6; color: var(--color-foreground);';
+    if (theme && theme.createdAt) {
+      publishDate.innerText = new Date(theme.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } else {
+      publishDate.innerText = 'Unknown date';
+    }
+
+    profileTextCol.appendChild(profileName);
+    profileTextCol.appendChild(publishDate);
+    profileInfo.appendChild(profileImg);
+    profileInfo.appendChild(profileTextCol);
+
+    // Stats
+    const statsCol = document.createElement('div');
+    statsCol.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: auto;';
+    
+    const makeStat = (iconId, countText, type) => {
+      const el = document.createElement('div');
+      el.className = `dockit-theme-card-${type}`;
+      el.style.cssText = 'display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--color-foreground); cursor: pointer; opacity: 0.8; transition: opacity 0.2s;';
+      el.innerHTML = iconId === 'download' ? `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> <span class="stat-val">${countText}</span>` : `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> <span class="stat-val">${countText}</span>`;
+      el.addEventListener('mouseover', () => el.style.opacity = '1');
+      el.addEventListener('mouseout', () => el.style.opacity = '0.8');
+      return el;
+    };
+    
+    const downloadsStat = makeStat('download', theme && theme.downloads !== undefined ? theme.downloads : 0, 'downloads');
+    const likesStat = makeStat('heart', theme && theme.likes !== undefined ? theme.likes : 0, 'likes');
+    
+    if (theme && theme.hasLiked) {
+      likesStat.style.color = 'var(--color-primary)';
+      likesStat.querySelector('i').setAttribute('fill', 'currentColor');
+    }
+
+    likesStat.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const current = parseInt(likesStat.querySelector('.stat-val').innerText) || 0;
+      const isLiked = likesStat.style.color !== '';
+      if (isLiked) {
+        likesStat.style.color = '';
+        likesStat.querySelector('i').removeAttribute('fill');
+        likesStat.querySelector('.stat-val').innerText = current - 1;
+        if (theme && theme.onUnlike) theme.onUnlike();
+      } else {
+        likesStat.style.color = 'var(--color-primary)';
+        likesStat.querySelector('i').setAttribute('fill', 'currentColor');
+        likesStat.querySelector('.stat-val').innerText = current + 1;
+        if (theme && theme.onLike) theme.onLike();
+      }
+    });
+
+    statsCol.appendChild(downloadsStat);
+    statsCol.appendChild(likesStat);
+
+    topRow.appendChild(profileInfo);
+    topRow.appendChild(statsCol);
+
+    // Bottom Actions
+    const actionsCol = document.createElement('div');
+    actionsCol.style.cssText = 'display: flex; flex-direction: column; gap: 8px; width: 100%;';
+    
+    const installBtn = document.createElement('button');
+    installBtn.className = 'dockit-btn dockit-theme-btn-install';
+    installBtn.style.cssText = 'background: var(--color-primary); color: var(--color-foreground); border: none; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s;';
+    installBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Install`;
+    installBtn.addEventListener('mouseover', () => installBtn.style.opacity = '0.8');
+    installBtn.addEventListener('mouseout', () => installBtn.style.opacity = '1');
+    installBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (theme && theme.onInstall) theme.onInstall();
+      installBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Installed`;
+      installBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 10%, transparent)';
+      installBtn.style.color = 'var(--color-foreground)';
+    });
+    
+    actionsCol.appendChild(installBtn);
+
+    const editRow = document.createElement('div');
+    editRow.style.cssText = 'display: flex; gap: 8px; width: 100%;';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'dockit-btn dockit-theme-btn-edit';
+    editBtn.style.cssText = 'background: color-mix(in srgb, var(--color-foreground) 10%, transparent); color: var(--color-foreground); border: none; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; flex: 1; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s;';
+    editBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Edit`;
+    editBtn.addEventListener('mouseover', () => editBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 15%, transparent)');
+    editBtn.addEventListener('mouseout', () => editBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 10%, transparent)');
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (theme && theme.onEdit) theme.onEdit();
+    });
+    editRow.appendChild(editBtn);
+
+    if (theme && theme.onDelete) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'dockit-btn dockit-theme-btn-delete';
+      delBtn.style.cssText = 'background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 6px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; aspect-ratio: 1; transition: background 0.2s;';
+      delBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+      delBtn.addEventListener('mouseover', () => delBtn.style.background = 'rgba(255, 77, 77, 0.1)');
+      delBtn.addEventListener('mouseout', () => delBtn.style.background = 'transparent');
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        theme.onDelete();
+      });
+      editRow.appendChild(delBtn);
+    } else {
+      const likeBtn = document.createElement('button');
+      likeBtn.className = 'dockit-btn dockit-theme-btn-like';
+      likeBtn.style.cssText = 'background: transparent; color: var(--color-foreground); border: 1px solid color-mix(in srgb, var(--color-foreground) 20%, transparent); padding: 6px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; aspect-ratio: 1; transition: all 0.2s;';
+      if (theme && theme.hasLiked) {
+        likeBtn.style.color = 'var(--color-primary)';
+        likeBtn.style.borderColor = 'color-mix(in srgb, var(--color-primary) 30%, transparent)';
+        likeBtn.style.background = 'color-mix(in srgb, var(--color-primary) 10%, transparent)';
+        likeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+      } else {
+        likeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+      }
+      likeBtn.addEventListener('mouseover', () => likeBtn.style.background = theme && theme.hasLiked ? 'color-mix(in srgb, var(--color-primary) 20%, transparent)' : 'color-mix(in srgb, var(--color-foreground) 5%, transparent)');
+      likeBtn.addEventListener('mouseout', () => likeBtn.style.background = theme && theme.hasLiked ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'transparent');
+      likeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        likesStat.click();
+        if (likesStat.style.color) {
+          likeBtn.style.color = 'var(--color-primary)';
+          likeBtn.style.borderColor = 'color-mix(in srgb, var(--color-primary) 30%, transparent)';
+          likeBtn.style.background = 'color-mix(in srgb, var(--color-primary) 10%, transparent)';
+          likeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+        } else {
+          likeBtn.style.color = 'var(--color-foreground)';
+          likeBtn.style.borderColor = 'color-mix(in srgb, var(--color-foreground) 20%, transparent)';
+          likeBtn.style.background = 'transparent';
+          likeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+        }
+      });
+      editRow.appendChild(likeBtn);
+    }
+    
+    actionsCol.appendChild(editRow);
+
+    back.appendChild(topRow);
+    back.appendChild(actionsCol);
+
+    inner.appendChild(card); // card is front
+    inner.appendChild(back);
+    wrapper.appendChild(inner);
+
+    if (window.lucide) window.lucide.createIcons({ root: back });
+
+    return wrapper;
   }
 
   constructor(isSidePanel = false) {
@@ -246,6 +455,137 @@ class DockitSidebar {
     this._isInPageOpen = false;
     this._i18n = { ...I18N_STRINGS_DEFAULT };
     this._themeEditor = null;
+    this._interactionQueue = [];
+    setInterval(() => this._processInteractionQueue(), 5000);
+  }
+
+  _queueInteraction(themeId, type, state) {
+    this._interactionQueue = this._interactionQueue.filter(i => !(i.themeId === themeId && i.type === type));
+    this._interactionQueue.push({ themeId, type, state });
+  }
+
+  async _processInteractionQueue() {
+    if (!this._interactionQueue || this._interactionQueue.length === 0) return;
+    const sessionData = await chrome.storage.local.get(['appwriteSession']);
+    if (!sessionData.appwriteSession) return;
+
+    const projectId = '6a0a1cc000178886bfaf';
+    const headers = {
+      'X-Appwrite-Project': projectId,
+      'X-Fallback-Cookies': `a_session_${projectId}=${sessionData.appwriteSession.secret}`,
+      'Content-Type': 'application/json'
+    };
+
+    const queueCopy = [...this._interactionQueue];
+    this._interactionQueue = [];
+
+    for (const action of queueCopy) {
+      if (action.state) { // add
+        try {
+          const queries = [
+            JSON.stringify({ method: 'equal', attribute: 'themeId', values: [action.themeId] }),
+            JSON.stringify({ method: 'equal', attribute: 'userId', values: [sessionData.appwriteSession.userId] }),
+            JSON.stringify({ method: 'equal', attribute: 'type', values: [action.type] })
+          ];
+          let qUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/theme_interactions/documents?`;
+          queries.forEach(q => qUrl += `queries[]=${encodeURIComponent(q)}&`);
+          const getRes = await fetch(qUrl, { headers });
+          if (getRes.ok) {
+            const data = await getRes.json();
+            if (data.documents.length === 0) {
+               const payload = {
+                 documentId: 'unique()',
+                 data: {
+                   themeId: action.themeId,
+                   userId: sessionData.appwriteSession.userId,
+                   type: action.type,
+                   timestamp: new Date().toISOString()
+                 }
+              };
+              await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/theme_interactions/documents`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(payload)
+              });
+            }
+          }
+        } catch(e) {}
+      } else { // remove
+        try {
+          const queries = [
+            JSON.stringify({ method: 'equal', attribute: 'themeId', values: [action.themeId] }),
+            JSON.stringify({ method: 'equal', attribute: 'userId', values: [sessionData.appwriteSession.userId] }),
+            JSON.stringify({ method: 'equal', attribute: 'type', values: [action.type] })
+          ];
+          let qUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/theme_interactions/documents?`;
+          queries.forEach(q => qUrl += `queries[]=${encodeURIComponent(q)}&`);
+          
+          const getRes = await fetch(qUrl, { headers });
+          if (getRes.ok) {
+            const data = await getRes.json();
+            for (const doc of data.documents) {
+              await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/theme_interactions/documents/${doc.$id}`, {
+                method: 'DELETE',
+                headers
+              });
+            }
+          }
+        } catch(e) {}
+      }
+    }
+  }
+
+  _installTheme(themeData) {
+    const toApply = { ...themeData };
+    delete toApply.hasLiked;
+    delete toApply.hasDownloaded;
+    delete toApply.onLike;
+    delete toApply.onUnlike;
+    delete toApply.onInstall;
+    delete toApply.onEdit;
+    delete toApply.onDelete;
+    chrome.storage.local.set({ dockitTheme: toApply });
+    if (!this.isSidePanel) {
+      this.closeInPage();
+    }
+  }
+
+  _openThemeEditor(themeData) {
+    if (!this._themeEditor) {
+      this._themeEditor = new DockitThemeEditor(this.element.querySelector('#dockit-theme-editor-overlay'), this, () => {
+        this._renderCustomization();
+      });
+    }
+    this._themeEditor.init(themeData);
+  }
+
+  async _deleteTheme(themeId) {
+    const confirmDelete = window.confirm('Are you sure you want to delete this theme? This cannot be undone.');
+    if (!confirmDelete) return;
+
+    const storageData = await chrome.storage.local.get(['appwriteSession']);
+    if (!storageData.appwriteSession) return;
+    
+    const projectId = '6a0a1cc000178886bfaf';
+    const headers = {
+      'X-Appwrite-Project': projectId,
+      'X-Fallback-Cookies': `a_session_${projectId}=${storageData.appwriteSession.secret}`
+    };
+
+    try {
+      await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents/${themeId}`, {
+        method: 'DELETE',
+        headers
+      });
+      // Try to re-render the customization gallery
+      if (this._states && this._states.recent) {
+        this._states.recent.data = this._states.recent.data.filter(d => d.$id !== themeId);
+      }
+      this._renderCustomization();
+    } catch (e) {
+      console.error(e);
+      alert('Failed to delete theme.');
+    }
   }
 
   showDialog({ title, message, type = 'alert', confirmText = 'OK', cancelText = 'Cancel', onConfirm = null, onCancel = null }) {
@@ -615,7 +955,7 @@ class DockitSidebar {
               row.style.cssText = 'display: flex; align-items: center; padding: 8px 12px; gap: 10px; cursor: pointer; transition: background-color 0.15s; min-height: 48px;';
 
               row.innerHTML = `
-                <img src="${item.iconUrl}" style="width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0;" onerror="this.src='https://www.google.com/s2/favicons?domain=google.com&sz=32'" />
+                <img src="${item.iconUrl}" style="width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0;" />
                 <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
                   <div style="font-weight: 500; font-size: 13px; color: var(--color-foreground);" data-theme-colors="--color-foreground">${item.title}</div>
                   <div style="font-size: 11px; color: var(--color-foreground); opacity: 0.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;" data-theme-colors="--color-foreground-rgba">${_formatUrl(item.url)}</div>
@@ -2422,11 +2762,36 @@ class DockitSidebar {
           themeData.name = doc.name; 
           themeData.publisherId = doc.profile || doc.publisherId;
           if (doc.publisherName) themeData.publisherName = doc.publisherName;
+          if (doc.publisherAvatar) themeData.publisherAvatar = doc.publisherAvatar;
+          themeData.createdAt = doc.$createdAt;
+          themeData.likes = doc.likes || 0;
+          themeData.downloads = doc.downloads || 0;
+          themeData.hasLiked = doc.hasLiked || false;
+          themeData.hasDownloaded = doc.hasDownloaded || false;
+          
+          themeData.onLike = () => { this._queueInteraction(doc.$id, 'like', true); };
+          themeData.onUnlike = () => { this._queueInteraction(doc.$id, 'like', false); };
+          themeData.onInstall = () => {
+             this._installTheme(themeData);
+             if (!doc.hasDownloaded) {
+               this._queueInteraction(doc.$id, 'download', true);
+               doc.hasDownloaded = true;
+             }
+          };
+          themeData.onEdit = () => {
+             this._openThemeEditor(themeData);
+             if (!doc.hasDownloaded) {
+               this._queueInteraction(doc.$id, 'download', true);
+               doc.hasDownloaded = true;
+             }
+          };
+          if (storageData.appwriteSession && themeData.publisherId === storageData.appwriteSession.userId) {
+            themeData.onDelete = () => { this._deleteTheme(doc.$id); };
+          }
         } catch(e) { return; }
         
         const card = DockitSidebar.createThemeCardDOM(themeData);
         card.style.height = 'auto'; 
-        card.style.cursor = 'pointer';
         galleryEl.appendChild(card);
       });
 
@@ -2526,13 +2891,38 @@ class DockitSidebar {
               if (pRes.ok) {
                 const pData = await pRes.json();
                 const profileMap = {};
-                pData.documents.forEach(p => profileMap[p.$id] = p.username);
+                const avatarMap = {};
+                pData.documents.forEach(p => {
+                  profileMap[p.$id] = p.username;
+                  if (p.avatar) avatarMap[p.$id] = p.avatar;
+                });
                 docs.forEach(d => {
                   const pid = d.profile || d.publisherId;
                   if (profileMap[pid]) d.publisherName = profileMap[pid];
+                  if (avatarMap[pid]) d.publisherAvatar = avatarMap[pid];
                 });
               }
             } catch (e) { console.error('Failed to fetch profiles', e); }
+          }
+          
+          if (hasSession && storageData.appwriteSession.userId) {
+            try {
+              let interUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/theme_interactions/documents?`;
+              const themeIds = docs.map(d => d.$id);
+              interUrl += `queries[]=${encodeURIComponent(JSON.stringify({ method: 'equal', attribute: 'themeId', values: themeIds }))}&`;
+              interUrl += `queries[]=${encodeURIComponent(JSON.stringify({ method: 'equal', attribute: 'userId', values: [storageData.appwriteSession.userId] }))}`;
+              const interRes = await fetch(interUrl, { headers });
+              if (interRes.ok) {
+                const interData = await interRes.json();
+                interData.documents.forEach(inter => {
+                  const doc = docs.find(d => d.$id === inter.themeId);
+                  if (doc) {
+                    if (inter.type === 'like') doc.hasLiked = true;
+                    if (inter.type === 'download') doc.hasDownloaded = true;
+                  }
+                });
+              }
+            } catch (e) { console.error('Failed to fetch interactions', e); }
           }
 
           state.cursor = docs[docs.length - 1].$id;
@@ -2637,7 +3027,7 @@ class DockitSidebar {
           <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 40%, var(--color-background));"></div><span id="dockit-storage-lbl-msgs">Messages 0%</span></div>
           <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 10%, var(--color-background));"></div><span id="dockit-storage-lbl-ext">Extension 0%</span></div>
         </div>
-        <button id="dockit-profile-open-drive" style="margin-top: 12px; padding: 8px 16px; border-radius: 100px; border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent); background: transparent; color: var(--color-foreground); font-weight: 500; font-size: 11px; cursor: pointer; transition: all 0.2s;" data-theme-colors="--color-border, --color-foreground" onmouseover="this.style.background='color-mix(in srgb, var(--color-border) 20%, transparent)'" onmouseout="this.style.background='transparent'">Open Drive</button>
+        <button id="dockit-profile-open-drive" style="margin-top: 12px; padding: 8px 16px; border-radius: 100px; border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent); background: transparent; color: var(--color-foreground); font-weight: 500; font-size: 11px; cursor: pointer; transition: all 0.2s;" data-theme-colors="--color-border, --color-foreground">Open Drive</button>
       </div>
     `;
 
@@ -2815,16 +3205,48 @@ class DockitSidebar {
 
           if (this._pendingProfileUpdates.avatarUrl) {
             try {
-              let existingPrefs = {};
-              const pRes = await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', { headers, keepalive: true });
-              if (pRes.ok) existingPrefs = await pRes.json();
-              
-              await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', {
-                method: 'PATCH',
-                headers,
-                keepalive: true,
-                body: JSON.stringify({ prefs: { ...existingPrefs, avatarUrl: this._pendingProfileUpdates.avatarUrl } })
+              const base64Response = await fetch(this._pendingProfileUpdates.avatarUrl);
+              const blob = await base64Response.blob();
+              const formData = new FormData();
+              formData.append('fileId', 'unique()');
+              formData.append('file', blob, 'avatar.jpg');
+              formData.append('permissions[]', 'read("any")');
+              formData.append('permissions[]', `update("user:${sessionData.userId}")`);
+              formData.append('permissions[]', `delete("user:${sessionData.userId}")`);
+
+              const uploadRes = await fetch('https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files', {
+                method: 'POST',
+                headers: {
+                  'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+                  'X-Fallback-Cookies': headers['X-Fallback-Cookies']
+                },
+                body: formData
               });
+              
+              if (uploadRes.ok) {
+                const uploadData = await uploadRes.json();
+                const actualFileId = uploadData.$id;
+                
+                let existingPrefs = {};
+                const pRes = await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', { headers, keepalive: true });
+                if (pRes.ok) existingPrefs = await pRes.json();
+                
+                await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', {
+                  method: 'PATCH',
+                  headers,
+                  keepalive: true,
+                  body: JSON.stringify({ prefs: { ...existingPrefs, avatarUrl: actualFileId } })
+                });
+
+                await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents/${sessionData.userId}`, {
+                  method: 'PATCH',
+                  headers,
+                  keepalive: true,
+                  body: JSON.stringify({ data: { avatar: actualFileId, updated: new Date().toISOString() } })
+                }).catch(() => {});
+              } else {
+                console.error('Failed to upload avatar to storage', await uploadRes.text());
+              }
             } catch(e) { console.error('Failed to update avatar', e); }
           }
           this._pendingProfileUpdates = null;
@@ -2858,7 +3280,7 @@ class DockitSidebar {
       }
 
       const imgQueries = [ JSON.stringify({ method: 'limit', values: [100] }) ];
-      let imgUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/theme-assets/files?`;
+      let imgUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files?`;
       imgQueries.forEach(q => imgUrl += `queries[]=${encodeURIComponent(q)}&`);
 
       const imgRes = await fetch(imgUrl, { headers });
@@ -2982,10 +3404,14 @@ class DockitThemeEditor {
     this.dragStartTop = 0;
   }
 
-  async init() {
-    const data = await chrome.storage.local.get(['dockitTheme']);
-    if (data.dockitTheme) {
-      this.theme = JSON.parse(JSON.stringify(data.dockitTheme));
+  async init(initialTheme = null) {
+    if (initialTheme) {
+      this.theme = JSON.parse(JSON.stringify(initialTheme));
+    } else {
+      const data = await chrome.storage.local.get(['dockitTheme']);
+      if (data.dockitTheme) {
+        this.theme = JSON.parse(JSON.stringify(data.dockitTheme));
+      }
     }
     this.originalThemeStr = JSON.stringify(this.theme);
 
@@ -3458,8 +3884,7 @@ class DockitThemeEditor {
         <div class="dockit-suggestion-row" data-theme-colors="--color-foreground"
           style="display:flex;align-items:center;padding:8px 12px;gap:10px;cursor:pointer;transition:background-color 0.15s;min-height:48px;">
           <img src="https://www.google.com/s2/favicons?domain=${app.domain}&sz=32"
-            style="width:24px;height:24px;border-radius:4px;flex-shrink:0;"
-            onerror="this.src='https://www.google.com/s2/favicons?domain=google.com&sz=32'" />
+            style="width:24px;height:24px;border-radius:4px;flex-shrink:0;" />
           <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px;">
             <div style="font-weight:500;font-size:13px;color:var(--color-foreground);" data-theme-colors="--color-foreground">${app.title}</div>
             <div style="font-size:11px;color:var(--color-foreground);opacity:0.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;" data-theme-colors="--color-foreground-rgba">${app.url}</div>
@@ -5040,7 +5465,7 @@ class DockitThemeEditor {
     const { secret, userId } = session;
 
     const projectId = '6a0a1cc000178886bfaf';
-    const bucketId = 'theme-assets';
+    const bucketId = 'Cloud-Drive';
     const headers = {
       'X-Appwrite-Project': projectId,
       'X-Fallback-Cookies': `a_session_${projectId}=${secret}`

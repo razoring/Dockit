@@ -79,7 +79,7 @@ async function registerScrollScript() {
 async function cacheAssets() {
   try {
     //cache specific lucide svgs for offline use
-    const iconsToFetch = ['plus', 'shapes', 'settings', 'trash-2', 'x', 'pin', 'clock-fading', 'search', 'rotate-cw', 'external-link', 'smartphone', 'monitor', 'lock', 'cookie', 'copy', 'lock-open', 'chevron-down', 'chevron-up', 'mirror-rectangular', 'squares-subtract', 'square-round-corner', 'aperture', 'image'];
+    const iconsToFetch = ['plus', 'shapes', 'settings', 'trash-2', 'x', 'pin', 'clock-fading', 'search', 'rotate-cw', 'external-link', 'smartphone', 'monitor', 'lock', 'cookie', 'copy', 'lock-open', 'chevron-down', 'chevron-up', 'mirror-rectangular', 'squares-subtract', 'square-round-corner', 'aperture', 'image', 'download', 'heart', 'edit-3'];
     const lucideIcons = {};
     for (const icon of iconsToFetch) {
       const res = await fetch(`https://unpkg.com/lucide-static@latest/icons/${icon}.svg`);
