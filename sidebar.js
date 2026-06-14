@@ -2342,6 +2342,7 @@ class DockitSidebar {
     if (!contentEl) return;
 
     const storageData = await chrome.storage.local.get(['appwriteSession', 'lucideIcons']);
+    const searchIconSvg = (storageData.lucideIcons && storageData.lucideIcons['search']) || `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
 
     contentEl.innerHTML = `
       <div class="dockit-customization-container" style="display: flex; flex-direction: column; height: 100%; position: relative;">
@@ -2349,11 +2350,15 @@ class DockitSidebar {
           
           <div id="dockit-profile-dashboard" style="display: none; flex-direction: column; gap: 16px; margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px dashed color-mix(in srgb, var(--color-border) 40%, transparent);" data-theme-colors="--color-border"></div>
 
-          <input type="search" id="dockit-theme-search" placeholder="Search themes..." style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-foreground); font-size: 14px; box-sizing: border-box; outline: none;" data-theme-colors="--color-border, --color-background, --color-foreground">
+          <div class="dockit-settings-search-wrapper dockit-search-bar-container" data-theme-colors="--color-primary, --color-border, --color-secondary">
+            ${searchIconSvg}
+            <input type="search" id="dockit-theme-search" class="dockit-settings-search-input dockit-search-input" placeholder="Search themes..." data-theme-colors="--color-foreground" />
+          </div>
           
-          <div style="display: flex; gap: 8px;">
-            <button class="dockit-filter-btn active" data-sort="downloads" style="flex: 1; padding: 8px; border-radius: 100px; border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-foreground); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;" data-theme-colors="--color-primary, --color-foreground">Popular</button>
-            <button class="dockit-filter-btn" data-sort="created" style="flex: 1; padding: 8px; border-radius: 100px; border: 1px solid var(--color-border); background: transparent; color: var(--color-foreground); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;" data-theme-colors="--color-border, --color-foreground">Newest</button>
+          <div style="display: flex; position: relative; border-bottom: 1px solid var(--color-border);" data-theme-colors="--color-border">
+            <div class="dockit-filter-btn active" data-sort="downloads" style="flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--color-foreground); transition: color 0.2s, opacity 0.2s;" data-theme-colors="--color-foreground">Popular</div>
+            <div class="dockit-filter-btn" data-sort="created" style="flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--color-foreground); opacity: 0.6; transition: color 0.2s, opacity 0.2s;" data-theme-colors="--color-foreground">Newest</div>
+            <div id="dockit-filter-indicator" style="position: absolute; bottom: -1px; left: 0; width: 50%; height: 2px; background: var(--color-primary); transition: transform 0.3s ease;" data-theme-colors="--color-primary"></div>
           </div>
 
           <button class="dockit-btn" id="dockit-enter-editor-btn" style="width: 100%; background: color-mix(in srgb, var(--color-primary) 15%, transparent); color: var(--color-primary); border: 1px dashed var(--color-primary); padding: 8px 0; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.2s;" data-theme-colors="--color-primary">
@@ -2538,18 +2543,21 @@ class DockitSidebar {
       }, 500);
     });
 
-    filterBtns.forEach(btn => {
+    const indicator = contentEl.querySelector('#dockit-filter-indicator');
+
+    filterBtns.forEach((btn, index) => {
       btn.addEventListener('click', (e) => {
         filterBtns.forEach(b => {
           b.classList.remove('active');
-          b.style.background = 'transparent';
-          b.style.border = '1px solid var(--color-border)';
-          b.style.color = 'var(--color-foreground)';
+          b.style.opacity = '0.6';
         });
         const target = e.currentTarget;
         target.classList.add('active');
-        target.style.background = 'var(--color-primary)';
-        target.style.border = '1px solid var(--color-primary)';
+        target.style.opacity = '1';
+        
+        if (indicator) {
+          indicator.style.transform = `translateX(${index * 100}%)`;
+        }
         
         currentSort = target.dataset.sort;
         if (currentQuery) {
