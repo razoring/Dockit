@@ -56,6 +56,184 @@ const I18N_STRINGS_DEFAULT = {
 };
 
 class DockitSidebar {
+  static createThemeCardDOM(theme) {
+    const card = document.createElement('div');
+    card.className = 'dockit-theme-card-mockup';
+    card.setAttribute('data-theme-colors', '--color-background, --color-foreground, --color-border');
+    
+    card.style.cssText = `
+      position: relative;
+      width: 100%;
+      height: 100%;
+      aspect-ratio: 1.75;
+      background-color: var(--color-background);
+      border-radius: 4.28cqw;
+      overflow: hidden;
+      padding: 5.71cqw;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--opacity-value, 1) * 100%), transparent);
+      box-sizing: border-box;
+      container-type: size;
+    `;
+
+    if (theme && theme.colors) {
+      for (const [key, val] of Object.entries(theme.colors)) {
+        card.style.setProperty(key, val);
+      }
+    }
+    if (theme && theme.options) {
+      for (const [key, val] of Object.entries(theme.options)) {
+        card.style.setProperty(key, val);
+      }
+    }
+
+    const topSection = document.createElement('div');
+    topSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%; position: relative; z-index: 2;';
+
+    const palette = document.createElement('div');
+    palette.style.cssText = 'display: flex; flex-direction: column; height: 50cqh; width: 30cqw; justify-content: space-between;';
+
+    const colors = [
+      { name: '--color-primary', width: '100%' },
+      { name: '--color-accent', width: '90%' },
+      { name: '--color-foreground', width: '81%' },
+      { name: '--color-border', width: '73%' },
+      { name: '--color-secondary', width: '66%' }
+    ];
+
+    colors.forEach(c => {
+      const bar = document.createElement('div');
+      bar.setAttribute('data-theme-colors', c.name);
+      bar.style.cssText = `
+        height: 15%;
+        width: ${c.width};
+        border-radius: 1000px;
+        background-color: var(${c.name});
+      `;
+      palette.appendChild(bar);
+    });
+
+    const dashRect = document.createElement('div');
+    dashRect.setAttribute('data-theme-colors', '--color-border');
+    dashRect.style.cssText = `
+      height: 60cqh;
+      aspect-ratio: 1;
+      border: calc(max(1px, 0.7cqw)) dashed var(--color-border);
+      border-radius: 0px;
+      background-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    `;
+
+    const dashChild = document.createElement('div');
+    dashChild.setAttribute('data-theme-colors', '--color-border');
+    dashChild.style.cssText = `
+      width: calc(100% - (var(--padding-value, 0px) * 2));
+      height: calc(100% - (var(--padding-value, 0px) * 2));
+      border-radius: var(--corner-radius-value, 0px);
+      border: 1px solid var(--color-border);
+      background-color: color-mix(in srgb, var(--color-border) 50%, transparent);
+      box-sizing: border-box;
+    `;
+    dashRect.appendChild(dashChild);
+
+    topSection.appendChild(palette);
+    topSection.appendChild(dashRect);
+
+    const bottomSection = document.createElement('div');
+    bottomSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%; align-items: flex-end; position: relative; z-index: 2; pointer-events: none;';
+
+    const textContainer = document.createElement('div');
+    textContainer.style.cssText = 'display: flex; flex-direction: column; gap: 1.42cqw;';
+
+    const title = document.createElement('div');
+    title.className = 'dockit-theme-card-title';
+    title.setAttribute('data-theme-colors', '--color-foreground');
+    title.style.cssText = 'font-size: 5cqw; font-weight: 600; color: var(--color-foreground); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50cqw; pointer-events: auto;';
+    title.innerText = theme && theme.name ? theme.name : 'Theme Name';
+
+    const subtitle = document.createElement('div');
+    subtitle.setAttribute('data-theme-colors', '--color-foreground-rgba');
+    subtitle.style.cssText = 'font-size: 3.92cqw; color: color-mix(in srgb, var(--color-foreground) 50%, transparent); pointer-events: auto;';
+    subtitle.innerText = theme && theme.publisherId ? `@${theme.publisherId.substring(0,8)}` : '@publisher';
+
+    textContainer.appendChild(title);
+    textContainer.appendChild(subtitle);
+
+    const imagesContainer = document.createElement('div');
+    imagesContainer.className = 'dockit-theme-card-images';
+    imagesContainer.style.cssText = 'position: absolute; bottom: -1px; right: -1px; height: 40%; aspect-ratio: 1; overflow: hidden; border-bottom-right-radius: 4.28cqw; z-index: 1; pointer-events: none;';
+
+    bottomSection.appendChild(textContainer);
+
+    card.appendChild(topSection);
+    card.appendChild(bottomSection);
+    card.appendChild(imagesContainer);
+
+    if (theme && theme.images && theme.images.length > 0) {
+      const patternImg = theme.images.find(img => img.isPattern);
+      if (patternImg) {
+        const patternLayer = document.createElement('div');
+        patternLayer.className = 'dockit-theme-card-pattern';
+        patternLayer.style.cssText = `
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          background-image: url(${patternImg.src});
+          background-repeat: repeat;
+          background-size: ${patternImg.width}px ${patternImg.height}px;
+          background-position: calc(50% + ${patternImg.offsetX}% + ${patternImg.offsetX * patternImg.width / 100}px) calc(50% + ${patternImg.offsetY}% + ${patternImg.offsetY * patternImg.height / 100}px);
+          z-index: 0;
+          pointer-events: none;
+        `;
+        card.insertBefore(patternLayer, card.firstChild);
+      }
+
+      const objectImgs = theme.images.filter(img => !img.isPattern);
+      objectImgs.forEach((imgData, index) => {
+        const img = document.createElement('img');
+        img.src = imgData.src;
+        img.style.cssText = `
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: ${imgData.fit || 'contain'};
+          -webkit-mask-image: linear-gradient(to bottom left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.2) 100%);
+          mask-image: linear-gradient(to bottom left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.2) 100%);
+          pointer-events: none;
+          opacity: ${index === 0 ? '1' : '0'};
+          transition: opacity 1s ease-in-out;
+        `;
+        imagesContainer.appendChild(img);
+      });
+
+      if (objectImgs.length > 1) {
+        let currentIdx = 0;
+        const fader = () => {
+          if (!imagesContainer.isConnected) return;
+          const imgs = imagesContainer.querySelectorAll('img');
+          if (imgs.length === 0) return;
+          
+          currentIdx = (currentIdx + 1) % imgs.length;
+          imgs.forEach((img, i) => {
+            img.style.opacity = (i === currentIdx) ? '1' : '0';
+          });
+          
+          setTimeout(fader, 3000);
+        };
+        setTimeout(fader, 3000);
+      }
+    }
+
+    return card;
+  }
+
   constructor(isSidePanel = false) {
     this.isSidePanel = isSidePanel;
     this.element = document.createElement('div');
@@ -2163,27 +2341,354 @@ class DockitSidebar {
     const contentEl = this.element.querySelector('#dockit-in-page-content');
     if (!contentEl) return;
 
-    const storageData = await chrome.storage.local.get(['lucideIcons']);
-    const shapesIconSvg = (storageData.lucideIcons && storageData.lucideIcons['shapes']) || `<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M8.3 10a3.5 3.5 0 0 1 6.8 0M12 2v3M12 19v3M3 12h3M18 12h3"/></svg>`;
+    const storageData = await chrome.storage.local.get(['appwriteSession', 'lucideIcons']);
 
     contentEl.innerHTML = `
-      <div class="dockit-customization-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; gap: 16px; padding: 20px;">
-        <div class="dockit-shapes-icon" style="font-size: 32px; color: var(--color-primary); display: flex; align-items: center; justify-content: center;" data-theme-colors="--color-primary">${shapesIconSvg}</div>
-        <div style="font-weight: 600; font-size: 18px; color: var(--color-foreground);" data-theme-colors="--color-foreground">Theme Customizer</div>
-        <div style="font-size: 13px; opacity: 0.7; max-width: 260px; line-height: 1.4;" data-theme-colors="--color-foreground-rgba">
-          Create and edit personalized color themes for your workspace with our visual Theme Editor.
+      <div class="dockit-customization-container" style="display: flex; flex-direction: column; height: 100%; position: relative;">
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent); flex-shrink: 0;" data-theme-colors="--color-border">
+          
+          <div id="dockit-profile-dashboard" style="display: none; flex-direction: column; gap: 16px; margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px dashed color-mix(in srgb, var(--color-border) 40%, transparent);" data-theme-colors="--color-border"></div>
+
+          <input type="search" id="dockit-theme-search" placeholder="Search themes..." style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-foreground); font-size: 14px; box-sizing: border-box; outline: none;" data-theme-colors="--color-border, --color-background, --color-foreground">
+          
+          <div style="display: flex; gap: 8px;">
+            <button class="dockit-filter-btn active" data-sort="downloads" style="flex: 1; padding: 8px; border-radius: 100px; border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-foreground); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;" data-theme-colors="--color-primary, --color-foreground">Popular</button>
+            <button class="dockit-filter-btn" data-sort="created" style="flex: 1; padding: 8px; border-radius: 100px; border: 1px solid var(--color-border); background: transparent; color: var(--color-foreground); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;" data-theme-colors="--color-border, --color-foreground">Newest</button>
+          </div>
+
+          <button class="dockit-btn" id="dockit-enter-editor-btn" style="width: 100%; background: color-mix(in srgb, var(--color-primary) 15%, transparent); color: var(--color-primary); border: 1px dashed var(--color-primary); padding: 8px 0; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.2s;" data-theme-colors="--color-primary">
+            + Enter Theme Editor
+          </button>
         </div>
-        <button class="dockit-btn" id="dockit-enter-editor-btn" style="background: var(--color-primary); color: var(--color-foreground); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 10px;" data-theme-colors="--color-primary, --color-foreground">
-          ${this._i18n.enter_theme_editor || 'Enter Theme Editor'}
-        </button>
+
+        <div id="dockit-theme-gallery" style="flex: 1; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-content: flex-start;">
+        </div>
       </div>
     `;
 
+    const galleryEl = contentEl.querySelector('#dockit-theme-gallery');
+    const searchInput = contentEl.querySelector('#dockit-theme-search');
+    const filterBtns = contentEl.querySelectorAll('.dockit-filter-btn');
     const enterBtn = contentEl.querySelector('#dockit-enter-editor-btn');
+
     if (enterBtn) {
-      enterBtn.addEventListener('click', () => {
-        this.enterThemeEditor();
+      enterBtn.addEventListener('click', () => this.enterThemeEditor());
+    }
+
+    if (storageData.appwriteSession) {
+      this._renderProfileDashboard(contentEl.querySelector('#dockit-profile-dashboard'), storageData.appwriteSession);
+    }
+
+    let currentQuery = '';
+    let currentSort = 'downloads';
+    let isFetching = false;
+
+    if (!this.themeGalleryCache) {
+      this.themeGalleryCache = {
+        downloads: { data: [], cursor: null, hasMore: true },
+        created: { data: [], cursor: null, hasMore: true },
+        search: { query: '', data: [], cursor: null, hasMore: true }
+      };
+    }
+
+    const getState = () => {
+      if (currentQuery) return this.themeGalleryCache.search;
+      return this.themeGalleryCache[currentSort];
+    };
+
+    const renderGallery = () => {
+      galleryEl.innerHTML = '';
+      const state = getState();
+      
+      if (state.data.length === 0 && !state.hasMore) {
+        galleryEl.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; opacity: 0.5; padding: 40px 0;">No themes found.</div>';
+        return;
+      }
+      
+      state.data.forEach(doc => {
+        let themeData;
+        try { 
+          themeData = JSON.parse(doc.theme || doc.payload); 
+          themeData.name = doc.name; 
+          themeData.publisherId = doc.profile || doc.publisherId;
+        } catch(e) { return; }
+        
+        const card = DockitSidebar.createThemeCardDOM(themeData);
+        card.style.height = 'auto'; 
+        card.style.cursor = 'pointer';
+        galleryEl.appendChild(card);
       });
+
+      const hasSession = !!storageData.appwriteSession;
+      if (!hasSession && state.data.length >= 5) {
+        const loginPromo = document.createElement('div');
+        loginPromo.id = 'dockit-gallery-login-promo';
+        loginPromo.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 40px; background: color-mix(in srgb, var(--color-background) 80%, var(--color-foreground)); border-radius: 12px; margin-top: 20px;';
+        loginPromo.innerHTML = `
+          <div style="font-size: 18px; font-weight: 600; color: var(--color-foreground); margin-bottom: 8px;" data-theme-colors="--color-foreground">View More Themes</div>
+          <div style="font-size: 14px; opacity: 0.7; color: var(--color-foreground); margin-bottom: 16px;" data-theme-colors="--color-foreground-rgba">Log in to unlock infinite scrolling and publish your own themes.</div>
+          <button class="dockit-btn" style="background: var(--color-primary); color: var(--color-foreground); border: none; padding: 10px 24px; border-radius: 100px; font-weight: 600; cursor: pointer;" data-theme-colors="--color-primary, --color-foreground">Log In</button>
+        `;
+        const loginBtn = loginPromo.querySelector('button');
+        loginBtn.addEventListener('click', async () => {
+          const authRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_LOGIN' });
+          if (authRes && authRes.success) {
+            this._renderCustomization();
+          }
+        });
+        galleryEl.appendChild(loginPromo);
+      }
+    };
+
+    const loadBatch = async (reset = false) => {
+      const state = getState();
+
+      if (reset) {
+        state.data = [];
+        state.cursor = null;
+        state.hasMore = true;
+        galleryEl.innerHTML = '';
+      }
+
+      if (isFetching || (!state.hasMore && !reset)) return;
+      isFetching = true;
+
+      const hasSession = !!storageData.appwriteSession;
+      
+      if (!hasSession && state.cursor) {
+        renderGallery();
+        isFetching = false;
+        return;
+      }
+
+      const projectId = '6a0a1cc000178886bfaf';
+
+      try {
+        let url = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents?`;
+        const queries = [
+          JSON.stringify({ method: 'limit', values: [5] }),
+          JSON.stringify({ method: 'orderDesc', attribute: currentSort })
+        ];
+        
+        if (currentSort !== 'created') {
+          queries.push(JSON.stringify({ method: 'orderDesc', attribute: 'created' }));
+        }
+
+        if (currentQuery) {
+          queries.push(JSON.stringify({ method: 'search', attribute: 'name', values: [currentQuery] }));
+        }
+        if (state.cursor) {
+          queries.push(JSON.stringify({ method: 'cursorAfter', values: [state.cursor] }));
+        }
+
+        queries.forEach(q => url += `queries[]=${encodeURIComponent(q)}&`);
+
+        const headers = { 'X-Appwrite-Project': projectId };
+        if (hasSession) {
+          headers['X-Fallback-Cookies'] = `a_session_${projectId}=${storageData.appwriteSession.secret}`;
+        }
+
+        const res = await fetch(url, { headers });
+        
+        if (!res.ok) {
+          let errMsg = 'Fetch failed';
+          try {
+            const errData = await res.json();
+            errMsg = errData.message || errMsg;
+          } catch(e) {}
+          throw new Error(errMsg);
+        }
+
+        const data = await res.json();
+        const docs = data.documents;
+
+        if (docs.length < 5) state.hasMore = false;
+        
+        if (docs.length > 0) {
+          state.cursor = docs[docs.length - 1].$id;
+          const newDocs = docs.filter(d => !state.data.some(existing => existing.$id === d.$id));
+          state.data.push(...newDocs);
+        }
+        
+        renderGallery();
+
+      } catch (err) {
+        console.error(err);
+        if (reset) galleryEl.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: red;">Failed to load themes.</div>';
+      } finally {
+        isFetching = false;
+      }
+    };
+
+    let searchTimeout;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        const val = e.target.value.trim();
+        if (currentQuery === val) return;
+        currentQuery = val;
+        
+        if (val) {
+          this.themeGalleryCache.search = { query: val, data: [], cursor: null, hasMore: true };
+          loadBatch(true);
+        } else {
+          if (getState().data.length > 0) renderGallery();
+          else loadBatch(true);
+        }
+      }, 500);
+    });
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        filterBtns.forEach(b => {
+          b.classList.remove('active');
+          b.style.background = 'transparent';
+          b.style.border = '1px solid var(--color-border)';
+          b.style.color = 'var(--color-foreground)';
+        });
+        const target = e.currentTarget;
+        target.classList.add('active');
+        target.style.background = 'var(--color-primary)';
+        target.style.border = '1px solid var(--color-primary)';
+        
+        currentSort = target.dataset.sort;
+        if (currentQuery) {
+          currentQuery = '';
+          searchInput.value = '';
+        }
+
+        if (getState().data.length > 0) renderGallery();
+        else loadBatch(true);
+      });
+    });
+
+    galleryEl.addEventListener('scroll', () => {
+      if (galleryEl.scrollTop + galleryEl.clientHeight >= galleryEl.scrollHeight - 50) {
+        loadBatch();
+      }
+    });
+
+    if (getState().data.length > 0) renderGallery();
+    else loadBatch(true);
+  }
+
+  async _renderProfileDashboard(containerEl, sessionData) {
+    containerEl.style.display = 'flex';
+    containerEl.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <img id="dockit-profile-avatar" src="" style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-background); border: 1px solid var(--color-border);" data-theme-colors="--color-background, --color-border" />
+        <div style="display: flex; flex-direction: column;">
+          <div id="dockit-profile-name" contenteditable="true" spellcheck="false" style="font-weight: 600; font-size: 15px; color: var(--color-foreground); outline: none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" data-theme-colors="--color-foreground">Loading...</div>
+          <div style="font-size: 12px; opacity: 0.6; color: var(--color-foreground);" data-theme-colors="--color-foreground">Dockit User</div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--color-foreground); opacity: 0.8;" data-theme-colors="--color-foreground">
+          <span>Storage</span>
+          <span id="dockit-storage-text">Calculating...</span>
+        </div>
+        <div style="width: 100%; height: 6px; border-radius: 9999px; background: color-mix(in srgb, var(--color-border) 50%, transparent); display: flex; overflow: hidden;" data-theme-colors="--color-border">
+          <div id="dockit-storage-bar-docs" style="height: 100%; background: #3b82f6; width: 0%;"></div>
+          <div id="dockit-storage-bar-imgs" style="height: 100%; background: #10b981; width: 0%;"></div>
+          <div id="dockit-storage-bar-msgs" style="height: 100%; background: #f59e0b; width: 0%;"></div>
+        </div>
+        <div style="display: flex; gap: 12px; font-size: 10px; color: var(--color-foreground); opacity: 0.6; margin-top: 2px;" data-theme-colors="--color-foreground">
+          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: #3b82f6;"></div>Documents</div>
+          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></div>Images</div>
+          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;"></div>Messages</div>
+        </div>
+      </div>
+    `;
+
+    const projectId = '6a0a1cc000178886bfaf';
+    const headers = {
+      'X-Appwrite-Project': projectId,
+      'X-Fallback-Cookies': `a_session_${projectId}=${sessionData.secret}`,
+      'Content-Type': 'application/json'
+    };
+
+    try {
+      const accRes = await fetch('https://nyc.cloud.appwrite.io/v1/account', { headers });
+      if (accRes.ok) {
+        const acc = await accRes.json();
+        const nameEl = containerEl.querySelector('#dockit-profile-name');
+        nameEl.textContent = acc.name || 'User';
+        
+        const avatarRes = await fetch(`https://nyc.cloud.appwrite.io/v1/avatars/initials?name=${encodeURIComponent(acc.name || 'User')}&width=80&height=80&project=${projectId}`);
+        if (avatarRes.ok) {
+          const blob = await avatarRes.blob();
+          containerEl.querySelector('#dockit-profile-avatar').src = URL.createObjectURL(blob);
+        }
+
+        let nameTimeout;
+        nameEl.addEventListener('input', () => {
+          clearTimeout(nameTimeout);
+          nameTimeout = setTimeout(async () => {
+            const newName = nameEl.textContent.trim();
+            if (!newName) return;
+            try {
+              await fetch('https://nyc.cloud.appwrite.io/v1/account/name', {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify({ name: newName })
+              });
+            } catch (e) { console.error('Failed to update name', e); }
+          }, 1000);
+        });
+      }
+
+      const userId = sessionData.userId;
+      let totalDocsSize = 0;
+      let totalImgsSize = 0;
+      let totalMsgsSize = 0; // Mock for now
+
+      const docQueries = [
+        JSON.stringify({ method: 'equal', attribute: 'profile', values: [userId] }),
+        JSON.stringify({ method: 'limit', values: [100] })
+      ];
+      let docUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents?`;
+      docQueries.forEach(q => docUrl += `queries[]=${encodeURIComponent(q)}&`);
+      
+      const docRes = await fetch(docUrl, { headers });
+      if (docRes.ok) {
+        const docData = await docRes.json();
+        docData.documents.forEach(d => {
+          totalDocsSize += new TextEncoder().encode(JSON.stringify(d)).length;
+        });
+      }
+
+      const imgQueries = [ JSON.stringify({ method: 'limit', values: [100] }) ];
+      let imgUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/theme-assets/files?`;
+      imgQueries.forEach(q => imgUrl += `queries[]=${encodeURIComponent(q)}&`);
+
+      const imgRes = await fetch(imgUrl, { headers });
+      if (imgRes.ok) {
+        const imgData = await imgRes.json();
+        const userFiles = imgData.files.filter(f => f.$permissions && f.$permissions.some(p => p.includes(`user:${userId}`)));
+        userFiles.forEach(f => {
+          totalImgsSize += f.sizeOriginal;
+        });
+      }
+
+      const totalSize = totalDocsSize + totalImgsSize + totalMsgsSize;
+      const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
+
+      const storageText = containerEl.querySelector('#dockit-storage-text');
+      storageText.textContent = `${(totalSize / 1024 / 1024).toFixed(2)} MB / 2 GB`;
+
+      const pctDocs = (totalDocsSize / MAX_SIZE) * 100;
+      const pctImgs = (totalImgsSize / MAX_SIZE) * 100;
+      const pctMsgs = (totalMsgsSize / MAX_SIZE) * 100;
+
+      containerEl.querySelector('#dockit-storage-bar-docs').style.width = `${pctDocs}%`;
+      containerEl.querySelector('#dockit-storage-bar-imgs').style.width = `${pctImgs}%`;
+      containerEl.querySelector('#dockit-storage-bar-msgs').style.width = `${pctMsgs}%`;
+      
+      this._userStorageTotal = totalSize;
+
+    } catch (err) {
+      console.error('Dockit: Failed to fetch profile stats', err);
+      containerEl.querySelector('#dockit-storage-text').textContent = 'Error calculating storage';
     }
   }
 
@@ -2303,7 +2808,7 @@ class DockitThemeEditor {
           <button class="dockit-dropdown-item" id="btn-apply-theme">
             ${checkIcon} <span>Apply Theme</span>
           </button>
-          <button class="dockit-dropdown-item" id="btn-publish-theme" style="opacity: 0.5;">
+          <button class="dockit-dropdown-item" id="btn-publish-theme">
             ${uploadIcon} <span>Publish Theme</span>
           </button>
           <button class="dockit-dropdown-item" id="btn-discard-theme">
@@ -2819,111 +3324,7 @@ class DockitThemeEditor {
   }
 
   createThemeCardMockup() {
-    const card = document.createElement('div');
-    card.className = 'dockit-theme-card-mockup';
-    card.setAttribute('data-theme-colors', '--color-background, --color-foreground, --color-border');
-    card.style.cssText = `
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background-color: var(--color-background);
-      border-radius: 4.28cqw;
-      overflow: hidden;
-      padding: 5.71cqw;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--opacity-value, 1) * 100%), transparent);
-      box-sizing: border-box;
-      container-type: size;
-    `;
-
-    const topSection = document.createElement('div');
-    topSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%; position: relative; z-index: 2;';
-
-    const palette = document.createElement('div');
-    palette.style.cssText = 'display: flex; flex-direction: column; height: 50cqh; width: 30cqw; justify-content: space-between;';
-
-    const colors = [
-      { name: '--color-primary', width: '100%' },
-      { name: '--color-accent', width: '90%' },
-      { name: '--color-foreground', width: '81%' },
-      { name: '--color-border', width: '73%' },
-      { name: '--color-secondary', width: '66%' }
-    ];
-
-    colors.forEach(c => {
-      const bar = document.createElement('div');
-      bar.setAttribute('data-theme-colors', c.name);
-      bar.style.cssText = `
-        height: 15%;
-        width: ${c.width};
-        border-radius: 1000px;
-        background-color: var(${c.name});
-      `;
-      palette.appendChild(bar);
-    });
-
-    const dashRect = document.createElement('div');
-    dashRect.setAttribute('data-theme-colors', '--color-border');
-    dashRect.style.cssText = `
-      height: 60cqh;
-      aspect-ratio: 1;
-      border: calc(max(1px, 0.7cqw)) dashed var(--color-border);
-      border-radius: 0px;
-      background-color: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-    `;
-
-    const dashChild = document.createElement('div');
-    dashChild.setAttribute('data-theme-colors', '--color-border');
-    dashChild.style.cssText = `
-      width: calc(100% - (var(--padding-value, 0px) * 2));
-      height: calc(100% - (var(--padding-value, 0px) * 2));
-      border-radius: var(--corner-radius-value, 0px);
-      border: 1px solid var(--color-border);
-      background-color: color-mix(in srgb, var(--color-border) 50%, transparent);
-      box-sizing: border-box;
-    `;
-    dashRect.appendChild(dashChild);
-
-    topSection.appendChild(palette);
-    topSection.appendChild(dashRect);
-
-    const bottomSection = document.createElement('div');
-    bottomSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%; align-items: flex-end; position: relative; z-index: 2; pointer-events: none;';
-
-    const textContainer = document.createElement('div');
-    textContainer.style.cssText = 'display: flex; flex-direction: column; gap: 1.42cqw;';
-
-    const title = document.createElement('div');
-    title.className = 'dockit-theme-card-title';
-    title.setAttribute('data-theme-colors', '--color-foreground');
-    title.style.cssText = 'font-size: 5cqw; font-weight: 600; color: var(--color-foreground); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50cqw;';
-    title.innerText = this.theme && this.theme.name ? this.theme.name : 'Theme Name';
-
-    const subtitle = document.createElement('div');
-    subtitle.setAttribute('data-theme-colors', '--color-foreground-rgba');
-    subtitle.style.cssText = 'font-size: 3.92cqw; color: color-mix(in srgb, var(--color-foreground) 50%, transparent);';
-    subtitle.innerText = '@publisher';
-
-    textContainer.appendChild(title);
-    textContainer.appendChild(subtitle);
-
-    const imagesContainer = document.createElement('div');
-    imagesContainer.className = 'dockit-theme-card-images';
-    imagesContainer.style.cssText = 'position: absolute; bottom: -1px; right: -1px; height: 40%; aspect-ratio: 1; overflow: hidden; border-bottom-right-radius: 4.28cqw; z-index: 1; pointer-events: none;';
-
-    bottomSection.appendChild(textContainer);
-
-    card.appendChild(topSection);
-    card.appendChild(bottomSection);
-    card.appendChild(imagesContainer);
-
-    return card;
+    return DockitSidebar.createThemeCardDOM(this.theme);
   }
 
   applyEditingThemeCSS() {
@@ -3401,9 +3802,7 @@ class DockitThemeEditor {
     this.container.querySelector('#btn-clear-theme').addEventListener('click', () => this.clearTheme());
     this.container.querySelector('#btn-reset-theme').addEventListener('click', () => this.resetTheme());
     this.container.querySelector('#btn-apply-theme').addEventListener('click', () => this.applyTheme());
-    this.container.querySelector('#btn-publish-theme').addEventListener('click', () => {
-      this.sidebar.showDialog({ message: 'Publishing themes will be supported in a future update!' });
-    });
+    this.container.querySelector('#btn-publish-theme').addEventListener('click', () => this.publishTheme());
     this.container.querySelector('#btn-discard-theme').addEventListener('click', () => this.discard());
 
     window.addEventListener('keydown', (e) => {
@@ -4183,6 +4582,119 @@ class DockitThemeEditor {
     return new Blob([u8arr], { type: mime });
   }
 
+  async publishTheme() {
+    const publishBtn = this.container.querySelector('#btn-publish-theme');
+    const originalContent = publishBtn ? publishBtn.innerHTML : '<span>Publish Theme</span>';
+    
+    let storage = await chrome.storage.local.get(['appwriteSession']);
+    if (!storage.appwriteSession) {
+      const authRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_LOGIN' });
+      if (!authRes || !authRes.success) {
+        this.sidebar.showDialog({ message: 'Authentication required to publish themes.' });
+        return;
+      }
+      storage = await chrome.storage.local.get(['appwriteSession']);
+      if (!storage.appwriteSession) return;
+    }
+
+    if (publishBtn) {
+      publishBtn.style.opacity = '1';
+      publishBtn.innerHTML = '<span>Publishing...</span>';
+    }
+
+    if (typeof this._userStorageTotal === 'number') {
+      const MAX_SIZE = 2 * 1024 * 1024 * 1024;
+      const estimatedNewSize = new TextEncoder().encode(JSON.stringify(this.theme)).length + (this.theme.images ? this.theme.images.length * 500000 : 0);
+      if (this._userStorageTotal + estimatedNewSize > MAX_SIZE) {
+        this.sidebar.showDialog({ message: 'Storage quota exceeded (2GB). Cannot publish theme.' });
+        if (publishBtn) {
+          publishBtn.innerHTML = originalContent;
+          publishBtn.style.opacity = '0.5';
+        }
+        return;
+      }
+    }
+
+    try {
+      await this._processImagesInBackground();
+      
+      const session = storage.appwriteSession;
+      const { secret, userId } = session;
+      const projectId = '6a0a1cc000178886bfaf';
+      
+      const payloadString = JSON.stringify(this.theme);
+      
+      const method = this.theme.publishedId ? 'PATCH' : 'POST';
+      const endpoint = this.theme.publishedId 
+        ? `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents/${this.theme.publishedId}`
+        : `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents`;
+        
+      const bodyData = {
+        name: this.theme.name || 'My Custom Theme',
+        theme: payloadString,
+        profile: userId,
+        updated: new Date().toISOString()
+      };
+      
+      if (method === 'POST') {
+        bodyData.downloads = 0;
+        bodyData.created = new Date().toISOString();
+      }
+
+      const reqBody = method === 'POST' ? { 
+        documentId: 'unique()', 
+        data: bodyData,
+        permissions: [
+          `read("any")`,
+          `update("user:${userId}")`,
+          `delete("user:${userId}")`
+        ]
+      } : { data: bodyData };
+
+      const res = await fetch(endpoint, {
+        method: method,
+        headers: {
+          'X-Appwrite-Project': projectId,
+          'X-Fallback-Cookies': `a_session_${projectId}=${secret}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(reqBody)
+      });
+      
+      if (!res.ok) {
+        let errMsg = `Failed to publish theme: ${res.statusText}`;
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch(e) {}
+        throw new Error(errMsg);
+      }
+      
+      const data = await res.json();
+      this.theme.publishedId = data.$id; // track locally to avoid duplicates
+      
+      if (!this.themeGalleryCache) this.themeGalleryCache = {};
+      if (this.themeGalleryCache.created && method === 'POST') {
+        this.themeGalleryCache.created.data.unshift(data);
+      } else if (this.themeGalleryCache.created && method === 'PATCH') {
+        const existingIdx = this.themeGalleryCache.created.data.findIndex(d => d.$id === data.$id);
+        if (existingIdx !== -1) {
+          this.themeGalleryCache.created.data[existingIdx] = data;
+        }
+      }
+      
+      this.sidebar.showDialog({ message: 'Theme published successfully!' });
+    } catch (err) {
+      console.error(err);
+      this.sidebar.showDialog({ message: 'Error publishing theme.' });
+    } finally {
+      if (publishBtn) {
+        publishBtn.innerHTML = originalContent;
+        publishBtn.style.opacity = '0.5';
+      }
+    }
+  }
+
   async applyTheme() {
     const applyBtn = this.container.querySelector('#btn-apply-theme');
     const originalText = applyBtn ? applyBtn.innerHTML : '<span>Apply Theme</span>';
@@ -4248,8 +4760,10 @@ class DockitThemeEditor {
     try {
       let after = null;
       for (let i = 0; i < 5; i++) {
-        let url = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files?limit=100`;
-        if (after) url += `&cursorAfter=${after}`;
+        let url = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files?queries[]=${encodeURIComponent(JSON.stringify({ method: 'limit', values: [100] }))}`;
+        if (after) {
+          url += `&queries[]=${encodeURIComponent(JSON.stringify({ method: 'cursorAfter', values: [after] }))}`;
+        }
         const listRes = await fetch(url, { headers });
         const listData = await listRes.json();
         if (listData.files) {
