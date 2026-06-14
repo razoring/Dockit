@@ -159,7 +159,9 @@ class DockitSidebar {
     const subtitle = document.createElement('div');
     subtitle.setAttribute('data-theme-colors', '--color-foreground-rgba');
     subtitle.style.cssText = 'font-size: 3.92cqw; color: color-mix(in srgb, var(--color-foreground) 50%, transparent); pointer-events: auto;';
-    subtitle.innerText = theme && theme.publisherId ? `@${theme.publisherId.substring(0,8)}` : '@publisher';
+    let pubName = theme && theme.publisherName ? theme.publisherName : null;
+    if (pubName && pubName.startsWith('user_')) pubName = null;
+    subtitle.innerText = pubName ? pubName : (theme && theme.publisherId ? `@${theme.publisherId.substring(0,8)}` : '@publisher');
 
     textContainer.appendChild(title);
     textContainer.appendChild(subtitle);
@@ -802,6 +804,7 @@ class DockitSidebar {
   }
 
   async openSystemApp(name) {
+    if (this._flushProfileUpdates) await this._flushProfileUpdates();
     const inPage = this.element.querySelector('.dockit-in-page');
     if (!inPage) return;
     const titleEl = this.element.querySelector('#dockit-in-page-title');
@@ -828,7 +831,7 @@ class DockitSidebar {
     this._updateSidebarVisibility();
   }
 
-  closeSystemApp() {
+  async closeSystemApp() {
     if (this._themeEditor) {
       this._themeEditor.discard();
       return;
@@ -837,6 +840,8 @@ class DockitSidebar {
     if (inPage) {
       inPage.classList.add('dockit-hidden');
       this._updateSidebarVisibility();
+
+      if (this._flushProfileUpdates) await this._flushProfileUpdates();
 
       if (chrome.runtime?.id) {
         chrome.storage.local.get(['appwriteSession'], (data) => {
@@ -2416,6 +2421,7 @@ class DockitSidebar {
           themeData = JSON.parse(doc.theme || doc.payload); 
           themeData.name = doc.name; 
           themeData.publisherId = doc.profile || doc.publisherId;
+          if (doc.publisherName) themeData.publisherName = doc.publisherName;
         } catch(e) { return; }
         
         const card = DockitSidebar.createThemeCardDOM(themeData);
@@ -2510,6 +2516,25 @@ class DockitSidebar {
         if (docs.length < 5) state.hasMore = false;
         
         if (docs.length > 0) {
+          const profileIds = [...new Set(docs.map(d => d.profile || d.publisherId).filter(Boolean))];
+          if (profileIds.length > 0) {
+            try {
+              let profilesUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents?`;
+              const pQuery = JSON.stringify({ method: 'equal', attribute: '$id', values: profileIds });
+              profilesUrl += `queries[]=${encodeURIComponent(pQuery)}`;
+              const pRes = await fetch(profilesUrl, { headers });
+              if (pRes.ok) {
+                const pData = await pRes.json();
+                const profileMap = {};
+                pData.documents.forEach(p => profileMap[p.$id] = p.username);
+                docs.forEach(d => {
+                  const pid = d.profile || d.publisherId;
+                  if (profileMap[pid]) d.publisherName = profileMap[pid];
+                });
+              }
+            } catch (e) { console.error('Failed to fetch profiles', e); }
+          }
+
           state.cursor = docs[docs.length - 1].$id;
           const newDocs = docs.filter(d => !state.data.some(existing => existing.$id === d.$id));
           state.data.push(...newDocs);
@@ -2583,11 +2608,16 @@ class DockitSidebar {
   async _renderProfileDashboard(containerEl, sessionData) {
     containerEl.style.display = 'flex';
     containerEl.innerHTML = `
+      <style>
+        #dockit-profile-name:empty:before {
+          content: attr(data-placeholder);
+          opacity: 0.5;
+        }
+      </style>
       <div style="display: flex; align-items: center; gap: 12px;">
-        <img id="dockit-profile-avatar" src="" style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-background); border: 1px solid var(--color-border);" data-theme-colors="--color-background, --color-border" />
+        <img id="dockit-profile-avatar" src="" style="width: 40px; height: 40px; border-radius: 50%; background: var(--color-background); border: 1px solid var(--color-border); cursor: pointer;" title="Click or drop an image to change profile picture" data-theme-colors="--color-background, --color-border" />
         <div style="display: flex; flex-direction: column;">
           <div id="dockit-profile-name" contenteditable="true" spellcheck="false" style="font-weight: 600; font-size: 15px; color: var(--color-foreground); outline: none; border-bottom: 1px dashed transparent; transition: border-color 0.2s;" data-theme-colors="--color-foreground">Loading...</div>
-          <div style="font-size: 12px; opacity: 0.6; color: var(--color-foreground);" data-theme-colors="--color-foreground">Dockit User</div>
         </div>
       </div>
       <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -2596,15 +2626,18 @@ class DockitSidebar {
           <span id="dockit-storage-text">Calculating...</span>
         </div>
         <div style="width: 100%; height: 6px; border-radius: 9999px; background: color-mix(in srgb, var(--color-border) 50%, transparent); display: flex; overflow: hidden;" data-theme-colors="--color-border">
-          <div id="dockit-storage-bar-docs" style="height: 100%; background: #3b82f6; width: 0%;"></div>
-          <div id="dockit-storage-bar-imgs" style="height: 100%; background: #10b981; width: 0%;"></div>
-          <div id="dockit-storage-bar-msgs" style="height: 100%; background: #f59e0b; width: 0%;"></div>
+          <div id="dockit-storage-bar-docs" style="height: 100%; background: var(--color-primary); width: 0%;"></div>
+          <div id="dockit-storage-bar-imgs" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 70%, var(--color-background)); width: 0%;"></div>
+          <div id="dockit-storage-bar-msgs" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 40%, var(--color-background)); width: 0%;"></div>
+          <div id="dockit-storage-bar-ext" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 10%, var(--color-background)); width: 0%;"></div>
         </div>
-        <div style="display: flex; gap: 12px; font-size: 10px; color: var(--color-foreground); opacity: 0.6; margin-top: 2px;" data-theme-colors="--color-foreground">
-          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: #3b82f6;"></div>Documents</div>
-          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></div>Images</div>
-          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;"></div>Messages</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 10px; color: var(--color-foreground); opacity: 0.6; margin-top: 2px;" data-theme-colors="--color-foreground">
+          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: var(--color-primary);"></div><span id="dockit-storage-lbl-docs">Documents 0%</span></div>
+          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 70%, var(--color-background));"></div><span id="dockit-storage-lbl-imgs">Images 0%</span></div>
+          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 40%, var(--color-background));"></div><span id="dockit-storage-lbl-msgs">Messages 0%</span></div>
+          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 10%, var(--color-background));"></div><span id="dockit-storage-lbl-ext">Extension 0%</span></div>
         </div>
+        <button id="dockit-profile-open-drive" style="margin-top: 12px; padding: 8px 16px; border-radius: 100px; border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent); background: transparent; color: var(--color-foreground); font-weight: 500; font-size: 11px; cursor: pointer; transition: all 0.2s;" data-theme-colors="--color-border, --color-foreground" onmouseover="this.style.background='color-mix(in srgb, var(--color-border) 20%, transparent)'" onmouseout="this.style.background='transparent'">Open Drive</button>
       </div>
     `;
 
@@ -2619,29 +2652,188 @@ class DockitSidebar {
       const accRes = await fetch('https://nyc.cloud.appwrite.io/v1/account', { headers });
       if (accRes.ok) {
         const acc = await accRes.json();
-        const nameEl = containerEl.querySelector('#dockit-profile-name');
-        nameEl.textContent = acc.name || 'User';
         
-        const avatarRes = await fetch(`https://nyc.cloud.appwrite.io/v1/avatars/initials?name=${encodeURIComponent(acc.name || 'User')}&width=80&height=80&project=${projectId}`);
-        if (avatarRes.ok) {
-          const blob = await avatarRes.blob();
-          containerEl.querySelector('#dockit-profile-avatar').src = URL.createObjectURL(blob);
+        if (acc.name) {
+          fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents/${sessionData.userId}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify({ data: { username: acc.name, updated: new Date().toISOString() } })
+          }).catch(()=>{});
         }
 
-        let nameTimeout;
+        let customAvatar = null;
+        try {
+          const prefsRes = await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', { headers });
+          if (prefsRes.ok) {
+            const prefs = await prefsRes.json();
+            if (prefs.avatarUrl) customAvatar = prefs.avatarUrl;
+          }
+        } catch (e) {}
+
+        const nameEl = containerEl.querySelector('#dockit-profile-name');
+        nameEl.textContent = acc.name || 'User';
+        nameEl.dataset.placeholder = acc.name || 'User';
+        
+        const avatarEl = containerEl.querySelector('#dockit-profile-avatar');
+        if (customAvatar) {
+          avatarEl.src = customAvatar;
+        } else {
+          const avatarRes = await fetch(`https://nyc.cloud.appwrite.io/v1/avatars/initials?name=${encodeURIComponent(acc.name || 'User')}&width=80&height=80&project=${projectId}`);
+          if (avatarRes.ok) {
+            const blob = await avatarRes.blob();
+            avatarEl.src = URL.createObjectURL(blob);
+          }
+        }
+
+        this._pendingProfileUpdates = { name: null, avatarUrl: null };
+        this._originalProfileName = acc.name || 'User';
+
+        nameEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            nameEl.blur();
+          }
+        });
+
         nameEl.addEventListener('input', () => {
-          clearTimeout(nameTimeout);
-          nameTimeout = setTimeout(async () => {
-            const newName = nameEl.textContent.trim();
-            if (!newName) return;
+          let text = nameEl.innerText.replace(/[<>\s]/g, '');
+          if (nameEl.innerHTML !== text) {
+            nameEl.innerHTML = text;
+            
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(nameEl);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+          this._pendingProfileUpdates.name = text;
+        });
+
+        nameEl.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const text = e.clipboardData.getData('text/plain').replace(/[<>\s]/g, '');
+          document.execCommand('insertText', false, text);
+        });
+
+        nameEl.addEventListener('focusout', () => {
+          if (!nameEl.textContent.trim()) {
+            nameEl.textContent = this._originalProfileName;
+            this._pendingProfileUpdates.name = this._originalProfileName;
+          }
+        });
+
+        avatarEl.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          avatarEl.style.opacity = '0.5';
+        });
+        avatarEl.addEventListener('dragleave', () => {
+          avatarEl.style.opacity = '1';
+        });
+        const handleImageFile = (file) => {
+          if (!file || !file.type.startsWith('image/')) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              const maxSize = 128;
+              if (width > height) {
+                if (width > maxSize) {
+                  height *= maxSize / width;
+                  width = maxSize;
+                }
+              } else {
+                if (height > maxSize) {
+                  width *= maxSize / height;
+                  height = maxSize;
+                }
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+              avatarEl.src = dataUrl;
+              this._pendingProfileUpdates.avatarUrl = dataUrl;
+            };
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+        };
+
+        avatarEl.addEventListener('click', () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.onchange = (e) => {
+            if (e.target.files && e.target.files[0]) {
+              handleImageFile(e.target.files[0]);
+            }
+          };
+          input.click();
+        });
+
+        avatarEl.addEventListener('drop', (e) => {
+          e.preventDefault();
+          avatarEl.style.opacity = '1';
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleImageFile(e.dataTransfer.files[0]);
+          }
+        });
+
+        this._flushProfileUpdates = async () => {
+          if (!this._pendingProfileUpdates) return;
+          
+          let newName = this._pendingProfileUpdates.name;
+          if (newName !== null) {
+            newName = newName.trim();
+            if (!newName) newName = this._originalProfileName;
+            
+            if (newName !== this._originalProfileName) {
+              try {
+                await fetch('https://nyc.cloud.appwrite.io/v1/account/name', {
+                  method: 'PATCH',
+                  headers,
+                  keepalive: true,
+                  body: JSON.stringify({ name: newName })
+                });
+
+                await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents/${sessionData.userId}`, {
+                  method: 'PATCH',
+                  headers,
+                  keepalive: true,
+                  body: JSON.stringify({ data: { username: newName, updated: new Date().toISOString() } })
+                });
+
+                this._originalProfileName = newName;
+              } catch (e) { console.error('Failed to update name', e); }
+            }
+          }
+
+          if (this._pendingProfileUpdates.avatarUrl) {
             try {
-              await fetch('https://nyc.cloud.appwrite.io/v1/account/name', {
+              let existingPrefs = {};
+              const pRes = await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', { headers, keepalive: true });
+              if (pRes.ok) existingPrefs = await pRes.json();
+              
+              await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', {
                 method: 'PATCH',
                 headers,
-                body: JSON.stringify({ name: newName })
+                keepalive: true,
+                body: JSON.stringify({ prefs: { ...existingPrefs, avatarUrl: this._pendingProfileUpdates.avatarUrl } })
               });
-            } catch (e) { console.error('Failed to update name', e); }
-          }, 1000);
+            } catch(e) { console.error('Failed to update avatar', e); }
+          }
+          this._pendingProfileUpdates = null;
+        };
+        
+        window.addEventListener('beforeunload', () => {
+          if (this._flushProfileUpdates) {
+            this._flushProfileUpdates();
+          }
         });
       }
 
@@ -2678,19 +2870,40 @@ class DockitSidebar {
         });
       }
 
-      const totalSize = totalDocsSize + totalImgsSize + totalMsgsSize;
+      let totalExtSize = 0;
+      if (chrome.storage && chrome.storage.local && chrome.storage.local.getBytesInUse) {
+        try {
+          totalExtSize = await new Promise(r => chrome.storage.local.getBytesInUse(null, r));
+        } catch(e) {}
+      } else if (this.themeGalleryCache) {
+        totalExtSize = new TextEncoder().encode(JSON.stringify(this.themeGalleryCache)).length;
+      }
+      
+      const totalSize = totalDocsSize + totalImgsSize + totalMsgsSize + totalExtSize;
       const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 
       const storageText = containerEl.querySelector('#dockit-storage-text');
       storageText.textContent = `${(totalSize / 1024 / 1024).toFixed(2)} MB / 2 GB`;
 
-      const pctDocs = (totalDocsSize / MAX_SIZE) * 100;
-      const pctImgs = (totalImgsSize / MAX_SIZE) * 100;
-      const pctMsgs = (totalMsgsSize / MAX_SIZE) * 100;
+      const pctDocs = Math.max(0, (totalDocsSize / MAX_SIZE) * 100);
+      const pctImgs = Math.max(0, (totalImgsSize / MAX_SIZE) * 100);
+      const pctMsgs = Math.max(0, (totalMsgsSize / MAX_SIZE) * 100);
+      const pctExt = Math.max(0, (totalExtSize / MAX_SIZE) * 100);
+
+      const relDocs = totalSize > 0 ? (totalDocsSize / totalSize) * 100 : 0;
+      const relImgs = totalSize > 0 ? (totalImgsSize / totalSize) * 100 : 0;
+      const relMsgs = totalSize > 0 ? (totalMsgsSize / totalSize) * 100 : 0;
+      const relExt = totalSize > 0 ? (totalExtSize / totalSize) * 100 : 0;
 
       containerEl.querySelector('#dockit-storage-bar-docs').style.width = `${pctDocs}%`;
       containerEl.querySelector('#dockit-storage-bar-imgs').style.width = `${pctImgs}%`;
       containerEl.querySelector('#dockit-storage-bar-msgs').style.width = `${pctMsgs}%`;
+      containerEl.querySelector('#dockit-storage-bar-ext').style.width = `${pctExt}%`;
+
+      containerEl.querySelector('#dockit-storage-lbl-docs').textContent = `Documents ${Math.round(relDocs)}%`;
+      containerEl.querySelector('#dockit-storage-lbl-imgs').textContent = `Images ${Math.round(relImgs)}%`;
+      containerEl.querySelector('#dockit-storage-lbl-msgs').textContent = `Messages ${Math.round(relMsgs)}%`;
+      containerEl.querySelector('#dockit-storage-lbl-ext').textContent = `Extension ${Math.round(relExt)}%`;
       
       this._userStorageTotal = totalSize;
 
@@ -3353,6 +3566,16 @@ class DockitThemeEditor {
     css += '}\n';
 
     styleEl.textContent = css;
+
+    const card = this.container.querySelector('.dockit-theme-card-mockup');
+    if (card) {
+      for (const [key, val] of Object.entries(this.theme.colors)) {
+        card.style.setProperty(key, val);
+      }
+      for (const [key, val] of Object.entries(this.theme.options)) {
+        card.style.setProperty(key, val);
+      }
+    }
   }
 
   setupEvents() {
@@ -3827,6 +4050,7 @@ class DockitThemeEditor {
           const toolbar = this.container.querySelector('.dockit-context-toolbar');
           if (toolbar) toolbar.style.display = 'none';
           this.renderImages();
+          this.updateThemeCardImages();
         }
       }
     });
@@ -4469,6 +4693,11 @@ class DockitThemeEditor {
   }
 
   clearTheme() {
+    this.theme.name = 'My Custom Theme';
+    this.theme.images = [];
+    const nameInput = this.container.querySelector('#dockit-theme-name-input');
+    if (nameInput) nameInput.value = this.theme.name;
+
     this.theme.colors = {
       '--color-background': '#333333',
       '--color-foreground': '#ffffff',
@@ -4484,6 +4713,9 @@ class DockitThemeEditor {
       '--corner-radius-value': '0px'
     };
     this.applyEditingThemeCSS();
+    if (this.renderImages) this.renderImages();
+    if (this.updateThemeCardImages) this.updateThemeCardImages();
+
     if (this.selectedMockupWrapper) {
       this.showToolbar(this.selectedMockupWrapper.getBoundingClientRect(), 'wrapper', this.selectedMockupWrapper);
     } else if (this.selectedElement) {
@@ -4495,11 +4727,16 @@ class DockitThemeEditor {
     const data = await chrome.storage.local.get(['dockitTheme']);
     if (data.dockitTheme) {
       this.theme = JSON.parse(JSON.stringify(data.dockitTheme));
+      const nameInput = this.container.querySelector('#dockit-theme-name-input');
+      if (nameInput) nameInput.value = this.theme.name || 'My Custom Theme';
     } else {
       this.clearTheme();
       return;
     }
     this.applyEditingThemeCSS();
+    if (this.renderImages) this.renderImages();
+    if (this.updateThemeCardImages) this.updateThemeCardImages();
+
     if (this.selectedMockupWrapper) {
       this.showToolbar(this.selectedMockupWrapper.getBoundingClientRect(), 'wrapper', this.selectedMockupWrapper);
     } else if (this.selectedElement) {
@@ -4629,6 +4866,22 @@ class DockitThemeEditor {
       const session = storage.appwriteSession;
       const { secret, userId } = session;
       const projectId = '6a0a1cc000178886bfaf';
+      
+      let userName = 'User';
+      try {
+        const accRes = await fetch('https://nyc.cloud.appwrite.io/v1/account', {
+          headers: {
+            'X-Appwrite-Project': projectId,
+            'X-Fallback-Cookies': `a_session_${projectId}=${secret}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (accRes.ok) {
+          const acc = await accRes.json();
+          if (acc.name) userName = acc.name;
+        }
+      } catch (e) {}
+      this.theme.publisherName = userName;
       
       const payloadString = JSON.stringify(this.theme);
       
