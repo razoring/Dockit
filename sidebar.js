@@ -2394,14 +2394,14 @@ class DockitThemeEditor {
 
       grid.appendChild(wrapper);
     });
-    
+
     this.renderImages();
   }
 
   renderImages() {
     const grid = this.container.querySelector('.dockit-theme-editor-grid');
     if (!grid) return;
-    
+
     let selectedImageId = null;
     let selectedImageWrapperId = null;
     if (this.selectedElement && this.selectedElement.classList.contains('dockit-mockup-image-container')) {
@@ -2418,14 +2418,17 @@ class DockitThemeEditor {
       el.style.removeProperty('overflow');
     });
 
-    if (!this.theme.images || this.theme.images.length === 0) return;
+    if (!this.theme.images || this.theme.images.length === 0) {
+      this.updateThemeCardImages();
+      return;
+    }
 
     this.theme.images.sort((a, b) => {
       if (a.isPattern && !b.isPattern) return -1;
       if (!a.isPattern && b.isPattern) return 1;
       return 0;
     });
-    
+
     const wrappers = Array.from(grid.querySelectorAll('.dockit-mockup-wrapper'));
     const refNodes = new Map();
     wrappers.forEach(wrapper => {
@@ -2439,16 +2442,16 @@ class DockitThemeEditor {
         if (wrapper.dataset.id === 'theme-card') return; // theme-card handles its own images
         const clipTarget = wrapper.querySelector('.dockit-in-page') || wrapper.querySelector('.dockit-sidebar') || wrapper;
         const isSidebar = wrapper.dataset.id === 'sidebar';
-        
+
         let scaledWidth = imgData.width;
         let scaledHeight = imgData.height;
 
         if (imgData.parentId === 'sidebar' && !isSidebar) {
-           scaledWidth *= 2;
-           scaledHeight *= 2;
+          scaledWidth *= 2;
+          scaledHeight *= 2;
         } else if (imgData.parentId !== 'sidebar' && isSidebar) {
-           scaledWidth *= 0.5;
-           scaledHeight *= 0.5;
+          scaledWidth *= 0.5;
+          scaledHeight *= 0.5;
         }
 
         if (imgData.isPattern) {
@@ -2473,12 +2476,12 @@ class DockitThemeEditor {
         const imgContainer = document.createElement('div');
         imgContainer.className = `dockit-mockup-image-container ${isParent ? 'is-parent' : 'is-child'}`;
         imgContainer.dataset.imageId = imgData.id;
-        
+
         imgContainer.style.width = `${scaledWidth}px`;
         imgContainer.style.height = `${scaledHeight}px`;
         imgContainer.style.left = `calc(50% + ${imgData.offsetX}% - ${scaledWidth / 2}px)`;
         imgContainer.style.top = `calc(50% + ${imgData.offsetY}% - ${scaledHeight / 2}px)`;
-        
+
         if (!imgData.isPattern) {
           const imgEl = document.createElement('img');
           imgEl.src = imgData.src;
@@ -2488,7 +2491,7 @@ class DockitThemeEditor {
         } else {
           imgContainer.dataset.isPattern = "true";
         }
-        
+
         if (isParent) {
           let directions = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
           directions.forEach(dir => {
@@ -2501,7 +2504,7 @@ class DockitThemeEditor {
             clipTarget.style.setProperty('overflow', 'visible', 'important');
           }
         }
-        
+
         if (imgData.isCropped) {
           let cropWrapper = clipTarget.querySelector(':scope > .dockit-mockup-crop-wrapper');
           if (!cropWrapper) {
@@ -2525,7 +2528,7 @@ class DockitThemeEditor {
           const rect = imgContainer.getBoundingClientRect();
           this.showToolbar(rect, 'image', imgContainer);
         }
-      }
+      });
     });
 
     this.updateThemeCardImages();
@@ -2533,31 +2536,71 @@ class DockitThemeEditor {
 
   updateThemeCardImages() {
     const cardImagesContainer = this.container.querySelector('.dockit-theme-card-images');
-    if (!cardImagesContainer) return;
-    
+    const card = this.container.querySelector('.dockit-theme-card-mockup');
+    if (!cardImagesContainer || !card) return;
+
     cardImagesContainer.innerHTML = '';
     
+    const existingPattern = card.querySelector('.dockit-theme-card-pattern');
+    if (existingPattern) existingPattern.remove();
+
     if (!this.theme.images || this.theme.images.length === 0) return;
 
-    this.theme.images.forEach((imgData, index) => {
-      const offset = index * 4;
+    const patternImg = this.theme.images.find(img => img.isPattern);
+    if (patternImg) {
+      const patternLayer = document.createElement('div');
+      patternLayer.className = 'dockit-theme-card-pattern';
+      patternLayer.style.cssText = `
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url(${patternImg.src});
+        background-repeat: repeat;
+        background-size: ${patternImg.width}px ${patternImg.height}px;
+        background-position: calc(50% + ${patternImg.offsetX}% + ${patternImg.offsetX * patternImg.width / 100}px) calc(50% + ${patternImg.offsetY}% + ${patternImg.offsetY * patternImg.height / 100}px);
+        z-index: 0;
+        pointer-events: none;
+      `;
+      card.insertBefore(patternLayer, card.firstChild);
+    }
+
+    const objectImgs = this.theme.images.filter(img => !img.isPattern);
+
+    objectImgs.forEach((imgData, index) => {
       const img = document.createElement('img');
       img.src = imgData.src;
       img.style.cssText = `
         position: absolute;
-        right: ${offset}px;
-        bottom: ${offset}px;
-        width: 44px;
-        height: 44px;
-        border-radius: 4px;
-        object-fit: cover;
-        box-shadow: -2px 2px 8px rgba(0,0,0,0.2);
-        -webkit-mask-image: linear-gradient(to bottom left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 100%);
-        mask-image: linear-gradient(to bottom left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 100%);
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: ${imgData.fit || 'contain'};
+        -webkit-mask-image: linear-gradient(to bottom left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.2) 100%);
+        mask-image: linear-gradient(to bottom left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.2) 100%);
         pointer-events: none;
+        opacity: ${index === 0 ? '1' : '0'};
+        transition: opacity 1s ease-in-out;
       `;
       cardImagesContainer.appendChild(img);
     });
+
+    if (objectImgs.length > 1) {
+      let currentIdx = 0;
+      const fader = () => {
+        if (!cardImagesContainer.isConnected) return;
+        const imgs = cardImagesContainer.querySelectorAll('img');
+        if (imgs.length === 0) return;
+        
+        currentIdx = (currentIdx + 1) % imgs.length;
+        imgs.forEach((img, i) => {
+          img.style.opacity = (i === currentIdx) ? '1' : '0';
+        });
+        
+        setTimeout(fader, 3000);
+      };
+      setTimeout(fader, 3000);
+    }
   }
 
   async getLiveMockupClones() {
@@ -2784,37 +2827,38 @@ class DockitThemeEditor {
       width: 100%;
       height: 100%;
       background-color: var(--color-background);
-      border-radius: 12px;
+      border-radius: 4.28cqw;
       overflow: hidden;
-      padding: 16px;
+      padding: 5.71cqw;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--opacity-value, 1) * 100%), transparent);
       box-sizing: border-box;
+      container-type: size;
     `;
 
     const topSection = document.createElement('div');
-    topSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%;';
+    topSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%; position: relative; z-index: 2;';
 
     const palette = document.createElement('div');
-    palette.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
-    
+    palette.style.cssText = 'display: flex; flex-direction: column; height: 50cqh; width: 30cqw; justify-content: space-between;';
+
     const colors = [
-      { name: '--color-primary', width: 60 },
-      { name: '--color-accent', width: 50 },
-      { name: '--color-foreground', width: 40 },
-      { name: '--color-border', width: 30 },
-      { name: '--color-secondary', width: 20 }
+      { name: '--color-primary', width: '100%' },
+      { name: '--color-accent', width: '90%' },
+      { name: '--color-foreground', width: '81%' },
+      { name: '--color-border', width: '73%' },
+      { name: '--color-secondary', width: '66%' }
     ];
 
     colors.forEach(c => {
       const bar = document.createElement('div');
       bar.setAttribute('data-theme-colors', c.name);
       bar.style.cssText = `
-        height: 6px;
-        width: ${c.width}px;
-        border-radius: 3px;
+        height: 15%;
+        width: ${c.width};
+        border-radius: 1000px;
         background-color: var(${c.name});
       `;
       palette.appendChild(bar);
@@ -2823,24 +2867,25 @@ class DockitThemeEditor {
     const dashRect = document.createElement('div');
     dashRect.setAttribute('data-theme-colors', '--color-border');
     dashRect.style.cssText = `
-      width: 48px;
-      height: 60px;
-      border: 2px dashed var(--color-border);
-      border-radius: 8px;
+      height: 60cqh;
+      aspect-ratio: 1;
+      border: calc(max(1px, 0.7cqw)) dashed var(--color-border);
+      border-radius: 0px;
       background-color: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
     `;
-    
+
     const dashChild = document.createElement('div');
-    dashChild.setAttribute('data-theme-colors', '--color-secondary');
+    dashChild.setAttribute('data-theme-colors', '--color-border');
     dashChild.style.cssText = `
       width: calc(100% - (var(--padding-value, 0px) * 2));
       height: calc(100% - (var(--padding-value, 0px) * 2));
       border-radius: var(--corner-radius-value, 0px);
-      background-color: var(--color-secondary);
+      border: 1px solid var(--color-border);
+      background-color: color-mix(in srgb, var(--color-border) 50%, transparent);
       box-sizing: border-box;
     `;
     dashRect.appendChild(dashChild);
@@ -2849,19 +2894,20 @@ class DockitThemeEditor {
     topSection.appendChild(dashRect);
 
     const bottomSection = document.createElement('div');
-    bottomSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%; align-items: flex-end;';
+    bottomSection.style.cssText = 'display: flex; justify-content: space-between; width: 100%; align-items: flex-end; position: relative; z-index: 2; pointer-events: none;';
 
     const textContainer = document.createElement('div');
-    textContainer.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
-    
+    textContainer.style.cssText = 'display: flex; flex-direction: column; gap: 1.42cqw;';
+
     const title = document.createElement('div');
+    title.className = 'dockit-theme-card-title';
     title.setAttribute('data-theme-colors', '--color-foreground');
-    title.style.cssText = 'font-size: 14px; font-weight: 600; color: var(--color-foreground); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;';
+    title.style.cssText = 'font-size: 5cqw; font-weight: 600; color: var(--color-foreground); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50cqw;';
     title.innerText = this.theme && this.theme.name ? this.theme.name : 'Theme Name';
 
     const subtitle = document.createElement('div');
     subtitle.setAttribute('data-theme-colors', '--color-foreground-rgba');
-    subtitle.style.cssText = 'font-size: 11px; color: color-mix(in srgb, var(--color-foreground) 50%, transparent);';
+    subtitle.style.cssText = 'font-size: 3.92cqw; color: color-mix(in srgb, var(--color-foreground) 50%, transparent);';
     subtitle.innerText = '@publisher';
 
     textContainer.appendChild(title);
@@ -2869,13 +2915,13 @@ class DockitThemeEditor {
 
     const imagesContainer = document.createElement('div');
     imagesContainer.className = 'dockit-theme-card-images';
-    imagesContainer.style.cssText = 'position: relative; width: 60px; height: 60px;';
+    imagesContainer.style.cssText = 'position: absolute; bottom: -1px; right: -1px; height: 40%; aspect-ratio: 1; overflow: hidden; border-bottom-right-radius: 4.28cqw; z-index: 1; pointer-events: none;';
 
     bottomSection.appendChild(textContainer);
-    bottomSection.appendChild(imagesContainer);
 
     card.appendChild(topSection);
     card.appendChild(bottomSection);
+    card.appendChild(imagesContainer);
 
     return card;
   }
@@ -2909,14 +2955,14 @@ class DockitThemeEditor {
     const btnZoomOut = this.container.querySelector('#btn-zoom-out');
     const btnZoomToggle = this.container.querySelector('#btn-zoom-toggle');
     const zoomMenu = this.container.querySelector('.dockit-zoom-menu');
-    
+
     if (btnZoomIn) {
       btnZoomIn.addEventListener('click', () => {
         const rect = canvas.getBoundingClientRect();
         zoomAtPoint(1.1, rect.width / 2, rect.height / 2);
       });
     }
-    
+
     if (btnZoomOut) {
       btnZoomOut.addEventListener('click', () => {
         const rect = canvas.getBoundingClientRect();
@@ -2963,7 +3009,7 @@ class DockitThemeEditor {
         zoomMenu.style.display = 'none';
         const mockups = Array.from(grid.querySelectorAll('.dockit-mockup-wrapper'));
         if (mockups.length === 0) return;
-        
+
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         mockups.forEach(m => {
           const l = parseFloat(m.style.left) || 0;
@@ -2975,21 +3021,21 @@ class DockitThemeEditor {
           maxX = Math.max(maxX, l + w);
           maxY = Math.max(maxY, t + h);
         });
-        
+
         const contentWidth = maxX - minX;
         const contentHeight = maxY - minY;
         const rect = canvas.getBoundingClientRect();
         const padding = 40;
-        
+
         const scaleX = (rect.width - padding * 2) / contentWidth;
         const scaleY = (rect.height - padding * 2) / contentHeight;
         this.zoom = Math.max(0.3, Math.min(Math.min(scaleX, scaleY), 3.0));
-        
+
         const contentCenterX = minX + contentWidth / 2;
         const contentCenterY = minY + contentHeight / 2;
         this.panX = (rect.width / 2) - (contentCenterX * this.zoom);
         this.panY = (rect.height / 2) - (contentCenterY * this.zoom);
-        
+
         updateTransform();
       });
     }
@@ -3001,11 +3047,11 @@ class DockitThemeEditor {
         zoomMenu.style.display = 'none';
         const mockups = Array.from(grid.querySelectorAll('.dockit-mockup-wrapper'));
         mockups.sort((a, b) => (parseFloat(a.style.left) || 0) - (parseFloat(b.style.left) || 0));
-        
+
         let currentLeft = 100;
         const topY = 150;
         const gap = 40;
-        
+
         mockups.forEach(m => {
           m.style.top = `${topY}px`;
           m.style.left = `${currentLeft}px`;
@@ -3059,12 +3105,19 @@ class DockitThemeEditor {
     nameLabel.addEventListener('click', startEditName);
     editIcon.addEventListener('click', startEditName);
 
+    nameInput.addEventListener('input', () => {
+      const cardTitle = this.container.querySelector('.dockit-theme-card-title');
+      if (cardTitle) cardTitle.innerText = nameInput.value.trim() || 'My Custom Theme';
+    });
+
     nameInput.addEventListener('blur', () => {
       this.theme.name = nameInput.value.trim() || 'My Custom Theme';
       nameLabel.textContent = this.theme.name;
       nameInput.style.display = 'none';
       nameLabel.style.display = 'inline-block';
       editIcon.style.display = 'inline-block';
+      const cardTitle = this.container.querySelector('.dockit-theme-card-title');
+      if (cardTitle) cardTitle.innerText = this.theme.name;
     });
 
     nameInput.addEventListener('keydown', (e) => {
@@ -3086,7 +3139,7 @@ class DockitThemeEditor {
       const scaledGrid = BASE_GRID_SIZE * this.zoom;
       canvas.style.backgroundSize = `${scaledGrid}px ${scaledGrid}px`;
       canvas.style.backgroundPosition = `${this.panX}px ${this.panY}px`;
-      
+
       const zoomTextBtn = this.container.querySelector('#btn-zoom-toggle');
       if (zoomTextBtn) {
         zoomTextBtn.textContent = `${Math.round((this.zoom || 1) * 100)}%`;
@@ -3249,22 +3302,22 @@ class DockitThemeEditor {
       } else if (this.dragImage && !this.isIsolated) {
         const deltaX = (e.clientX - this.dragStartX) / this.zoom;
         const deltaY = (e.clientY - this.dragStartY) / this.zoom;
-        
+
         const imgObj = this.theme.images.find(img => img.id === this.dragImage.dataset.imageId);
         if (imgObj) {
-           const wrapper = this.dragImage.closest('.dockit-mockup-wrapper');
-           const wrapperWidth = parseInt(wrapper.style.width) || wrapper.offsetWidth;
-           const wrapperHeight = parseInt(wrapper.style.height) || wrapper.offsetHeight;
-           
-           imgObj.offsetX = this.dragStartOffsetX + (deltaX / wrapperWidth) * 100;
-           imgObj.offsetY = this.dragStartOffsetY + (deltaY / wrapperHeight) * 100;
-           
-           this.updateImagesDOM();
+          const wrapper = this.dragImage.closest('.dockit-mockup-wrapper');
+          const wrapperWidth = parseInt(wrapper.style.width) || wrapper.offsetWidth;
+          const wrapperHeight = parseInt(wrapper.style.height) || wrapper.offsetHeight;
 
-           if (this.selectedElement === this.dragImage) {
-             const rect = this.dragImage.getBoundingClientRect();
-             this.showToolbar(rect, 'image', this.dragImage);
-           }
+          imgObj.offsetX = this.dragStartOffsetX + (deltaX / wrapperWidth) * 100;
+          imgObj.offsetY = this.dragStartOffsetY + (deltaY / wrapperHeight) * 100;
+
+          this.updateImagesDOM();
+
+          if (this.selectedElement === this.dragImage) {
+            const rect = this.dragImage.getBoundingClientRect();
+            this.showToolbar(rect, 'image', this.dragImage);
+          }
         }
       }
     });
@@ -3416,22 +3469,24 @@ class DockitThemeEditor {
   updateImagesDOM() {
     const grid = this.container.querySelector('.dockit-theme-editor-grid');
     if (!grid || !this.theme.images) return;
-    
+
+    this.updateThemeCardImages();
+
     grid.querySelectorAll('.dockit-mockup-image-container').forEach(imgContainer => {
       const imgObj = this.theme.images.find(img => img.id === imgContainer.dataset.imageId);
       if (imgObj) {
         const wrapper = imgContainer.closest('.dockit-mockup-wrapper');
         const isSidebar = wrapper && wrapper.dataset.id === 'sidebar';
-        
+
         let scaledWidth = imgObj.width;
         let scaledHeight = imgObj.height;
 
         if (imgObj.parentId === 'sidebar' && !isSidebar) {
-           scaledWidth *= 2;
-           scaledHeight *= 2;
+          scaledWidth *= 2;
+          scaledHeight *= 2;
         } else if (imgObj.parentId !== 'sidebar' && isSidebar) {
-           scaledWidth *= 0.5;
-           scaledHeight *= 0.5;
+          scaledWidth *= 0.5;
+          scaledHeight *= 0.5;
         }
 
         imgContainer.style.width = `${scaledWidth}px`;
@@ -3446,16 +3501,16 @@ class DockitThemeEditor {
       if (imgObj) {
         const wrapper = patternLayer.closest('.dockit-mockup-wrapper');
         const isSidebar = wrapper && wrapper.dataset.id === 'sidebar';
-        
+
         let scaledWidth = imgObj.width;
         let scaledHeight = imgObj.height;
 
         if (imgObj.parentId === 'sidebar' && !isSidebar) {
-           scaledWidth *= 2;
-           scaledHeight *= 2;
+          scaledWidth *= 2;
+          scaledHeight *= 2;
         } else if (imgObj.parentId !== 'sidebar' && isSidebar) {
-           scaledWidth *= 0.5;
-           scaledHeight *= 0.5;
+          scaledWidth *= 0.5;
+          scaledHeight *= 0.5;
         }
 
         patternLayer.style.backgroundSize = `${scaledWidth}px ${scaledHeight}px`;
@@ -3555,7 +3610,7 @@ class DockitThemeEditor {
     const onMouseUp = () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
-      
+
       const rect = imageContainer.getBoundingClientRect();
       this.showToolbar(rect, 'image', imageContainer);
     };
@@ -3736,26 +3791,28 @@ class DockitThemeEditor {
 
     let toolsHtml = '';
     if (type === 'wrapper') {
-      toolsHtml += `
-        <div class="dockit-toolbar-tool">
-          <button class="dockit-toolbar-icon-btn" title="Blur">${apertureIcon}</button>
-          <div class="dockit-toolbar-slider-container">
-            <input type="range" id="slider-blur" min="0" max="20" value="${parseInt(this.theme.options['--blur-value']) || 0}" />
+      if (target.dataset.id !== 'theme-card') {
+        toolsHtml += `
+          <div class="dockit-toolbar-tool">
+            <button class="dockit-toolbar-icon-btn" title="Blur">${apertureIcon}</button>
+            <div class="dockit-toolbar-slider-container">
+              <input type="range" id="slider-blur" min="0" max="20" value="${parseInt(this.theme.options['--blur-value']) || 0}" />
+            </div>
           </div>
-        </div>
-        <div class="dockit-toolbar-tool">
-          <button class="dockit-toolbar-icon-btn" title="Transparency">${blendIcon}</button>
-          <div class="dockit-toolbar-slider-container">
-            <input type="range" id="slider-opacity" min="10" max="100" value="${Math.round(parseFloat(this.theme.options['--opacity-value']) * 100) || 100}" />
+          <div class="dockit-toolbar-tool">
+            <button class="dockit-toolbar-icon-btn" title="Transparency">${blendIcon}</button>
+            <div class="dockit-toolbar-slider-container">
+              <input type="range" id="slider-opacity" min="10" max="100" value="${Math.round(parseFloat(this.theme.options['--opacity-value']) * 100) || 100}" />
+            </div>
           </div>
-        </div>
-        <div class="dockit-toolbar-tool">
-          <button class="dockit-toolbar-icon-btn" title="Menu Transparency">${panelTransparencyIcon}</button>
-          <div class="dockit-toolbar-slider-container">
-            <input type="range" id="slider-menu-opacity" min="0" max="100" value="${Math.round(parseFloat(this.theme.options['--menu-opacity-value'] ?? 1) * 100)}" />
+          <div class="dockit-toolbar-tool">
+            <button class="dockit-toolbar-icon-btn" title="Menu Transparency">${panelTransparencyIcon}</button>
+            <div class="dockit-toolbar-slider-container">
+              <input type="range" id="slider-menu-opacity" min="0" max="100" value="${Math.round(parseFloat(this.theme.options['--menu-opacity-value'] ?? 1) * 100)}" />
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      }
       if (target.dataset.id === 'sidebar') {
         toolsHtml += `
           <div class="dockit-toolbar-tool">
@@ -3804,9 +3861,9 @@ class DockitThemeEditor {
           ${swatchesHtml}
         </div>
       ` : ''}
-      ${(type === 'wrapper') ? '<div class="dockit-toolbar-divider"></div>' + toolsHtml : ''}
+      ${(type === 'wrapper' && target.dataset.id !== 'theme-card') ? '<div class="dockit-toolbar-divider"></div>' + toolsHtml : ''}
       ${(type === 'image') ? toolsHtml : ''}
-      ${type === 'wrapper' ? `
+      ${(type === 'wrapper' && target.dataset.id !== 'theme-card') ? `
         <div class="dockit-toolbar-divider"></div>
         <button class="dockit-toolbar-icon-btn dockit-toolbar-img-btn" id="btn-img-importer" title="Import Image">
           ${imageIcon}
@@ -3913,7 +3970,7 @@ class DockitThemeEditor {
           this.renderImages();
         });
       }
-      
+
       const btnPattern = toolbar.querySelector('#btn-image-pattern');
       if (btnPattern) {
         btnPattern.addEventListener('click', () => {
@@ -4053,18 +4110,18 @@ class DockitThemeEditor {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, 9, 8);
         const data = ctx.getImageData(0, 0, 9, 8).data;
-        
+
         let hash = '';
         for (let y = 0; y < 8; y++) {
           for (let x = 0; x < 8; x++) {
             const idx1 = (y * 9 + x) * 4;
             const idx2 = (y * 9 + x + 1) * 4;
-            const gray1 = data[idx1] * 0.299 + data[idx1+1] * 0.587 + data[idx1+2] * 0.114;
-            const gray2 = data[idx2] * 0.299 + data[idx2+1] * 0.587 + data[idx2+2] * 0.114;
+            const gray1 = data[idx1] * 0.299 + data[idx1 + 1] * 0.587 + data[idx1 + 2] * 0.114;
+            const gray2 = data[idx2] * 0.299 + data[idx2 + 1] * 0.587 + data[idx2 + 2] * 0.114;
             hash += gray1 > gray2 ? '1' : '0';
           }
         }
-        
+
         let hex = '';
         for (let i = 0; i < 64; i += 4) {
           hex += parseInt(hash.substr(i, 4), 2).toString(16);
@@ -4136,7 +4193,7 @@ class DockitThemeEditor {
       let storage = await chrome.storage.local.get(['appwriteSession']);
       if (!storage.appwriteSession) {
         if (applyBtn) applyBtn.innerHTML = originalText;
-        
+
         const userProceeds = await new Promise((resolve) => {
           this.sidebar.showDialog({
             title: 'Account Required',
@@ -4161,7 +4218,7 @@ class DockitThemeEditor {
     } catch (e) {
       console.warn("Dockit: Failed to save to local storage immediately, quota exceeded?", e);
     }
-    
+
     if (applyBtn) {
       applyBtn.innerHTML = `<span>Applied!</span>`;
       setTimeout(() => {
@@ -4237,15 +4294,15 @@ class DockitThemeEditor {
             formData.append('permissions[]', `read("any")`);
             formData.append('permissions[]', `update("user:${userId}")`);
             formData.append('permissions[]', `delete("user:${userId}")`);
-            
+
             const res = await fetch(`https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files`, {
               method: 'POST',
               headers,
               body: formData
             });
-            
+
             const data = await res.json();
-            
+
             if (data.$id || data.code === 409) {
               const finalId = data.$id || dHash;
               img.src = `https://nyc.cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${finalId}/view?project=${projectId}`;
