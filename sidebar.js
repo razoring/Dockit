@@ -264,7 +264,7 @@ class DockitSidebar {
 
     // Top layout (profile on left, stats on right)
     const topRow = document.createElement('div');
-    topRow.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin-bottom: auto; pointer-events: none;';
+    topRow.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin-bottom: auto;';
     
     // Profile Info
     const profileInfo = document.createElement('div');
@@ -358,16 +358,35 @@ class DockitSidebar {
     
     const installBtn = document.createElement('button');
     installBtn.className = 'dockit-btn dockit-theme-btn-install';
-    installBtn.style.cssText = 'background: var(--color-primary); color: var(--color-foreground); border: none; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s;';
+    installBtn.style.cssText = 'background: var(--color-primary); color: var(--color-foreground); border: none; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s, transform 0.2s, background 0.2s;';
     installBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Install`;
-    installBtn.addEventListener('mouseover', () => installBtn.style.opacity = '0.8');
-    installBtn.addEventListener('mouseout', () => installBtn.style.opacity = '1');
+    installBtn.addEventListener('mouseover', () => {
+      installBtn.style.opacity = '0.85';
+      installBtn.style.transform = 'scale(1.02)';
+    });
+    installBtn.addEventListener('mouseout', () => {
+      installBtn.style.opacity = '1';
+      installBtn.style.transform = 'scale(1)';
+    });
     installBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (theme && theme.onInstall) theme.onInstall();
+      if (theme && theme.onInstall) {
+        theme.onInstall();
+      }
+      
+      const origHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Install`;
+      const origBg = 'var(--color-primary)';
+      const origColor = 'var(--color-foreground)';
+      
       installBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Installed`;
       installBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 10%, transparent)';
       installBtn.style.color = 'var(--color-foreground)';
+      
+      setTimeout(() => {
+        installBtn.innerHTML = origHTML;
+        installBtn.style.background = origBg;
+        installBtn.style.color = origColor;
+      }, 1500);
     });
     
     actionsCol.appendChild(installBtn);
@@ -390,8 +409,8 @@ class DockitSidebar {
     if (theme && theme.onDelete) {
       const delBtn = document.createElement('button');
       delBtn.className = 'dockit-btn dockit-theme-btn-delete';
-      delBtn.style.cssText = 'background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 6px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; aspect-ratio: 1; transition: background 0.2s;';
-      delBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+      delBtn.style.cssText = 'background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 8px; width: 34px; height: 34px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s;';
+      delBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
       delBtn.addEventListener('mouseover', () => delBtn.style.background = 'rgba(255, 77, 77, 0.1)');
       delBtn.addEventListener('mouseout', () => delBtn.style.background = 'transparent');
       delBtn.addEventListener('click', (e) => {
@@ -402,14 +421,14 @@ class DockitSidebar {
     } else {
       const likeBtn = document.createElement('button');
       likeBtn.className = 'dockit-btn dockit-theme-btn-like';
-      likeBtn.style.cssText = 'background: transparent; color: var(--color-foreground); border: 1px solid color-mix(in srgb, var(--color-foreground) 20%, transparent); padding: 6px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; aspect-ratio: 1; transition: all 0.2s;';
+      likeBtn.style.cssText = 'background: transparent; color: var(--color-foreground); border: 1px solid color-mix(in srgb, var(--color-foreground) 20%, transparent); padding: 8px; width: 34px; height: 34px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;';
       if (theme && theme.hasLiked) {
         likeBtn.style.color = 'var(--color-primary)';
         likeBtn.style.borderColor = 'color-mix(in srgb, var(--color-primary) 30%, transparent)';
         likeBtn.style.background = 'color-mix(in srgb, var(--color-primary) 10%, transparent)';
-        likeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+        likeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
       } else {
-        likeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+        likeBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
       }
       likeBtn.addEventListener('mouseover', () => likeBtn.style.background = theme && theme.hasLiked ? 'color-mix(in srgb, var(--color-primary) 20%, transparent)' : 'color-mix(in srgb, var(--color-foreground) 5%, transparent)');
       likeBtn.addEventListener('mouseout', () => likeBtn.style.background = theme && theme.hasLiked ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'transparent');
@@ -535,57 +554,67 @@ class DockitSidebar {
     }
   }
 
-  _installTheme(themeData) {
-    const toApply = { ...themeData };
-    delete toApply.hasLiked;
-    delete toApply.hasDownloaded;
-    delete toApply.onLike;
-    delete toApply.onUnlike;
-    delete toApply.onInstall;
-    delete toApply.onEdit;
-    delete toApply.onDelete;
-    chrome.storage.local.set({ dockitTheme: toApply });
-    if (!this.isSidePanel) {
-      this.closeInPage();
+  async _installTheme(themeData) {
+    try {
+      //build a clean theme object with only the data applyTheme() needs
+      const cleanTheme = {};
+      if (themeData.name) cleanTheme.name = themeData.name;
+      if (themeData.colors) cleanTheme.colors = { ...themeData.colors };
+      if (themeData.options) cleanTheme.options = { ...themeData.options };
+      if (themeData.images) cleanTheme.images = [...themeData.images];
+      if (themeData.publisherId) cleanTheme.publisherId = themeData.publisherId;
+      if (themeData.publisherName) cleanTheme.publisherName = themeData.publisherName;
+
+      await chrome.storage.local.set({ dockitTheme: cleanTheme });
+
+      if (!this.isSidePanel) {
+        this.closeInPage();
+      }
+    } catch (e) {
+      console.error('Dockit: _installTheme error', e);
     }
   }
 
   _openThemeEditor(themeData) {
-    if (!this._themeEditor) {
-      this._themeEditor = new DockitThemeEditor(this.element.querySelector('#dockit-theme-editor-overlay'), this, () => {
-        this._renderCustomization();
-      });
-    }
-    this._themeEditor.init(themeData);
+    this.enterThemeEditor(themeData);
   }
 
-  async _deleteTheme(themeId) {
-    const confirmDelete = window.confirm('Are you sure you want to delete this theme? This cannot be undone.');
-    if (!confirmDelete) return;
+  _deleteTheme(themeId) {
+    this.showDialog({
+      title: 'Delete Theme',
+      message: 'Are you sure you want to delete this theme? This cannot be undone.',
+      type: 'confirm',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        const storageData = await chrome.storage.local.get(['appwriteSession']);
+        if (!storageData.appwriteSession) return;
+        
+        const projectId = '6a0a1cc000178886bfaf';
+        const headers = {
+          'X-Appwrite-Project': projectId,
+          'X-Fallback-Cookies': `a_session_${projectId}=${storageData.appwriteSession.secret}`
+        };
 
-    const storageData = await chrome.storage.local.get(['appwriteSession']);
-    if (!storageData.appwriteSession) return;
-    
-    const projectId = '6a0a1cc000178886bfaf';
-    const headers = {
-      'X-Appwrite-Project': projectId,
-      'X-Fallback-Cookies': `a_session_${projectId}=${storageData.appwriteSession.secret}`
-    };
-
-    try {
-      await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents/${themeId}`, {
-        method: 'DELETE',
-        headers
-      });
-      // Try to re-render the customization gallery
-      if (this._states && this._states.recent) {
-        this._states.recent.data = this._states.recent.data.filter(d => d.$id !== themeId);
+        try {
+          const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents/${themeId}`, {
+            method: 'DELETE',
+            headers
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || 'Delete failed with status ' + res.status);
+          }
+          // Try to re-render the customization gallery
+          if (this._states && this._states.recent) {
+            this._states.recent.data = this._states.recent.data.filter(d => d.$id !== themeId);
+          }
+          this._renderCustomization();
+        } catch (e) {
+          console.error('Delete theme error:', e);
+          this.showDialog({ message: 'Failed to delete theme: ' + e.message });
+        }
       }
-      this._renderCustomization();
-    } catch (e) {
-      console.error(e);
-      alert('Failed to delete theme.');
-    }
+    });
   }
 
   showDialog({ title, message, type = 'alert', confirmText = 'OK', cancelText = 'Cancel', onConfirm = null, onCancel = null }) {
@@ -2682,7 +2711,7 @@ class DockitSidebar {
     }
   }
 
-  async _renderCustomization() {
+  async _renderCustomization(isBackground = false) {
     const contentEl = this.element.querySelector('#dockit-in-page-content');
     if (!contentEl) return;
 
@@ -2991,8 +3020,12 @@ class DockitSidebar {
       }
     });
 
-    if (getState().data.length > 0) renderGallery();
-    else loadBatch(true);
+    if (isBackground) {
+      if (getState().data.length > 0) renderGallery();
+    } else {
+      if (getState().data.length > 0) renderGallery();
+      else loadBatch(true);
+    }
   }
 
   async _renderProfileDashboard(containerEl, sessionData) {
@@ -3335,7 +3368,7 @@ class DockitSidebar {
     }
   }
 
-  async enterThemeEditor() {
+  async enterThemeEditor(initialTheme = null) {
     const host = this.element.getRootNode()?.host || document.getElementById('dockit-host-root');
     if (host) {
       host.classList.add('dockit-theme-editor-active');
@@ -3361,7 +3394,7 @@ class DockitSidebar {
       this._renderCustomization();
     });
 
-    await this._themeEditor.init();
+    await this._themeEditor.init(initialTheme);
   }
 }
 
@@ -3783,7 +3816,7 @@ class DockitThemeEditor {
     editAppsContent.removeAttribute('id');
 
     if (titleEl) titleEl.dataset.appName = 'Customization';
-    await this.sidebar._renderCustomization();
+    await this.sidebar._renderCustomization(true);
     const customizationContent = tempContentEl.cloneNode(true);
     customizationContent.style.display = '';
     customizationContent.removeAttribute('id');

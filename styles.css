@@ -1938,5 +1938,12 @@ body.dockit-theme-editor-active {
   justify-content: center;
   align-items: center;
   gap: 8px;
+  pointer-events: none;
+}
+.dockit-theme-card-wrapper:hover .dockit-theme-card-front {
+  pointer-events: none;
+}
+.dockit-theme-card-wrapper:hover .dockit-theme-card-back {
+  pointer-events: auto;
 }
 
