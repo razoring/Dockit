@@ -230,8 +230,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         chrome.tabs.remove(tabId);
 
         try {
-          const cookie = await chrome.cookies.get({ url: 'https://nyc.cloud.appwrite.io', name: `a_session_${projectId}` });
-          if (!cookie) throw new Error('Cookie not found after login');
+          const urlObj = new URL(changeInfo.url);
+          const errorParam = urlObj.searchParams.get('error');
+          if (errorParam) {
+            throw new Error('OAuth Error: ' + errorParam);
+          }
+
+          let cookie = await chrome.cookies.get({ url: 'https://nyc.cloud.appwrite.io', name: `a_session_${projectId}` });
+          if (!cookie) {
+            cookie = await chrome.cookies.get({ url: 'https://nyc.cloud.appwrite.io', name: `a_session_${projectId}_legacy` });
+          }
+          if (!cookie) throw new Error('Cookie not found after login. The login might have failed or cookies are blocked.');
 
           const secret = cookie.value;
           const fallbackCookie = `a_session_${projectId}=${secret}`;
@@ -254,7 +263,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
     };
     chrome.tabs.onUpdated.addListener(listener);
-    chrome.tabs.create({ url: authUrl, active: true });
+
+    //destroy existing server-side session and clear cookies before starting fresh oauth
+    const _startFreshLogin = async () => {
+      try {
+        const stored = await chrome.storage.local.get(['appwriteSession']);
+        if (stored.appwriteSession) {
+          //kill the server-side session so appwrite doesn't reuse it
+          await fetch('https://nyc.cloud.appwrite.io/v1/account/sessions/current', {
+            method: 'DELETE',
+            headers: {
+              'X-Appwrite-Project': projectId,
+              'X-Fallback-Cookies': `a_session_${projectId}=${stored.appwriteSession.secret}`
+            }
+          }).catch(() => { });
+          await chrome.storage.local.remove('appwriteSession');
+        }
+      } catch (e) { }
+
+      //clear both main and legacy appwrite cookies
+      await chrome.cookies.remove({ url: 'https://nyc.cloud.appwrite.io', name: `a_session_${projectId}` }).catch(() => { });
+      await chrome.cookies.remove({ url: 'https://nyc.cloud.appwrite.io', name: `a_session_${projectId}_legacy` }).catch(() => { });
+
+      chrome.tabs.create({ url: authUrl, active: true });
+    };
+    _startFreshLogin();
     return true;
   } else if (msg.type === 'APPWRITE_SYNC_PUSH') {
     _pushSync().then(sendResponse);
