@@ -59,10 +59,10 @@ class DockitSidebar {
   static createThemeCardDOM(theme) {
     const wrapper = document.createElement('div');
     wrapper.className = 'dockit-theme-card-wrapper';
-    
+
     const inner = document.createElement('div');
     inner.className = 'dockit-theme-card-inner';
-    
+
     const card = document.createElement('div');
     card.className = 'dockit-theme-card-front dockit-theme-card-mockup';
     card.setAttribute('data-theme-colors', '--color-background, --color-foreground, --color-border');
@@ -77,7 +77,7 @@ class DockitSidebar {
       aspect-ratio: 1.75;
       container-type: size;
     `;
-    
+
     card.style.cssText = `
       background-color: var(--color-background);
       border-radius: 4.28cqw;
@@ -190,14 +190,14 @@ class DockitSidebar {
     subtitle.style.cssText = 'font-size: 3.92cqw; color: color-mix(in srgb, var(--color-foreground) 50%, transparent); pointer-events: auto;';
     let pubName = theme && theme.publisherName ? theme.publisherName : null;
     if (pubName && pubName.startsWith('user_')) pubName = null;
-    subtitle.innerText = pubName ? pubName : (theme && theme.publisherId ? `@${theme.publisherId.substring(0,8)}` : '@publisher');
+    subtitle.innerText = pubName ? pubName : (theme && theme.publisherId ? `@${theme.publisherId.substring(0, 8)}` : '@publisher');
 
     textContainer.appendChild(title);
     textContainer.appendChild(subtitle);
 
     const imagesContainer = document.createElement('div');
     imagesContainer.className = 'dockit-theme-card-images';
-    imagesContainer.style.cssText = 'position: absolute; bottom: -1px; right: -1px; height: 40%; aspect-ratio: 1; overflow: hidden; border-bottom-right-radius: 4.28cqw; z-index: 1; pointer-events: none;';
+    imagesContainer.style.cssText = 'position: absolute; bottom: -1px; right: -1px; height: 60%; aspect-ratio: 1; overflow: hidden; border-bottom-right-radius: 4.28cqw; z-index: 1; pointer-events: none;';
 
     bottomSection.appendChild(textContainer);
 
@@ -250,12 +250,12 @@ class DockitSidebar {
           if (!imagesContainer.isConnected) return;
           const imgs = imagesContainer.querySelectorAll('img');
           if (imgs.length === 0) return;
-          
+
           currentIdx = (currentIdx + 1) % imgs.length;
           imgs.forEach((img, i) => {
             img.style.opacity = (i === currentIdx) ? '1' : '0';
           });
-          
+
           setTimeout(fader, 3000);
         };
         setTimeout(fader, 3000);
@@ -265,16 +265,16 @@ class DockitSidebar {
     // Top layout (profile on left, stats on right)
     const topRow = document.createElement('div');
     topRow.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin-bottom: auto;';
-    
+
     // Profile Info
     const profileInfo = document.createElement('div');
     profileInfo.style.cssText = 'display: flex; align-items: center; gap: 8px;';
-    
+
     const profileImg = document.createElement('img');
     profileImg.className = 'dockit-theme-card-avatar';
     profileImg.style.cssText = 'width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: color-mix(in srgb, var(--color-foreground) 20%, transparent); flex-shrink: 0;';
     if (theme && theme.publisherAvatar) {
-      if (theme.publisherAvatar.startsWith('data:')) {
+      if (theme.publisherAvatar.startsWith('http') || theme.publisherAvatar.startsWith('data:')) {
         profileImg.src = theme.publisherAvatar;
       } else {
         const projectId = '6a0a1cc000178886bfaf';
@@ -288,12 +288,12 @@ class DockitSidebar {
 
     const profileTextCol = document.createElement('div');
     profileTextCol.style.cssText = 'display: flex; flex-direction: column; text-align: left;';
-    
+
     const profileNameStr = (theme && theme.publisherName) ? theme.publisherName : (theme && theme.publisherId ? `@${theme.publisherId}` : 'User');
     const profileName = document.createElement('span');
     profileName.style.cssText = 'font-size: 13px; font-weight: 600; color: var(--color-foreground); max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
     profileName.innerText = profileNameStr;
-    
+
     const publishDate = document.createElement('span');
     publishDate.style.cssText = 'font-size: 11px; opacity: 0.6; color: var(--color-foreground);';
     if (theme && theme.createdAt) {
@@ -310,7 +310,7 @@ class DockitSidebar {
     // Stats
     const statsCol = document.createElement('div');
     statsCol.style.cssText = 'display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: auto;';
-    
+
     const makeStat = (iconId, countText, type) => {
       const el = document.createElement('div');
       el.className = `dockit-theme-card-${type}`;
@@ -320,10 +320,10 @@ class DockitSidebar {
       el.addEventListener('mouseout', () => el.style.opacity = '0.8');
       return el;
     };
-    
+
     const downloadsStat = makeStat('download', theme && theme.downloads !== undefined ? theme.downloads : 0, 'downloads');
     const likesStat = makeStat('heart', theme && theme.likes !== undefined ? theme.likes : 0, 'likes');
-    
+
     if (theme && theme.hasLiked) {
       likesStat.style.color = 'var(--color-primary)';
       likesStat.querySelector('i').setAttribute('fill', 'currentColor');
@@ -355,7 +355,7 @@ class DockitSidebar {
     // Bottom Actions
     const actionsCol = document.createElement('div');
     actionsCol.style.cssText = 'display: flex; flex-direction: column; gap: 8px; width: 100%;';
-    
+
     const installBtn = document.createElement('button');
     installBtn.className = 'dockit-btn dockit-theme-btn-install';
     installBtn.style.cssText = 'background: var(--color-primary); color: var(--color-foreground); border: none; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s, transform 0.2s, background 0.2s;';
@@ -373,22 +373,22 @@ class DockitSidebar {
       if (theme && theme.onInstall) {
         theme.onInstall();
       }
-      
+
       const origHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Install`;
       const origBg = 'var(--color-primary)';
       const origColor = 'var(--color-foreground)';
-      
+
       installBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Installed`;
       installBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 10%, transparent)';
       installBtn.style.color = 'var(--color-foreground)';
-      
+
       setTimeout(() => {
         installBtn.innerHTML = origHTML;
         installBtn.style.background = origBg;
         installBtn.style.color = origColor;
       }, 1500);
     });
-    
+
     actionsCol.appendChild(installBtn);
 
     const editRow = document.createElement('div');
@@ -449,7 +449,7 @@ class DockitSidebar {
       });
       editRow.appendChild(likeBtn);
     }
-    
+
     actionsCol.appendChild(editRow);
 
     back.appendChild(topRow);
@@ -512,14 +512,14 @@ class DockitSidebar {
           if (getRes.ok) {
             const data = await getRes.json();
             if (data.documents.length === 0) {
-               const payload = {
-                 documentId: 'unique()',
-                 data: {
-                   themeId: action.themeId,
-                   userId: sessionData.appwriteSession.userId,
-                   type: action.type,
-                   timestamp: new Date().toISOString()
-                 }
+              const payload = {
+                documentId: 'unique()',
+                data: {
+                  themeId: action.themeId,
+                  userId: sessionData.appwriteSession.userId,
+                  type: action.type,
+                  timestamp: new Date().toISOString()
+                }
               };
               await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/theme_interactions/documents`, {
                 method: 'POST',
@@ -528,7 +528,7 @@ class DockitSidebar {
               });
             }
           }
-        } catch(e) {}
+        } catch (e) { }
       } else { // remove
         try {
           const queries = [
@@ -538,7 +538,7 @@ class DockitSidebar {
           ];
           let qUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/theme_interactions/documents?`;
           queries.forEach(q => qUrl += `queries[]=${encodeURIComponent(q)}&`);
-          
+
           const getRes = await fetch(qUrl, { headers });
           if (getRes.ok) {
             const data = await getRes.json();
@@ -549,7 +549,7 @@ class DockitSidebar {
               });
             }
           }
-        } catch(e) {}
+        } catch (e) { }
       }
     }
   }
@@ -588,7 +588,7 @@ class DockitSidebar {
       onConfirm: async () => {
         const storageData = await chrome.storage.local.get(['appwriteSession']);
         if (!storageData.appwriteSession) return;
-        
+
         const projectId = '6a0a1cc000178886bfaf';
         const headers = {
           'X-Appwrite-Project': projectId,
@@ -2778,17 +2778,17 @@ class DockitSidebar {
     const renderGallery = () => {
       galleryEl.innerHTML = '';
       const state = getState();
-      
+
       if (state.data.length === 0 && !state.hasMore) {
         galleryEl.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; opacity: 0.5; padding: 40px 0;">No themes found.</div>';
         return;
       }
-      
+
       state.data.forEach(doc => {
         let themeData;
-        try { 
-          themeData = JSON.parse(doc.theme || doc.payload); 
-          themeData.name = doc.name; 
+        try {
+          themeData = JSON.parse(doc.theme || doc.payload);
+          themeData.name = doc.name;
           themeData.publisherId = doc.profile || doc.publisherId;
           if (doc.publisherName) themeData.publisherName = doc.publisherName;
           if (doc.publisherAvatar) themeData.publisherAvatar = doc.publisherAvatar;
@@ -2797,30 +2797,30 @@ class DockitSidebar {
           themeData.downloads = doc.downloads || 0;
           themeData.hasLiked = doc.hasLiked || false;
           themeData.hasDownloaded = doc.hasDownloaded || false;
-          
+
           themeData.onLike = () => { this._queueInteraction(doc.$id, 'like', true); };
           themeData.onUnlike = () => { this._queueInteraction(doc.$id, 'like', false); };
           themeData.onInstall = () => {
-             this._installTheme(themeData);
-             if (!doc.hasDownloaded) {
-               this._queueInteraction(doc.$id, 'download', true);
-               doc.hasDownloaded = true;
-             }
+            this._installTheme(themeData);
+            if (!doc.hasDownloaded) {
+              this._queueInteraction(doc.$id, 'download', true);
+              doc.hasDownloaded = true;
+            }
           };
           themeData.onEdit = () => {
-             this._openThemeEditor(themeData);
-             if (!doc.hasDownloaded) {
-               this._queueInteraction(doc.$id, 'download', true);
-               doc.hasDownloaded = true;
-             }
+            this._openThemeEditor(themeData);
+            if (!doc.hasDownloaded) {
+              this._queueInteraction(doc.$id, 'download', true);
+              doc.hasDownloaded = true;
+            }
           };
           if (storageData.appwriteSession && themeData.publisherId === storageData.appwriteSession.userId) {
             themeData.onDelete = () => { this._deleteTheme(doc.$id); };
           }
-        } catch(e) { return; }
-        
+        } catch (e) { return; }
+
         const card = DockitSidebar.createThemeCardDOM(themeData);
-        card.style.height = 'auto'; 
+        card.style.height = 'auto';
         galleryEl.appendChild(card);
       });
 
@@ -2859,7 +2859,7 @@ class DockitSidebar {
       isFetching = true;
 
       const hasSession = !!storageData.appwriteSession;
-      
+
       if (!hasSession && state.cursor) {
         renderGallery();
         isFetching = false;
@@ -2874,7 +2874,7 @@ class DockitSidebar {
           JSON.stringify({ method: 'limit', values: [5] }),
           JSON.stringify({ method: 'orderDesc', attribute: currentSort })
         ];
-        
+
         if (currentSort !== 'created') {
           queries.push(JSON.stringify({ method: 'orderDesc', attribute: 'created' }));
         }
@@ -2894,13 +2894,13 @@ class DockitSidebar {
         }
 
         const res = await fetch(url, { headers });
-        
+
         if (!res.ok) {
           let errMsg = 'Fetch failed';
           try {
             const errData = await res.json();
             errMsg = errData.message || errMsg;
-          } catch(e) {}
+          } catch (e) { }
           throw new Error(errMsg);
         }
 
@@ -2908,7 +2908,7 @@ class DockitSidebar {
         const docs = data.documents;
 
         if (docs.length < 5) state.hasMore = false;
-        
+
         if (docs.length > 0) {
           const profileIds = [...new Set(docs.map(d => d.profile || d.publisherId).filter(Boolean))];
           if (profileIds.length > 0) {
@@ -2933,7 +2933,7 @@ class DockitSidebar {
               }
             } catch (e) { console.error('Failed to fetch profiles', e); }
           }
-          
+
           if (hasSession && storageData.appwriteSession.userId) {
             try {
               let interUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/theme_interactions/documents?`;
@@ -2958,7 +2958,7 @@ class DockitSidebar {
           const newDocs = docs.filter(d => !state.data.some(existing => existing.$id === d.$id));
           state.data.push(...newDocs);
         }
-        
+
         renderGallery();
 
       } catch (err) {
@@ -2976,7 +2976,7 @@ class DockitSidebar {
         const val = e.target.value.trim();
         if (currentQuery === val) return;
         currentQuery = val;
-        
+
         if (val) {
           this.themeGalleryCache.search = { query: val, data: [], cursor: null, hasMore: true };
           loadBatch(true);
@@ -2998,11 +2998,11 @@ class DockitSidebar {
         const target = e.currentTarget;
         target.classList.add('active');
         target.style.opacity = '1';
-        
+
         if (indicator) {
           indicator.style.transform = `translateX(${index * 100}%)`;
         }
-        
+
         currentSort = target.dataset.sort;
         if (currentQuery) {
           currentQuery = '';
@@ -3023,8 +3023,7 @@ class DockitSidebar {
     if (isBackground) {
       if (getState().data.length > 0) renderGallery();
     } else {
-      if (getState().data.length > 0) renderGallery();
-      else loadBatch(true);
+      loadBatch(true);
     }
   }
 
@@ -3075,13 +3074,13 @@ class DockitSidebar {
       const accRes = await fetch('https://nyc.cloud.appwrite.io/v1/account', { headers });
       if (accRes.ok) {
         const acc = await accRes.json();
-        
+
         if (acc.name) {
           fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents/${sessionData.userId}`, {
             method: 'PATCH',
             headers,
             body: JSON.stringify({ data: { username: acc.name, updated: new Date().toISOString() } })
-          }).catch(()=>{});
+          }).catch(() => { });
         }
 
         let customAvatar = null;
@@ -3097,12 +3096,12 @@ class DockitSidebar {
               }
             }
           }
-        } catch (e) {}
+        } catch (e) { }
 
         const nameEl = containerEl.querySelector('#dockit-profile-name');
         nameEl.textContent = acc.name || 'User';
         nameEl.dataset.placeholder = acc.name || 'User';
-        
+
         const avatarEl = containerEl.querySelector('#dockit-profile-avatar');
         if (customAvatar) {
           avatarEl.src = customAvatar;
@@ -3128,7 +3127,7 @@ class DockitSidebar {
           let text = nameEl.innerText.replace(/[<>\s]/g, '');
           if (nameEl.innerHTML !== text) {
             nameEl.innerHTML = text;
-            
+
             const selection = window.getSelection();
             const range = document.createRange();
             range.selectNodeContents(nameEl);
@@ -3215,12 +3214,12 @@ class DockitSidebar {
 
         this._flushProfileUpdates = async () => {
           if (!this._pendingProfileUpdates) return;
-          
+
           let newName = this._pendingProfileUpdates.name;
           if (newName !== null) {
             newName = newName.trim();
             if (!newName) newName = this._originalProfileName;
-            
+
             if (newName !== this._originalProfileName) {
               try {
                 await fetch('https://nyc.cloud.appwrite.io/v1/account/name', {
@@ -3246,7 +3245,7 @@ class DockitSidebar {
             try {
               const base64Response = await fetch(this._pendingProfileUpdates.avatarUrl);
               const blob = await base64Response.blob();
-              
+
               const mimeMatch = this._pendingProfileUpdates.avatarUrl.match(/:(.*?);/);
               const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
               const ext = mime.split('/')[1] || 'jpg';
@@ -3266,12 +3265,12 @@ class DockitSidebar {
                 },
                 body: formData
               });
-              
+
               if (uploadRes.ok) {
                 const uploadData = await uploadRes.json();
                 let actualFileId = uploadData.$id;
                 let finalUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${actualFileId}/view?project=6a0a1cc000178886bfaf`;
-                
+
                 try {
                   const funcRes = await fetch(`https://nyc.cloud.appwrite.io/v1/functions/process-image/executions`, {
                     method: 'POST',
@@ -3296,14 +3295,14 @@ class DockitSidebar {
                       finalUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${actualFileId}/view?project=6a0a1cc000178886bfaf`;
                     }
                   }
-                } catch(e) {
-                   console.error('Dockit: Server deduplication failed for avatar:', e);
+                } catch (e) {
+                  console.error('Dockit: Server deduplication failed for avatar:', e);
                 }
-                
+
                 let existingPrefs = {};
                 const pRes = await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', { headers, keepalive: true });
                 if (pRes.ok) existingPrefs = await pRes.json();
-                
+
                 await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', {
                   method: 'PATCH',
                   headers,
@@ -3316,15 +3315,15 @@ class DockitSidebar {
                   headers,
                   keepalive: true,
                   body: JSON.stringify({ data: { avatar: finalUrl, updated: new Date().toISOString() } })
-                }).catch(() => {});
+                }).catch(() => { });
               } else {
                 console.error('Failed to upload avatar to storage', await uploadRes.text());
               }
-            } catch(e) { console.error('Failed to update avatar', e); }
+            } catch (e) { console.error('Failed to update avatar', e); }
           }
           this._pendingProfileUpdates = null;
         };
-        
+
         window.addEventListener('beforeunload', () => {
           if (this._flushProfileUpdates) {
             this._flushProfileUpdates();
@@ -3343,7 +3342,7 @@ class DockitSidebar {
       ];
       let docUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents?`;
       docQueries.forEach(q => docUrl += `queries[]=${encodeURIComponent(q)}&`);
-      
+
       const docRes = await fetch(docUrl, { headers });
       if (docRes.ok) {
         const docData = await docRes.json();
@@ -3352,7 +3351,7 @@ class DockitSidebar {
         });
       }
 
-      const imgQueries = [ JSON.stringify({ method: 'limit', values: [100] }) ];
+      const imgQueries = [JSON.stringify({ method: 'limit', values: [100] })];
       let imgUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files?`;
       imgQueries.forEach(q => imgUrl += `queries[]=${encodeURIComponent(q)}&`);
 
@@ -3369,11 +3368,11 @@ class DockitSidebar {
       if (chrome.storage && chrome.storage.local && chrome.storage.local.getBytesInUse) {
         try {
           totalExtSize = await new Promise(r => chrome.storage.local.getBytesInUse(null, r));
-        } catch(e) {}
+        } catch (e) { }
       } else if (this.themeGalleryCache) {
         totalExtSize = new TextEncoder().encode(JSON.stringify(this.themeGalleryCache)).length;
       }
-      
+
       const totalSize = totalDocsSize + totalImgsSize + totalMsgsSize + totalExtSize;
       const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 
@@ -3399,7 +3398,7 @@ class DockitSidebar {
       containerEl.querySelector('#dockit-storage-lbl-imgs').textContent = `Images ${Math.round(relImgs)}%`;
       containerEl.querySelector('#dockit-storage-lbl-msgs').textContent = `Messages ${Math.round(relMsgs)}%`;
       containerEl.querySelector('#dockit-storage-lbl-ext').textContent = `Extension ${Math.round(relExt)}%`;
-      
+
       this._userStorageTotal = totalSize;
 
     } catch (err) {
@@ -3765,7 +3764,7 @@ class DockitThemeEditor {
     if (!cardImagesContainer || !card) return;
 
     cardImagesContainer.innerHTML = '';
-    
+
     const existingPattern = card.querySelector('.dockit-theme-card-pattern');
     if (existingPattern) existingPattern.remove();
 
@@ -3816,12 +3815,12 @@ class DockitThemeEditor {
         if (!cardImagesContainer.isConnected) return;
         const imgs = cardImagesContainer.querySelectorAll('img');
         if (imgs.length === 0) return;
-        
+
         currentIdx = (currentIdx + 1) % imgs.length;
         imgs.forEach((img, i) => {
           img.style.opacity = (i === currentIdx) ? '1' : '0';
         });
-        
+
         setTimeout(fader, 3000);
       };
       setTimeout(fader, 3000);
@@ -5257,7 +5256,7 @@ class DockitThemeEditor {
   async publishTheme() {
     const publishBtn = this.container.querySelector('#btn-publish-theme');
     const originalContent = publishBtn ? publishBtn.innerHTML : '<span>Publish Theme</span>';
-    
+
     let storage = await chrome.storage.local.get(['appwriteSession']);
     if (!storage.appwriteSession) {
       const authRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_LOGIN' });
@@ -5289,11 +5288,11 @@ class DockitThemeEditor {
 
     try {
       await this._processImagesInBackground();
-      
+
       const session = storage.appwriteSession;
       const { secret, userId } = session;
       const projectId = '6a0a1cc000178886bfaf';
-      
+
       let userName = 'User';
       try {
         const accRes = await fetch('https://nyc.cloud.appwrite.io/v1/account', {
@@ -5307,11 +5306,11 @@ class DockitThemeEditor {
           const acc = await accRes.json();
           if (acc.name) userName = acc.name;
         }
-      } catch (e) {}
+      } catch (e) { }
       this.theme.publisherName = userName;
-      
+
       const payloadString = JSON.stringify(this.theme);
-      
+
       if (!this.theme.publishedId) {
         try {
           const themeName = this.theme.name || 'My Custom Theme';
@@ -5322,14 +5321,14 @@ class DockitThemeEditor {
           ];
           let checkUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents?`;
           checkQueries.forEach(q => checkUrl += `queries[]=${encodeURIComponent(q)}&`);
-          
+
           const checkRes = await fetch(checkUrl, {
             headers: {
               'X-Appwrite-Project': projectId,
               'X-Fallback-Cookies': `a_session_${projectId}=${secret}`
             }
           });
-          
+
           if (checkRes.ok) {
             const checkData = await checkRes.json();
             if (checkData.documents && checkData.documents.length > 0) {
@@ -5342,24 +5341,24 @@ class DockitThemeEditor {
       }
 
       const method = this.theme.publishedId ? 'PATCH' : 'POST';
-      const endpoint = this.theme.publishedId 
+      const endpoint = this.theme.publishedId
         ? `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents/${this.theme.publishedId}`
         : `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents`;
-        
+
       const bodyData = {
         name: this.theme.name || 'My Custom Theme',
         theme: payloadString,
         profile: userId,
         updated: new Date().toISOString()
       };
-      
+
       if (method === 'POST') {
         bodyData.downloads = 0;
         bodyData.created = new Date().toISOString();
       }
 
-      const reqBody = method === 'POST' ? { 
-        documentId: 'unique()', 
+      const reqBody = method === 'POST' ? {
+        documentId: 'unique()',
         data: bodyData,
         permissions: [
           `read("any")`,
@@ -5377,19 +5376,19 @@ class DockitThemeEditor {
         },
         body: JSON.stringify(reqBody)
       });
-      
+
       if (!res.ok) {
         let errMsg = `Failed to publish theme: ${res.statusText}`;
         try {
           const errData = await res.json();
           errMsg = errData.message || errMsg;
-        } catch(e) {}
+        } catch (e) { }
         throw new Error(errMsg);
       }
-      
+
       const data = await res.json();
       this.theme.publishedId = data.$id; // track locally to avoid duplicates
-      
+
       if (!this.themeGalleryCache) this.themeGalleryCache = {};
       if (this.themeGalleryCache.created && method === 'POST') {
         this.themeGalleryCache.created.data.unshift(data);
@@ -5399,7 +5398,7 @@ class DockitThemeEditor {
           this.themeGalleryCache.created.data[existingIdx] = data;
         }
       }
-      
+
       this.sidebar.showDialog({ message: 'Theme published successfully!' });
     } catch (err) {
       console.error(err);
@@ -5534,14 +5533,14 @@ class DockitThemeEditor {
                   } else {
                     console.error('Dockit: Server deduplication failed:', result.error);
                   }
-                } catch(e) {
+                } catch (e) {
                   console.error('Dockit: Failed to parse function response', funcData.responseBody);
                 }
               } else {
                 console.error('Dockit: Function execution failed:', funcData);
               }
             } else {
-               console.error('Dockit: Upload failed:', uploadData);
+              console.error('Dockit: Upload failed:', uploadData);
             }
           } catch (err) {
             console.error('Dockit: Image processing error', err);
