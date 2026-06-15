@@ -321,6 +321,60 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
     });
     return true;
+  } else if (msg.type === 'APPWRITE_GET_CLOUD_DATA_COUNTS') {
+    chrome.storage.local.get(['appwriteSession'], async (data) => {
+      if (!data.appwriteSession) {
+        sendResponse({ success: false, error: 'Not logged in' });
+        return;
+      }
+      const { secret, userId } = data.appwriteSession;
+      try {
+        const fallbackCookie = `a_session_6a0a1cc000178886bfaf=${secret}`;
+        const headers = {
+          'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+          'X-Fallback-Cookies': fallbackCookie
+        };
+
+        const checkDoc = async (coll, id) => {
+          try {
+            const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/${coll}/documents/${id}`, { headers });
+            return res.ok ? 1 : 0;
+          } catch { return 0; }
+        };
+
+        const countDocs = async (coll, attr) => {
+          try {
+            let url = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/${coll}/documents?`;
+            url += `queries[]=${encodeURIComponent(JSON.stringify({ method: 'equal', attribute: attr, values: [userId] }))}&`;
+            url += `queries[]=${encodeURIComponent(JSON.stringify({ method: 'limit', values: [1] }))}`;
+            const res = await fetch(url, { headers });
+            if (res.ok) {
+              const data = await res.json();
+              return data.total || 0;
+            }
+            return 0;
+          } catch { return 0; }
+        };
+
+        const settingsCount = await checkDoc('settings', userId);
+        const profilesCount = await checkDoc('profiles', userId);
+        const themesCount = await countDocs('themes', 'profile');
+        const interactionsCount = await countDocs('theme_interactions', 'userId');
+
+        sendResponse({
+          success: true,
+          counts: {
+            settings: settingsCount,
+            profiles: profilesCount,
+            themes: themesCount,
+            interactions: interactionsCount
+          }
+        });
+      } catch (err) {
+        sendResponse({ success: false, error: err.toString() });
+      }
+    });
+    return true;
   } else if (msg.type === 'APPWRITE_SYNC_CLEAR') {
     chrome.storage.local.get(['appwriteSession'], async (data) => {
       if (!data.appwriteSession) {
@@ -330,17 +384,47 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const { secret, userId } = data.appwriteSession;
       try {
         const fallbackCookie = `a_session_6a0a1cc000178886bfaf=${secret}`;
-        const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents/${userId}`, {
-          method: 'DELETE',
-          headers: {
-            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
-            'X-Fallback-Cookies': fallbackCookie
-          }
-        });
-        if (res.status !== 204 && res.status !== 404 && res.status !== 200) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || `Failed to delete cloud data (status ${res.status})`);
-        }
+        const headers = {
+          'X-Appwrite-Project': '6a0a1cc000178886bfaf',
+          'X-Fallback-Cookies': fallbackCookie
+        };
+
+        const deleteDoc = async (coll, id) => {
+          try {
+            await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/${coll}/documents/${id}`, { method: 'DELETE', headers });
+          } catch (e) {}
+        };
+
+        const deleteMany = async (coll, attr) => {
+          try {
+            let hasMore = true;
+            while(hasMore) {
+              let url = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/${coll}/documents?`;
+              url += `queries[]=${encodeURIComponent(JSON.stringify({ method: 'equal', attribute: attr, values: [userId] }))}&`;
+              url += `queries[]=${encodeURIComponent(JSON.stringify({ method: 'limit', values: [100] }))}`;
+              const res = await fetch(url, { headers });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.documents.length === 0) {
+                  hasMore = false;
+                } else {
+                  for (const doc of data.documents) {
+                    await deleteDoc(coll, doc.$id);
+                  }
+                }
+              } else {
+                hasMore = false;
+              }
+            }
+          } catch(e) {}
+        };
+
+        // Delete all data
+        await deleteDoc('settings', userId);
+        await deleteDoc('profiles', userId);
+        await deleteMany('themes', 'profile');
+        await deleteMany('theme_interactions', 'userId');
+
         sendResponse({ success: true });
       } catch (err) {
         sendResponse({ success: false, error: err.toString() });

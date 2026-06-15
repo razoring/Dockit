@@ -495,6 +495,12 @@ class DockitSidebar {
   }
 
   async _executeInteraction(themeId, type, state) {
+    //validate inputs before any network calls
+    const _VALID_ID = /^[a-zA-Z0-9._-]+$/;
+    const _VALID_TYPES = ['like', 'download'];
+    if (!themeId || typeof themeId !== 'string' || !_VALID_ID.test(themeId)) return;
+    if (!_VALID_TYPES.includes(type)) return;
+
     const sessionData = await chrome.storage.local.get(['appwriteSession']);
     if (!sessionData.appwriteSession) return;
 
@@ -2682,7 +2688,7 @@ class DockitSidebar {
       clearCloudBtn.addEventListener('click', async () => {
         if (clearCloudBtn.dataset.busy) return;
         clearCloudBtn.dataset.busy = '1';
-        clearCloudBtn.textContent = 'Clearing...';
+        clearCloudBtn.textContent = 'Calculating...';
 
         try {
           const storage = await chrome.storage.local.get(['appwriteSession']);
@@ -2690,6 +2696,20 @@ class DockitSidebar {
             const authRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_LOGIN' });
             if (!authRes || !authRes.success) throw new Error(authRes?.error || 'Auth failed');
           }
+
+          const countRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_GET_CLOUD_DATA_COUNTS' });
+          if (!countRes || !countRes.success) throw new Error(countRes?.error || 'Failed to fetch counts');
+
+          const { settings, profiles, themes, interactions } = countRes.counts;
+          const msg = `Are you sure you want to completely erase all your cloud data?\n\nThis will permanently delete:\n- ${settings} Settings profile(s)\n- ${profiles} User profile(s)\n- ${themes} Published Theme(s)\n- ${interactions} Like(s) / Download(s)\n\nThis action cannot be undone.`;
+          
+          if (!window.confirm(msg)) {
+            clearCloudBtn.textContent = t('clear_cloud');
+            delete clearCloudBtn.dataset.busy;
+            return;
+          }
+
+          clearCloudBtn.textContent = 'Clearing...';
           const clearRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_CLEAR' });
           if (!clearRes || !clearRes.success) throw new Error(clearRes?.error || 'Clear failed');
 
