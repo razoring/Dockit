@@ -88,6 +88,7 @@ class DockitSidebar {
       justify-content: space-between;
       border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--opacity-value, 1) * 100%), transparent);
       box-sizing: border-box;
+      pointer-events: none;
     `;
 
     back.style.cssText = `
@@ -182,12 +183,12 @@ class DockitSidebar {
     const title = document.createElement('div');
     title.className = 'dockit-theme-card-title';
     title.setAttribute('data-theme-colors', '--color-foreground');
-    title.style.cssText = 'font-size: 5cqw; font-weight: 600; color: var(--color-foreground); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50cqw; pointer-events: auto;';
+    title.style.cssText = 'font-size: 5cqw; font-weight: 600; color: var(--color-foreground); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50cqw;';
     title.innerText = theme && theme.name ? theme.name : 'Theme Name';
 
     const subtitle = document.createElement('div');
     subtitle.setAttribute('data-theme-colors', '--color-foreground-rgba');
-    subtitle.style.cssText = 'font-size: 3.92cqw; color: color-mix(in srgb, var(--color-foreground) 50%, transparent); pointer-events: auto;';
+    subtitle.style.cssText = 'font-size: 3.92cqw; color: color-mix(in srgb, var(--color-foreground) 50%, transparent);';
     let pubName = theme && theme.publisherName ? theme.publisherName : null;
     if (pubName && pubName.startsWith('user_')) pubName = null;
     subtitle.innerText = pubName ? pubName : (theme && theme.publisherId ? `@${theme.publisherId.substring(0, 8)}` : '@publisher');
@@ -316,8 +317,8 @@ class DockitSidebar {
       el.className = `dockit-theme-card-${type}`;
       el.style.cssText = 'display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--color-foreground); cursor: pointer; opacity: 0.8; transition: opacity 0.2s;';
       el.innerHTML = iconId === 'download' ? `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> <span class="stat-val">${countText}</span>` : `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> <span class="stat-val">${countText}</span>`;
-      el.addEventListener('mouseover', () => el.style.opacity = '1');
-      el.addEventListener('mouseout', () => el.style.opacity = '0.8');
+      el.addEventListener('mouseenter', () => el.style.opacity = '1');
+      el.addEventListener('mouseleave', () => el.style.opacity = '0.8');
       return el;
     };
 
@@ -344,13 +345,13 @@ class DockitSidebar {
 
     const installBtn = document.createElement('button');
     installBtn.className = 'dockit-btn dockit-theme-btn-install';
-    installBtn.style.cssText = 'background: var(--color-primary); color: var(--color-foreground); border: none; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s, transform 0.2s, background 0.2s;';
+    installBtn.style.cssText = 'box-sizing: border-box; background: var(--color-primary); color: var(--color-foreground); border: none; padding: 0 16px; height: 36px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s, transform 0.2s, background 0.2s;';
     installBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Install`;
-    installBtn.addEventListener('mouseover', () => {
+    installBtn.addEventListener('mouseenter', () => {
       installBtn.style.opacity = '0.85';
       installBtn.style.transform = 'scale(1.02)';
     });
-    installBtn.addEventListener('mouseout', () => {
+    installBtn.addEventListener('mouseleave', () => {
       installBtn.style.opacity = '1';
       installBtn.style.transform = 'scale(1)';
     });
@@ -382,10 +383,10 @@ class DockitSidebar {
 
     const editBtn = document.createElement('button');
     editBtn.className = 'dockit-btn dockit-theme-btn-edit';
-    editBtn.style.cssText = 'background: color-mix(in srgb, var(--color-foreground) 10%, transparent); color: var(--color-foreground); border: none; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; flex: 1; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s;';
+    editBtn.style.cssText = 'box-sizing: border-box; background: color-mix(in srgb, var(--color-foreground) 10%, transparent); color: var(--color-foreground); border: none; padding: 0 16px; height: 36px; border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; flex: 1; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s;';
     editBtn.innerHTML = `<svg style="pointer-events: none;" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Edit`;
-    editBtn.addEventListener('mouseover', () => editBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 15%, transparent)');
-    editBtn.addEventListener('mouseout', () => editBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 10%, transparent)');
+    editBtn.addEventListener('mouseenter', () => editBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 15%, transparent)');
+    editBtn.addEventListener('mouseleave', () => editBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 10%, transparent)');
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (theme && theme.onEdit) theme.onEdit();
@@ -395,10 +396,16 @@ class DockitSidebar {
     if (theme && theme.onDelete) {
       const delBtn = document.createElement('button');
       delBtn.className = 'dockit-btn dockit-theme-btn-delete';
-      delBtn.style.cssText = 'box-sizing: border-box; background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 0; width: 40px; height: 40px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s;';
+      delBtn.style.cssText = 'box-sizing: border-box; background: transparent; color: var(--color-foreground); border: 1px solid color-mix(in srgb, var(--color-foreground) 20%, transparent); padding: 0; width: 36px; height: 36px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;';
       delBtn.innerHTML = `<svg style="pointer-events: none;" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
-      delBtn.addEventListener('mouseover', () => delBtn.style.background = 'rgba(255, 77, 77, 0.1)');
-      delBtn.addEventListener('mouseout', () => delBtn.style.background = 'transparent');
+      delBtn.addEventListener('mouseenter', () => {
+        delBtn.style.background = 'color-mix(in srgb, var(--color-foreground) 10%, transparent)';
+        delBtn.style.borderColor = 'color-mix(in srgb, var(--color-foreground) 30%, transparent)';
+      });
+      delBtn.addEventListener('mouseleave', () => {
+        delBtn.style.background = 'transparent';
+        delBtn.style.borderColor = 'color-mix(in srgb, var(--color-foreground) 20%, transparent)';
+      });
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         theme.onDelete();
@@ -407,7 +414,7 @@ class DockitSidebar {
     } else {
       const likeBtn = document.createElement('button');
       likeBtn.className = 'dockit-btn dockit-theme-btn-like';
-      likeBtn.style.cssText = 'background: transparent; color: var(--color-foreground); border: 1px solid color-mix(in srgb, var(--color-foreground) 20%, transparent); padding: 6px; width: 34px; height: 34px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;';
+      likeBtn.style.cssText = 'box-sizing: border-box; background: transparent; color: var(--color-foreground); border: 1px solid color-mix(in srgb, var(--color-foreground) 20%, transparent); padding: 0; width: 36px; height: 36px; border-radius: 100px; cursor: pointer; pointer-events: auto; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;';
 
       likeBtn.dataset.liked = (theme && theme.hasLiked) ? 'true' : 'false';
 
@@ -441,8 +448,8 @@ class DockitSidebar {
         }
       };
 
-      likeBtn.addEventListener('mouseover', () => likeBtn.style.background = (likeBtn.dataset.liked === 'true') ? 'color-mix(in srgb, var(--color-primary) 20%, transparent)' : 'color-mix(in srgb, var(--color-foreground) 5%, transparent)');
-      likeBtn.addEventListener('mouseout', () => likeBtn.style.background = (likeBtn.dataset.liked === 'true') ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'transparent');
+      likeBtn.addEventListener('mouseenter', () => likeBtn.style.background = (likeBtn.dataset.liked === 'true') ? 'color-mix(in srgb, var(--color-primary) 20%, transparent)' : 'color-mix(in srgb, var(--color-foreground) 5%, transparent)');
+      likeBtn.addEventListener('mouseleave', () => likeBtn.style.background = (likeBtn.dataset.liked === 'true') ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'transparent');
 
       likeBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -1181,6 +1188,7 @@ class DockitSidebar {
     if (name === 'Edit Apps') return t('edit_apps');
     if (name === 'Customization') return t('customization');
     if (name === 'Settings') return t('settings');
+    if (name === 'Drive') return 'Drive';
     return name;
   }
 
@@ -1204,6 +1212,9 @@ class DockitSidebar {
       } else if (name === 'Customization') {
         contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Loading customization...</div>`;
         await this._renderCustomization();
+      } else if (name === 'Drive') {
+        contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Loading Drive...</div>`;
+        await this._renderDrive();
       } else {
         contentEl.innerHTML = `<div style="font-size: 14px; opacity: 0.8;">Welcome to ${name}</div>`;
       }
@@ -2593,34 +2604,69 @@ class DockitSidebar {
 
         try {
           const storage = await chrome.storage.local.get(['appwriteSession']);
-          let justLoggedIn = false;
           if (!storage.appwriteSession) {
-            const authRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_LOGIN' });
-            if (!authRes || !authRes.success) throw new Error(authRes?.error || 'Auth failed');
-            justLoggedIn = true;
+            delete syncBtn.dataset.busy;
+            syncBtn.textContent = t('sync_now');
+
+            const overlay = document.createElement('div');
+            Object.assign(overlay.style, {
+              position: 'fixed', top: '0', left: '0', right: '0', bottom: '0',
+              backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: '9999999', opacity: '0', transition: 'opacity 0.2s'
+            });
+
+            const dialog = document.createElement('div');
+            Object.assign(dialog.style, {
+              backgroundColor: 'var(--color-secondary)', border: '1px solid var(--color-border)',
+              borderRadius: '12px', padding: '20px', maxWidth: '300px', width: '90%',
+              color: 'var(--color-foreground)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              transform: 'scale(0.95)', transition: 'transform 0.2s', display: 'flex',
+              flexDirection: 'column', gap: '16px', textAlign: 'center'
+            });
+
+            const title = document.createElement('div');
+            title.style.fontWeight = '600';
+            title.style.fontSize = '16px';
+            title.textContent = 'Authentication Required';
+
+            const desc = document.createElement('div');
+            desc.style.fontSize = '13px';
+            desc.style.lineHeight = '1.5';
+            desc.style.color = 'var(--color-foreground-rgba)';
+            desc.textContent = 'You must be logged in to sync your workspace. Please go to the Customization tab to connect your account.';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = 'Close';
+            Object.assign(closeBtn.style, {
+              padding: '8px 16px', borderRadius: '8px', border: 'none',
+              backgroundColor: 'var(--color-primary)', color: '#fff', cursor: 'pointer',
+              fontSize: '13px', fontWeight: 'bold'
+            });
+
+            closeBtn.addEventListener('click', () => {
+              overlay.style.opacity = '0';
+              dialog.style.transform = 'scale(0.95)';
+              setTimeout(() => overlay.remove(), 200);
+            });
+
+            dialog.appendChild(title);
+            dialog.appendChild(desc);
+            dialog.appendChild(closeBtn);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            requestAnimationFrame(() => {
+              overlay.style.opacity = '1';
+              dialog.style.transform = 'scale(1)';
+            });
+
+            return;
           }
 
-          if (justLoggedIn) {
-            syncBtn.textContent = 'Restoring...';
-            const pullRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PULL' });
-            if (pullRes && pullRes.success && pullRes.settings) {
-              const cleanSettings = { ...pullRes.settings };
-              if (!Array.isArray(cleanSettings.pinnedApps)) {
-                delete cleanSettings.pinnedApps;
-              }
-              await chrome.storage.local.set(cleanSettings);
-              syncBtn.textContent = 'Restored!';
-              setTimeout(() => window.location.reload(), 1000);
-              return; // skip the clear timeout below
-            } else {
-              syncBtn.textContent = 'Syncing...';
-              await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' });
-            }
-          } else {
-            syncBtn.textContent = 'Syncing...';
-            const syncRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' });
-            if (!syncRes || !syncRes.success) throw new Error(syncRes?.error || 'Sync failed');
-          }
+          syncBtn.textContent = 'Syncing...';
+          const syncRes = await chrome.runtime.sendMessage({ type: 'APPWRITE_SYNC_PUSH' });
+          if (!syncRes || !syncRes.success) throw new Error(syncRes?.error || 'Sync failed');
 
           syncBtn.textContent = 'Synced!';
         } catch (e) {
@@ -2702,8 +2748,75 @@ class DockitSidebar {
 
           const { settings, profiles, themes, interactions } = countRes.counts;
           const msg = `Are you sure you want to completely erase all your cloud data?\n\nThis will permanently delete:\n- ${settings} Settings profile(s)\n- ${profiles} User profile(s)\n- ${themes} Published Theme(s)\n- ${interactions} Like(s) / Download(s)\n\nThis action cannot be undone.`;
-          
-          if (!window.confirm(msg)) {
+
+          const confirmed = await new Promise(resolve => {
+            const overlay = document.createElement('div');
+            Object.assign(overlay.style, {
+              position: 'fixed', top: '0', left: '0', right: '0', bottom: '0',
+              backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: '9999999', opacity: '0', transition: 'opacity 0.2s'
+            });
+
+            const dialog = document.createElement('div');
+            Object.assign(dialog.style, {
+              backgroundColor: 'var(--color-secondary)', border: '1px solid var(--color-border)',
+              borderRadius: '12px', padding: '20px', maxWidth: '300px', width: '90%',
+              color: 'var(--color-foreground)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              transform: 'scale(0.95)', transition: 'transform 0.2s', display: 'flex',
+              flexDirection: 'column', gap: '16px'
+            });
+
+            const text = document.createElement('div');
+            text.style.fontSize = '13px';
+            text.style.lineHeight = '1.5';
+            text.style.whiteSpace = 'pre-wrap';
+            text.textContent = msg;
+
+            const btnContainer = document.createElement('div');
+            btnContainer.style.display = 'flex';
+            btnContainer.style.gap = '10px';
+            btnContainer.style.justifyContent = 'flex-end';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            Object.assign(cancelBtn.style, {
+              padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--color-border)',
+              backgroundColor: 'transparent', color: 'var(--color-foreground)', cursor: 'pointer',
+              fontSize: '12px'
+            });
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.textContent = 'Erase Data';
+            Object.assign(confirmBtn.style, {
+              padding: '6px 12px', borderRadius: '6px', border: 'none',
+              backgroundColor: 'var(--color-accent)', color: '#fff', cursor: 'pointer',
+              fontSize: '12px', fontWeight: 'bold'
+            });
+
+            btnContainer.appendChild(cancelBtn);
+            btnContainer.appendChild(confirmBtn);
+            dialog.appendChild(text);
+            dialog.appendChild(btnContainer);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            requestAnimationFrame(() => {
+              overlay.style.opacity = '1';
+              dialog.style.transform = 'scale(1)';
+            });
+
+            const close = (res) => {
+              overlay.style.opacity = '0';
+              dialog.style.transform = 'scale(0.95)';
+              setTimeout(() => { overlay.remove(); resolve(res); }, 200);
+            };
+
+            cancelBtn.onclick = () => close(false);
+            confirmBtn.onclick = () => close(true);
+          });
+
+          if (!confirmed) {
             clearCloudBtn.textContent = t('clear_cloud');
             delete clearCloudBtn.dataset.busy;
             return;
@@ -2750,18 +2863,35 @@ class DockitSidebar {
           
           <div id="dockit-profile-dashboard" style="display: none; flex-direction: column; gap: 16px; margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px dashed color-mix(in srgb, var(--color-border) 40%, transparent);" data-theme-colors="--color-border"></div>
 
+          <button class="dockit-btn" id="dockit-enter-editor-btn" style="width: 100%; height: 86px; position: relative; overflow: hidden; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--color-border) 30%, transparent); cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; transition: filter 0.2s ease, transform 0.2s ease; background: var(--color-background);" data-theme-colors="--color-border, --color-background" onmouseover="this.style.filter='contrast(1.1) brightness(1.05)';" onmouseout="this.style.filter='none';">
+            <img src="https://images.unsplash.com/photo-1579548122080-c35fd6820ecb?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.9;" alt="Theme background">
+            <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 100%);"></div>
+            <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; padding: 0 20px; width: 100%; text-align: left;">
+              <span style="color: #ffffff; font-weight: 600; font-size: 16px; letter-spacing: 0.3px;">Theme Studio</span>
+              <span style="color: rgba(255,255,255,0.75); font-weight: 400; font-size: 13px; margin-top: 4px;">Craft your perfect workspace</span>
+            </div>
+          </button>
+
           <div style="display: flex; gap: 8px;">
             <div class="dockit-settings-search-wrapper dockit-search-bar-container" style="flex: 1;" data-theme-colors="--color-primary, --color-border, --color-secondary">
               ${searchIconSvg}
               <input type="search" id="dockit-theme-search" class="dockit-settings-search-input dockit-search-input" placeholder="Search themes..." data-theme-colors="--color-foreground" />
             </div>
             <div style="position: relative; display: flex;">
-              <select id="dockit-theme-filter-btn" class="dockit-btn" style="background: transparent; border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent); border-radius: 8px; height: 36px; padding: 0 32px 0 12px; cursor: pointer; color: var(--color-foreground); font-size: 13px; font-weight: 500; appearance: none; -webkit-appearance: none; outline: none;" title="Filter Themes" data-theme-colors="--color-border, --color-foreground">
-                <option value="community" style="background: var(--color-background); color: var(--color-foreground);">Community</option>
-                <option value="liked" style="background: var(--color-background); color: var(--color-foreground);">Liked</option>
-                <option value="mine" style="background: var(--color-background); color: var(--color-foreground);">Your Themes</option>
-              </select>
-              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              <button id="dockit-theme-filter-btn" class="dockit-btn" style="background: transparent; border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-foreground); transition: background 0.2s;" title="Filter Themes" data-theme-colors="--color-border, --color-foreground">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+              </button>
+              <div id="dockit-theme-filter-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); right: 0; background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent); border: 1px solid color-mix(in srgb, var(--color-border) calc(var(--menu-opacity-value, 1) * 100%), transparent); border-radius: 8px; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); min-width: 140px; padding: 6px 0;" data-theme-colors="--color-border, --color-secondary">
+                <div class="dockit-filter-option active" data-value="community" style="padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 15%, transparent); display: flex; justify-content: space-between; align-items: center;" data-theme-colors="--color-primary">
+                  All <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="dockit-filter-option" data-value="liked" style="padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--color-foreground); display: flex; justify-content: space-between; align-items: center;" data-theme-colors="--color-foreground">
+                  Liked
+                </div>
+                <div class="dockit-filter-option" data-value="mine" style="padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--color-foreground); display: flex; justify-content: space-between; align-items: center;" data-theme-colors="--color-foreground">
+                  Your Themes
+                </div>
+              </div>
             </div>
           </div>
           
@@ -2770,10 +2900,6 @@ class DockitSidebar {
             <div class="dockit-filter-btn" data-sort="created" style="flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--color-foreground); opacity: 0.6; transition: color 0.2s, opacity 0.2s;" data-theme-colors="--color-foreground">Newest</div>
             <div id="dockit-filter-indicator" style="position: absolute; bottom: -1px; left: 0; width: 50%; height: 2px; background: var(--color-primary); transition: transform 0.3s ease;" data-theme-colors="--color-primary"></div>
           </div>
-
-          <button class="dockit-btn" id="dockit-enter-editor-btn" style="width: 100%; background: color-mix(in srgb, var(--color-primary) 15%, transparent); color: var(--color-primary); border: 1px dashed var(--color-primary); padding: 8px 0; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.2s;" data-theme-colors="--color-primary">
-            + Enter Theme Editor
-          </button>
         </div>
 
         <div id="dockit-theme-gallery" style="flex: 1; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-content: flex-start;">
@@ -2793,6 +2919,74 @@ class DockitSidebar {
 
     if (storageData.appwriteSession) {
       this._renderProfileDashboard(contentEl.querySelector('#dockit-profile-dashboard'), storageData.appwriteSession);
+    } else {
+      const dashboardEl = contentEl.querySelector('#dockit-profile-dashboard');
+      dashboardEl.style.display = 'flex';
+      const checkSvg = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--color-primary)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      const googleSvg = `<svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.16C1.43 8.55 1 10.22 1 12s.43 3.45 1.16 4.93l3.68-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.16 7.07l3.68 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>`;
+      const msSvg = `<svg viewBox="0 0 21 21" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>`;
+
+      dashboardEl.innerHTML = `
+        <div style="padding-bottom: 4px;">
+          <div style="font-size: 15px; font-weight: 700; color: var(--color-foreground); margin-bottom: 8px;" data-theme-colors="--color-foreground">Connect & Sync Your Workspace</div>
+          <div style="font-size: 13px; color: color-mix(in srgb, var(--color-foreground) 65%, transparent); margin-bottom: 20px; line-height: 1.5;" data-theme-colors="--color-foreground">Join now to activate secure, real-time cloud synchronization and premium features.</div>
+          
+          <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.5;">
+              ${checkSvg}
+              <div style="color: color-mix(in srgb, var(--color-foreground) 75%, transparent);" data-theme-colors="--color-foreground">
+                <span style="font-weight: 600; color: var(--color-foreground);" data-theme-colors="--color-foreground">Free Forever:</span> Access all cloud features, synchronization, and 2GB of free storage without any costs.
+              </div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.5;">
+              ${checkSvg}
+              <div style="color: color-mix(in srgb, var(--color-foreground) 75%, transparent);" data-theme-colors="--color-foreground">
+                <span style="font-weight: 600; color: var(--color-foreground);" data-theme-colors="--color-foreground">Real-time Cloud Sync:</span> Keep pinned apps and custom settings aligned across all your browsers and devices instantly.
+              </div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.5;">
+              ${checkSvg}
+              <div style="color: color-mix(in srgb, var(--color-foreground) 75%, transparent);" data-theme-colors="--color-foreground">
+                <span style="font-weight: 600; color: var(--color-foreground);" data-theme-colors="--color-foreground">Community Theme Store:</span> Publish your own customized themes, like creations, and download curated designs.
+              </div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.5;">
+              ${checkSvg}
+              <div style="color: color-mix(in srgb, var(--color-foreground) 75%, transparent);" data-theme-colors="--color-foreground">
+                <span style="font-weight: 600; color: var(--color-foreground);" data-theme-colors="--color-foreground">Dockit Warp:</span> Drag-and-drop sharing between your devices.
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px;">
+            <button id="dockit-login-google" class="dockit-btn" style="flex: 1; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent); padding: 12px 0; border-radius: 8px; cursor: pointer; transition: background 0.2s;" data-theme-colors="--color-border">
+              ${googleSvg}
+            </button>
+            <button id="dockit-login-microsoft" class="dockit-btn" style="flex: 1; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent); padding: 12px 0; border-radius: 8px; cursor: pointer; transition: background 0.2s;" data-theme-colors="--color-border">
+              ${msSvg}
+            </button>
+          </div>
+        </div>
+      `;
+
+      const btnGoogle = dashboardEl.querySelector('#dockit-login-google');
+      const btnMicrosoft = dashboardEl.querySelector('#dockit-login-microsoft');
+
+      const loginFn = async (provider) => {
+        const btn = provider === 'google' ? btnGoogle : btnMicrosoft;
+        const originalText = btn.textContent;
+        btn.textContent = 'Wait...';
+        const res = await chrome.runtime.sendMessage({ type: 'APPWRITE_LOGIN', provider });
+        if (res && res.success) {
+          this._renderCustomization();
+        } else {
+          btn.textContent = 'Failed';
+          setTimeout(() => btn.textContent = originalText, 2000);
+        }
+      };
+
+      btnGoogle.addEventListener('click', () => loginFn('google'));
+      btnMicrosoft.addEventListener('click', () => loginFn('microsoft'));
     }
 
     let currentQuery = '';
@@ -2800,32 +2994,75 @@ class DockitSidebar {
     let currentFilter = 'community';
     let isFetching = false;
 
-    if (filterBtn) {
-      filterBtn.addEventListener('change', async (e) => {
-        const newValue = e.target.value;
-        if (newValue !== 'community') {
-          const hasSession = !!(await chrome.storage.local.get(['appwriteSession'])).appwriteSession;
-          if (!hasSession) {
-            this.showDialog({ message: 'You must be logged in to filter themes.' });
-            e.target.value = currentFilter;
-            return;
+    const filterDropdown = contentEl.querySelector('#dockit-theme-filter-dropdown');
+    if (filterBtn && filterDropdown) {
+      filterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        filterDropdown.style.display = filterDropdown.style.display === 'none' ? 'block' : 'none';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (filterDropdown.isConnected && !filterDropdown.contains(e.target) && !filterBtn.contains(e.target)) {
+          filterDropdown.style.display = 'none';
+        }
+      });
+
+      const updateDropdownUI = (selectedVal) => {
+        const options = filterDropdown.querySelectorAll('.dockit-filter-option');
+        options.forEach(opt => {
+          if (opt.dataset.value === selectedVal) {
+            opt.style.color = 'var(--color-primary)';
+            opt.style.background = 'color-mix(in srgb, var(--color-primary) 15%, transparent)';
+            if (!opt.querySelector('svg')) {
+              opt.innerHTML += ' <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            }
+          } else {
+            opt.style.color = 'var(--color-foreground)';
+            opt.style.background = 'transparent';
+            const svg = opt.querySelector('svg');
+            if (svg) svg.remove();
           }
-        }
+        });
+      };
 
-        currentFilter = newValue;
+      const options = filterDropdown.querySelectorAll('.dockit-filter-option');
+      options.forEach(opt => {
+        opt.addEventListener('mouseenter', () => {
+          if (opt.dataset.value !== currentFilter) opt.style.background = 'color-mix(in srgb, var(--color-foreground) 10%, transparent)';
+        });
+        opt.addEventListener('mouseleave', () => {
+          if (opt.dataset.value !== currentFilter) opt.style.background = 'transparent';
+        });
 
-        if (currentFilter === 'community') {
-          filterBtn.style.background = 'transparent';
-          filterBtn.style.color = 'var(--color-foreground)';
-        } else if (currentFilter === 'liked') {
-          filterBtn.style.background = 'color-mix(in srgb, var(--color-primary) 15%, transparent)';
-          filterBtn.style.color = 'var(--color-primary)';
-        } else {
-          filterBtn.style.background = 'color-mix(in srgb, var(--color-primary) 30%, transparent)';
-          filterBtn.style.color = 'var(--color-primary)';
-        }
+        opt.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          filterDropdown.style.display = 'none';
+          const newValue = opt.dataset.value;
 
-        loadBatch(true);
+          if (newValue !== 'community') {
+            const hasSession = !!(await chrome.storage.local.get(['appwriteSession'])).appwriteSession;
+            if (!hasSession) {
+              this.showDialog({ message: 'You must be logged in to filter themes.' });
+              return;
+            }
+          }
+
+          currentFilter = newValue;
+          updateDropdownUI(currentFilter);
+
+          if (currentFilter === 'community') {
+            filterBtn.style.background = 'transparent';
+            filterBtn.style.color = 'var(--color-foreground)';
+          } else if (currentFilter === 'liked') {
+            filterBtn.style.background = 'color-mix(in srgb, var(--color-primary) 15%, transparent)';
+            filterBtn.style.color = 'var(--color-primary)';
+          } else {
+            filterBtn.style.background = 'color-mix(in srgb, var(--color-primary) 30%, transparent)';
+            filterBtn.style.color = 'var(--color-primary)';
+          }
+
+          loadBatch(true);
+        });
       });
     }
 
@@ -3158,18 +3395,6 @@ class DockitSidebar {
           <span>Storage</span>
           <span id="dockit-storage-text">Calculating...</span>
         </div>
-        <div style="width: 100%; height: 6px; border-radius: 9999px; background: color-mix(in srgb, var(--color-border) 50%, transparent); display: flex; overflow: hidden;" data-theme-colors="--color-border">
-          <div id="dockit-storage-bar-docs" style="height: 100%; background: var(--color-primary); width: 0%;"></div>
-          <div id="dockit-storage-bar-imgs" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 70%, var(--color-background)); width: 0%;"></div>
-          <div id="dockit-storage-bar-msgs" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 40%, var(--color-background)); width: 0%;"></div>
-          <div id="dockit-storage-bar-ext" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 10%, var(--color-background)); width: 0%;"></div>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 10px; color: var(--color-foreground); opacity: 0.6; margin-top: 2px;" data-theme-colors="--color-foreground">
-          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: var(--color-primary);"></div><span id="dockit-storage-lbl-docs">Documents 0%</span></div>
-          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 70%, var(--color-background));"></div><span id="dockit-storage-lbl-imgs">Images 0%</span></div>
-          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 40%, var(--color-background));"></div><span id="dockit-storage-lbl-msgs">Messages 0%</span></div>
-          <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 10%, var(--color-background));"></div><span id="dockit-storage-lbl-ext">Extension 0%</span></div>
-        </div>
         <button id="dockit-profile-open-drive" style="margin-top: 12px; padding: 8px 16px; border-radius: 100px; border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent); background: transparent; color: var(--color-foreground); font-weight: 500; font-size: 11px; cursor: pointer; transition: all 0.2s;" data-theme-colors="--color-border, --color-foreground">Open Drive</button>
       </div>
     `;
@@ -3323,8 +3548,17 @@ class DockitSidebar {
           }
         });
 
+        const openDriveBtn = containerEl.querySelector('#dockit-profile-open-drive');
+        if (openDriveBtn) {
+          openDriveBtn.addEventListener('click', () => {
+            this.openSystemApp('Drive');
+          });
+        }
+
+        let isFlushing = false;
         this._flushProfileUpdates = async () => {
-          if (!this._pendingProfileUpdates) return;
+          if (!this._pendingProfileUpdates || isFlushing) return;
+          isFlushing = true;
 
           let newName = this._pendingProfileUpdates.name;
           if (newName !== null) {
@@ -3433,6 +3667,7 @@ class DockitSidebar {
             } catch (e) { console.error('Failed to update avatar', e); }
           }
           this._pendingProfileUpdates = null;
+          isFlushing = false;
         };
 
         window.addEventListener('beforeunload', () => {
@@ -3444,7 +3679,6 @@ class DockitSidebar {
 
       const userId = sessionData.userId;
       let totalDocsSize = 0;
-      let totalImgsSize = 0;
       let totalMsgsSize = 0; // Mock for now
 
       const docQueries = [
@@ -3462,6 +3696,11 @@ class DockitSidebar {
         });
       }
 
+      let driveImgsSize = 0;
+      let driveVidsSize = 0;
+      let driveDocsSize = 0;
+      let driveOthersSize = 0;
+
       const imgQueries = [JSON.stringify({ method: 'limit', values: [100] })];
       let imgUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files?`;
       imgQueries.forEach(q => imgUrl += `queries[]=${encodeURIComponent(q)}&`);
@@ -3471,7 +3710,10 @@ class DockitSidebar {
         const imgData = await imgRes.json();
         const userFiles = imgData.files.filter(f => f.$permissions && f.$permissions.some(p => p.includes(`user:${userId}`)));
         userFiles.forEach(f => {
-          totalImgsSize += f.sizeOriginal;
+          if (f.mimeType.startsWith('image/')) driveImgsSize += f.sizeOriginal;
+          else if (f.mimeType.startsWith('video/')) driveVidsSize += f.sizeOriginal;
+          else if (f.mimeType.includes('pdf') || f.mimeType.includes('text') || f.mimeType.includes('document')) driveDocsSize += f.sizeOriginal;
+          else driveOthersSize += f.sizeOriginal;
         });
       }
 
@@ -3484,38 +3726,823 @@ class DockitSidebar {
         totalExtSize = new TextEncoder().encode(JSON.stringify(this.themeGalleryCache)).length;
       }
 
-      const totalSize = totalDocsSize + totalImgsSize + totalMsgsSize + totalExtSize;
+      this._userStorageExt = totalDocsSize + totalMsgsSize + totalExtSize;
+      this._userStorageImgs = driveImgsSize;
+      this._userStorageVids = driveVidsSize;
+      this._userStorageDocs = driveDocsSize;
+      this._userStorageOthers = driveOthersSize;
+
+      const totalSize = this._userStorageExt + driveImgsSize + driveVidsSize + driveDocsSize + driveOthersSize;
       const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 
       const storageText = containerEl.querySelector('#dockit-storage-text');
-      storageText.textContent = `${(totalSize / 1024 / 1024).toFixed(2)} MB / 2 GB`;
-
-      const pctDocs = Math.max(0, (totalDocsSize / MAX_SIZE) * 100);
-      const pctImgs = Math.max(0, (totalImgsSize / MAX_SIZE) * 100);
-      const pctMsgs = Math.max(0, (totalMsgsSize / MAX_SIZE) * 100);
-      const pctExt = Math.max(0, (totalExtSize / MAX_SIZE) * 100);
-
-      const relDocs = totalSize > 0 ? (totalDocsSize / totalSize) * 100 : 0;
-      const relImgs = totalSize > 0 ? (totalImgsSize / totalSize) * 100 : 0;
-      const relMsgs = totalSize > 0 ? (totalMsgsSize / totalSize) * 100 : 0;
-      const relExt = totalSize > 0 ? (totalExtSize / totalSize) * 100 : 0;
-
-      containerEl.querySelector('#dockit-storage-bar-docs').style.width = `${pctDocs}%`;
-      containerEl.querySelector('#dockit-storage-bar-imgs').style.width = `${pctImgs}%`;
-      containerEl.querySelector('#dockit-storage-bar-msgs').style.width = `${pctMsgs}%`;
-      containerEl.querySelector('#dockit-storage-bar-ext').style.width = `${pctExt}%`;
-
-      containerEl.querySelector('#dockit-storage-lbl-docs').textContent = `Documents ${Math.round(relDocs)}%`;
-      containerEl.querySelector('#dockit-storage-lbl-imgs').textContent = `Images ${Math.round(relImgs)}%`;
-      containerEl.querySelector('#dockit-storage-lbl-msgs').textContent = `Messages ${Math.round(relMsgs)}%`;
-      containerEl.querySelector('#dockit-storage-lbl-ext').textContent = `Extension ${Math.round(relExt)}%`;
+      if (storageText) storageText.textContent = `${(totalSize / 1024 / 1024).toFixed(2)} MB / 2 GB`;
 
       this._userStorageTotal = totalSize;
 
     } catch (err) {
       console.error('Dockit: Failed to fetch profile stats', err);
-      containerEl.querySelector('#dockit-storage-text').textContent = 'Error calculating storage';
+      const storageText = containerEl.querySelector('#dockit-storage-text');
+      if (storageText) storageText.textContent = 'Error calculating storage';
     }
+  }
+
+  async _renderDrive() {
+    const contentEl = this.element.querySelector('#dockit-in-page-content');
+    if (!contentEl) return;
+
+    const projectId = '6a0a1cc000178886bfaf';
+    const storageData = await chrome.storage.local.get(['appwriteSession']);
+
+    if (!storageData.appwriteSession) {
+      contentEl.innerHTML = `<div style="padding: 20px; color: var(--color-foreground);">Authentication required. Please sign in via the Customization tab.</div>`;
+      return;
+    }
+
+    const headers = {
+      'X-Appwrite-Project': projectId,
+      'X-Fallback-Cookies': `a_session_${projectId}=${storageData.appwriteSession.secret}`,
+      'Content-Type': 'application/json'
+    };
+
+    let driveState = {
+      files: [],
+      chips: ['All'],
+      activeChip: 'All',
+      viewMode: 'grid', // 'grid' or 'list'
+      loading: true,
+      error: null,
+      pageCursor: null,
+      hasNext: false,
+      selectedFiles: new Set()
+    };
+
+    const docIconBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjODg4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE0IDJIMmEyIDIgMCAwIDAtMiAyVjIyaDIwVjhsLTYtNnoiLz48cGF0aCBkPSJNMTQgMnY2aDZyLTEyIDEySDZtMC00aDgiLz48L3N2Zz4=";
+    const genericFileSvg = `
+      <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg" style="width: 48px; height: 60px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));">
+        <defs>
+          <linearGradient id="docGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#f5f5f5"/>
+          </linearGradient>
+          <linearGradient id="foldGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#e0e0e0"/>
+          </linearGradient>
+          <filter id="foldShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="-1" dy="1" stdDeviation="2" flood-opacity="0.15"/>
+          </filter>
+        </defs>
+        <path d="M10 0 C4.5 0 0 4.5 0 10 L0 120 C0 125.5 4.5 130 10 130 L90 130 C95.5 130 100 125.5 100 120 L100 30 L70 0 Z" fill="url(#docGrad)" stroke="#cccccc" stroke-width="1"/>
+        <path d="M70 0 L70 25 C70 27.8 72.2 30 75 30 L100 30 Z" fill="url(#foldGrad)" filter="url(#foldShadow)"/>
+        <rect x="20" y="55" width="60" height="4" rx="2" fill="#d8d8d8"/>
+        <rect x="20" y="75" width="60" height="4" rx="2" fill="#d8d8d8"/>
+        <rect x="20" y="95" width="40" height="4" rx="2" fill="#d8d8d8"/>
+        <rect x="20" y="35" width="20" height="4" rx="2" fill="#b0c4de"/>
+      </svg>
+    `;
+
+    const renderUI = () => {
+      let filesHtml = '';
+
+      if (driveState.loading) {
+        filesHtml = `<div style="padding: 40px; text-align: center; color: var(--color-foreground-rgba);" data-theme-colors="--color-foreground-rgba">Loading your files...</div>`;
+      } else if (driveState.error) {
+        filesHtml = `<div style="padding: 40px; text-align: center; color: var(--color-accent);">${driveState.error}</div>`;
+      } else {
+        const filteredFiles = driveState.activeChip === 'All' ? driveState.files : driveState.files.filter(f => {
+          if (driveState.activeChip === 'Images' && f.mimeType.startsWith('image/')) return true;
+          if (driveState.activeChip === 'Videos' && f.mimeType.startsWith('video/')) return true;
+          if (driveState.activeChip === 'Documents' && (f.mimeType.includes('pdf') || f.mimeType.includes('text') || f.mimeType.includes('document'))) return true;
+          if (driveState.activeChip === 'Others' && !f.mimeType.startsWith('image/') && !f.mimeType.startsWith('video/') && !f.mimeType.includes('pdf') && !f.mimeType.includes('text') && !f.mimeType.includes('document')) return true;
+          return false;
+        });
+
+        if (filteredFiles.length === 0) {
+          filesHtml = `<div style="padding: 40px; text-align: center; color: var(--color-foreground-rgba);" data-theme-colors="--color-foreground-rgba">No files found.</div>`;
+        } else {
+          if (driveState.viewMode === 'grid') {
+            filesHtml = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 16px; padding: 4px;">`;
+            filteredFiles.forEach(f => {
+              const isImage = f.mimeType.startsWith('image/');
+              const viewUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${f.$id}/view?project=${projectId}`;
+              const thumbHtml = isImage ?
+                `<img src="${viewUrl}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px 8px 0 0;" loading="lazy" />` :
+                `<div style="width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--color-foreground) 5%, var(--color-background)); border-radius: 8px 8px 0 0;">${genericFileSvg}</div>`;
+
+              const isSelected = driveState.selectedFiles.has(f.$id);
+              const selectHtml = `
+                <button class="dockit-drive-select-btn" data-id="${f.$id}" style="position: absolute; top: 4px; left: 4px; background: ${isSelected ? 'var(--color-primary)' : 'rgba(0,0,0,0.3)'}; color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: 50%; width: 20px; height: 20px; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">
+                  ${isSelected ? '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+                </button>
+              `;
+
+              filesHtml += `
+                <div class="dockit-drive-item" style="border: 1px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}; border-radius: 8px; overflow: hidden; background: var(--color-secondary); position: relative; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" data-theme-colors="--color-border, --color-secondary">
+                  ${thumbHtml}
+                  ${selectHtml}
+                  <div style="padding: 8px;">
+                    <div style="font-size: 11px; font-weight: 600; color: var(--color-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" data-theme-colors="--color-foreground" title="${f.name}">${f.name}</div>
+                    <div style="font-size: 10px; color: var(--color-foreground-rgba); margin-top: 4px; display: flex; justify-content: space-between;" data-theme-colors="--color-foreground-rgba">
+                      <span>${(f.sizeOriginal / 1024).toFixed(1)} KB</span>
+                    </div>
+                  </div>
+                  <button class="dockit-drive-delete-btn" data-id="${f.$id}" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 4px; padding: 4px; cursor: pointer; opacity: 0; transition: opacity 0.2s;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              `;
+            });
+            filesHtml += '</div>';
+          } else {
+            // list view
+            filesHtml = `<div style="display: flex; flex-direction: column; gap: 8px; padding: 4px;">`;
+            filteredFiles.forEach(f => {
+              const isImage = f.mimeType.startsWith('image/');
+              const viewUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${f.$id}/view?project=${projectId}`;
+              const thumbHtml = isImage ?
+                `<img src="${viewUrl}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px;" loading="lazy" />` :
+                `<div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--color-foreground) 5%, var(--color-background)); border-radius: 4px;">${genericFileSvg.replace('width: 48px; height: 60px;', 'width: 20px; height: 26px;')}</div>`;
+
+              const isSelected = driveState.selectedFiles.has(f.$id);
+              const date = new Date(f.$createdAt).toLocaleDateString();
+              filesHtml += `
+                <div class="dockit-drive-item" style="display: flex; align-items: center; padding: 8px 12px; border: 1px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}; border-radius: 8px; background: var(--color-secondary); gap: 12px; position: relative;" data-theme-colors="--color-border, --color-secondary">
+                  ${thumbHtml}
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 13px; font-weight: 600; color: var(--color-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" data-theme-colors="--color-foreground" title="${f.name}">${f.name}</div>
+                    <div style="font-size: 11px; color: var(--color-foreground-rgba);" data-theme-colors="--color-foreground-rgba">${date} • ${(f.sizeOriginal / 1024).toFixed(1)} KB</div>
+                  </div>
+                  <button class="dockit-drive-select-btn" data-id="${f.$id}" style="background: ${isSelected ? 'var(--color-primary)' : 'transparent'}; color: ${isSelected ? '#fff' : 'var(--color-foreground)'}; border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent); padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: background 0.2s;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" style="${!isSelected ? 'opacity: 0;' : ''}"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </button>
+                  <button class="dockit-drive-delete-btn" data-id="${f.$id}" style="background: transparent; color: var(--color-foreground); border: none; padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: background 0.2s;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              `;
+            });
+            filesHtml += '</div>';
+          }
+        }
+      }
+
+      const chipsHtml = driveState.chips.map(chip => `
+        <button class="dockit-drive-chip ${driveState.activeChip === chip ? 'active' : ''}" data-chip="${chip}" style="padding: 6px 12px; border-radius: 100px; border: 1px solid color-mix(in srgb, var(--color-border) ${driveState.activeChip === chip ? '100%' : '50%'}, transparent); background: ${driveState.activeChip === chip ? 'var(--color-primary)' : 'transparent'}; color: ${driveState.activeChip === chip ? '#fff' : 'var(--color-foreground)'}; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+          ${chip}
+        </button>
+      `).join('');
+
+      contentEl.innerHTML = `
+        <div style="display: flex; flex-direction: column; height: 100%;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent); display: flex; justify-content: space-between; align-items: center;" data-theme-colors="--color-border">
+            <div style="font-size: 16px; font-weight: 700; color: var(--color-foreground);" data-theme-colors="--color-foreground">Cloud Drive</div>
+            <div style="display: flex; gap: 8px;">
+              <button id="dockit-drive-upload" style="padding: 6px 16px; border-radius: 8px; background: var(--color-primary); color: #fff; border: none; font-size: 12px; font-weight: 600; cursor: pointer;">Upload</button>
+              <div style="display: flex; background: var(--color-secondary); border-radius: 8px; border: 1px solid var(--color-border); overflow: hidden;" data-theme-colors="--color-secondary, --color-border">
+                <button id="dockit-drive-view-grid" style="padding: 6px 10px; background: ${driveState.viewMode === 'grid' ? 'var(--color-primary)' : 'transparent'}; color: ${driveState.viewMode === 'grid' ? '#fff' : 'var(--color-foreground)'}; border: none; cursor: pointer;"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></button>
+                <button id="dockit-drive-view-list" style="padding: 6px 10px; background: ${driveState.viewMode === 'list' ? 'var(--color-primary)' : 'transparent'}; color: ${driveState.viewMode === 'list' ? '#fff' : 'var(--color-foreground)'}; border: none; cursor: pointer;"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></button>
+              </div>
+            </div>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 20px; border-bottom: 1px solid color-mix(in srgb, var(--color-border) 30%, transparent);" data-theme-colors="--color-border">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--color-foreground); opacity: 0.8;" data-theme-colors="--color-foreground">
+              <span>Storage Usage</span>
+              <span id="dockit-drive-storage-text">Calculating...</span>
+            </div>
+            <div style="width: 100%; height: 6px; border-radius: 9999px; background: color-mix(in srgb, var(--color-border) 50%, transparent); display: flex; overflow: hidden;" data-theme-colors="--color-border">
+              <div id="dockit-drive-storage-bar-docs" style="height: 100%; background: var(--color-primary); width: 0%;"></div>
+              <div id="dockit-drive-storage-bar-imgs" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 80%, var(--color-background)); width: 0%;"></div>
+              <div id="dockit-drive-storage-bar-vids" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 60%, var(--color-background)); width: 0%;"></div>
+              <div id="dockit-drive-storage-bar-others" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 40%, var(--color-background)); width: 0%;"></div>
+              <div id="dockit-drive-storage-bar-ext" style="height: 100%; background: color-mix(in srgb, var(--color-primary) 20%, var(--color-background)); width: 0%;"></div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 10px; color: var(--color-foreground); opacity: 0.6; margin-top: 2px;" data-theme-colors="--color-foreground">
+              <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: var(--color-primary);"></div><span id="dockit-drive-storage-lbl-docs">Documents 0%</span></div>
+              <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 80%, var(--color-background));"></div><span id="dockit-drive-storage-lbl-imgs">Images 0%</span></div>
+              <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 60%, var(--color-background));"></div><span id="dockit-drive-storage-lbl-vids">Videos 0%</span></div>
+              <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 40%, var(--color-background));"></div><span id="dockit-drive-storage-lbl-others">Others 0%</span></div>
+              <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--color-primary) 20%, var(--color-background));"></div><span id="dockit-drive-storage-lbl-ext">Extension 0%</span></div>
+            </div>
+          </div>
+          
+          <div style="padding: 12px 20px; display: flex; gap: 8px; overflow-x: auto; flex-wrap: nowrap; border-bottom: 1px solid color-mix(in srgb, var(--color-border) 30%, transparent);" data-theme-colors="--color-border">
+            ${chipsHtml}
+          </div>
+
+          <div id="dockit-drive-dropzone" style="flex: 1; overflow-y: auto; padding: 16px; position: relative;">
+            ${filesHtml}
+            ${driveState.hasNext && !driveState.loading ? `<button id="dockit-drive-load-more" style="width: 100%; padding: 10px; margin-top: 16px; border-radius: 8px; background: transparent; border: 1px solid var(--color-border); color: var(--color-foreground); font-weight: 600; font-size: 12px; cursor: pointer;">Load More</button>` : ''}
+            <div id="dockit-drive-drag-overlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--color-primary) 10%, var(--color-background)); border: 2px dashed var(--color-primary); border-radius: 8px; z-index: 10; align-items: center; justify-content: center; flex-direction: column;">
+              <div style="pointer-events: none; display: flex; flex-direction: column; align-items: center;">
+                <svg viewBox="0 0 24 24" width="32" height="32" stroke="var(--color-primary)" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <div style="margin-top: 12px; font-weight: 600; color: var(--color-primary);">Drop files to upload</div>
+              </div>
+            </div>
+          </div>
+          ${driveState.selectedFiles.size > 0 ? `
+            <div style="padding: 12px 20px; border-top: 1px solid color-mix(in srgb, var(--color-border) 30%, transparent); display: flex; justify-content: flex-end; background: var(--color-background); flex-shrink: 0;" data-theme-colors="--color-border, --color-background">
+              <button id="dockit-drive-batch-delete" style="padding: 8px 16px; border-radius: 8px; background: rgba(255, 77, 77, 0.1); color: #ff4d4d; border: 1px solid #ff4d4d; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Delete Selected (${driveState.selectedFiles.size})
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      setTimeout(() => {
+        const totalSize = this._userStorageTotal || 0;
+        const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
+        const relDocs = totalSize > 0 ? ((this._userStorageDocs || 0) / totalSize) * 100 : 0;
+        const relImgs = totalSize > 0 ? ((this._userStorageImgs || 0) / totalSize) * 100 : 0;
+        const relVids = totalSize > 0 ? ((this._userStorageVids || 0) / totalSize) * 100 : 0;
+        const relOthers = totalSize > 0 ? ((this._userStorageOthers || 0) / totalSize) * 100 : 0;
+        const relExt = totalSize > 0 ? ((this._userStorageExt || 0) / totalSize) * 100 : 0;
+
+        const docsBar = contentEl.querySelector('#dockit-drive-storage-bar-docs');
+        if (docsBar) {
+          docsBar.style.width = `${Math.max(0, ((this._userStorageDocs || 0) / MAX_SIZE) * 100)}%`;
+          contentEl.querySelector('#dockit-drive-storage-bar-imgs').style.width = `${Math.max(0, ((this._userStorageImgs || 0) / MAX_SIZE) * 100)}%`;
+          contentEl.querySelector('#dockit-drive-storage-bar-vids').style.width = `${Math.max(0, ((this._userStorageVids || 0) / MAX_SIZE) * 100)}%`;
+          contentEl.querySelector('#dockit-drive-storage-bar-others').style.width = `${Math.max(0, ((this._userStorageOthers || 0) / MAX_SIZE) * 100)}%`;
+          contentEl.querySelector('#dockit-drive-storage-bar-ext').style.width = `${Math.max(0, ((this._userStorageExt || 0) / MAX_SIZE) * 100)}%`;
+
+          contentEl.querySelector('#dockit-drive-storage-lbl-docs').textContent = `Documents ${Math.round(relDocs)}%`;
+          contentEl.querySelector('#dockit-drive-storage-lbl-imgs').textContent = `Images ${Math.round(relImgs)}%`;
+          contentEl.querySelector('#dockit-drive-storage-lbl-vids').textContent = `Videos ${Math.round(relVids)}%`;
+          contentEl.querySelector('#dockit-drive-storage-lbl-others').textContent = `Others ${Math.round(relOthers)}%`;
+          contentEl.querySelector('#dockit-drive-storage-lbl-ext').textContent = `Extension ${Math.round(relExt)}%`;
+
+          contentEl.querySelector('#dockit-drive-storage-text').textContent = `${(totalSize / 1024 / 1024).toFixed(2)} MB / 2 GB`;
+        }
+      }, 0);
+
+      // bind events
+      const dropzone = contentEl.querySelector('#dockit-drive-dropzone');
+      const dragOverlay = contentEl.querySelector('#dockit-drive-drag-overlay');
+
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dragOverlay.style.display = 'flex';
+      });
+
+      dropzone.addEventListener('dragleave', (e) => {
+        if (!e.relatedTarget || !dropzone.contains(e.relatedTarget)) {
+          dragOverlay.style.display = 'none';
+        }
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dragOverlay.style.display = 'none';
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          uploadFiles(Array.from(e.dataTransfer.files));
+        }
+      });
+
+      contentEl.querySelector('#dockit-drive-upload').addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.onchange = e => {
+          if (e.target.files && e.target.files.length > 0) {
+            uploadFiles(Array.from(e.target.files));
+          }
+        };
+        input.click();
+      });
+
+      const batchDeleteBtn = contentEl.querySelector('#dockit-drive-batch-delete');
+      if (batchDeleteBtn) {
+        batchDeleteBtn.addEventListener('click', async () => {
+          const filesToDelete = Array.from(driveState.selectedFiles);
+          if (filesToDelete.length === 0) return;
+
+          const confirmed = await new Promise(resolve => {
+            const overlay = document.createElement('div');
+            Object.assign(overlay.style, {
+              position: 'fixed', top: '0', left: '0', right: '0', bottom: '0',
+              backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: '9999999', opacity: '0', transition: 'opacity 0.2s'
+            });
+
+            const dialog = document.createElement('div');
+            Object.assign(dialog.style, {
+              backgroundColor: 'var(--color-secondary)', border: '1px solid var(--color-border)',
+              borderRadius: '12px', padding: '20px', maxWidth: '300px', width: '90%',
+              color: 'var(--color-foreground)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              transform: 'scale(0.95)', transition: 'transform 0.2s', display: 'flex',
+              flexDirection: 'column', gap: '16px'
+            });
+
+            const text = document.createElement('div');
+            text.style.fontSize = '13px';
+            text.style.lineHeight = '1.5';
+            text.style.whiteSpace = 'pre-wrap';
+            text.innerHTML = `Are you sure you want to delete <b>${filesToDelete.length} selected files</b>?<br><br><span style="color: var(--color-accent); font-weight: 600;">Warning: If any of these files are used by your themes, their backgrounds will break.</span><br><br>This action cannot be undone.`;
+
+            const btnContainer = document.createElement('div');
+            btnContainer.style.display = 'flex';
+            btnContainer.style.gap = '10px';
+            btnContainer.style.justifyContent = 'flex-end';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            Object.assign(cancelBtn.style, {
+              padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--color-border)',
+              backgroundColor: 'transparent', color: 'var(--color-foreground)', cursor: 'pointer',
+              fontSize: '12px'
+            });
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.textContent = 'Delete All';
+            Object.assign(confirmBtn.style, {
+              padding: '6px 12px', borderRadius: '6px', border: 'none',
+              backgroundColor: 'var(--color-accent)', color: '#fff', cursor: 'pointer',
+              fontSize: '12px', fontWeight: 'bold'
+            });
+
+            const close = (val) => {
+              overlay.style.opacity = '0';
+              dialog.style.transform = 'scale(0.95)';
+              setTimeout(() => { overlay.remove(); resolve(val); }, 200);
+            };
+
+            cancelBtn.onclick = () => close(false);
+            confirmBtn.onclick = () => close(true);
+
+            btnContainer.appendChild(cancelBtn);
+            btnContainer.appendChild(confirmBtn);
+            dialog.appendChild(text);
+            dialog.appendChild(btnContainer);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            requestAnimationFrame(() => {
+              overlay.style.opacity = '1';
+              dialog.style.transform = 'scale(1)';
+            });
+          });
+
+          if (confirmed) {
+            driveState.loading = true;
+            renderUI();
+
+            let failedCount = 0;
+            for (const fileId of filesToDelete) {
+              try {
+                const res = await fetch(`https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${fileId}`, {
+                  method: 'DELETE',
+                  headers
+                });
+                if (res.ok) {
+                  const deletedFile = driveState.files.find(f => f.$id === fileId);
+                  if (deletedFile) {
+                    if (deletedFile.mimeType.startsWith('image/')) this._userStorageImgs = Math.max(0, (this._userStorageImgs || 0) - deletedFile.sizeOriginal);
+                    else if (deletedFile.mimeType.startsWith('video/')) this._userStorageVids = Math.max(0, (this._userStorageVids || 0) - deletedFile.sizeOriginal);
+                    else if (deletedFile.mimeType.includes('pdf') || deletedFile.mimeType.includes('text') || deletedFile.mimeType.includes('document')) this._userStorageDocs = Math.max(0, (this._userStorageDocs || 0) - deletedFile.sizeOriginal);
+                    else this._userStorageOthers = Math.max(0, (this._userStorageOthers || 0) - deletedFile.sizeOriginal);
+                    this._userStorageTotal = (this._userStorageExt || 0) + (this._userStorageImgs || 0) + (this._userStorageVids || 0) + (this._userStorageDocs || 0) + (this._userStorageOthers || 0);
+                  }
+                  driveState.files = driveState.files.filter(f => f.$id !== fileId);
+                  driveState.selectedFiles.delete(fileId);
+                } else {
+                  failedCount++;
+                }
+              } catch (e) {
+                failedCount++;
+              }
+            }
+
+            if (failedCount > 0) {
+              const errOverlay = document.createElement('div');
+              Object.assign(errOverlay.style, {
+                position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+                backgroundColor: 'var(--color-accent)', color: '#fff', padding: '10px 20px',
+                borderRadius: '8px', zIndex: '9999999', fontSize: '13px', fontWeight: 'bold',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)', opacity: '0', transition: 'opacity 0.2s'
+              });
+              errOverlay.textContent = `Failed to delete ${failedCount} file(s)`;
+              document.body.appendChild(errOverlay);
+              requestAnimationFrame(() => errOverlay.style.opacity = '1');
+              setTimeout(() => {
+                errOverlay.style.opacity = '0';
+                setTimeout(() => errOverlay.remove(), 200);
+              }, 3000);
+            }
+
+            driveState.loading = false;
+            renderUI();
+          }
+        });
+      }
+
+      contentEl.querySelectorAll('.dockit-drive-chip').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          driveState.activeChip = e.currentTarget.dataset.chip;
+          renderUI();
+        });
+      });
+
+      contentEl.querySelector('#dockit-drive-view-grid').addEventListener('click', () => {
+        driveState.viewMode = 'grid';
+        renderUI();
+      });
+      contentEl.querySelector('#dockit-drive-view-list').addEventListener('click', () => {
+        driveState.viewMode = 'list';
+        renderUI();
+      });
+
+      const loadMoreBtn = contentEl.querySelector('#dockit-drive-load-more');
+      if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => fetchFiles(driveState.pageCursor));
+      }
+
+      contentEl.querySelectorAll('.dockit-drive-select-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const fileId = e.currentTarget.dataset.id;
+          if (driveState.selectedFiles.has(fileId)) {
+            driveState.selectedFiles.delete(fileId);
+          } else {
+            driveState.selectedFiles.add(fileId);
+          }
+          renderUI();
+        });
+      });
+
+      contentEl.querySelectorAll('.dockit-drive-item').forEach(item => {
+        item.addEventListener('mouseenter', () => {
+          const btn = item.querySelector('.dockit-drive-delete-btn');
+          if (btn) btn.style.opacity = '1';
+        });
+        item.addEventListener('mouseleave', () => {
+          const btn = item.querySelector('.dockit-drive-delete-btn');
+          if (btn) btn.style.opacity = '0';
+        });
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.dockit-drive-delete-btn') || e.target.closest('.dockit-drive-select-btn')) return;
+
+          const fileId = item.querySelector('.dockit-drive-delete-btn').dataset.id;
+          const file = driveState.files.find(f => f.$id === fileId);
+          if (!file) return;
+
+          const viewUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${file.$id}/view?project=${projectId}`;
+          const downloadUrl = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${file.$id}/download?project=${projectId}`;
+
+          let previewHtml = '';
+          if (file.mimeType.startsWith('image/')) {
+            previewHtml = `<img src="${viewUrl}" style="max-width: 100%; max-height: 50vh; object-fit: contain; border-radius: 8px;" />`;
+          } else if (file.mimeType.startsWith('video/')) {
+            previewHtml = `<video src="${viewUrl}" controls style="max-width: 100%; max-height: 50vh; border-radius: 8px; width: 100%;"></video>`;
+          } else if (file.mimeType.startsWith('audio/')) {
+            previewHtml = `<audio src="${viewUrl}" controls style="width: 100%;"></audio>`;
+          } else if (file.mimeType === 'application/pdf') {
+            previewHtml = `<iframe src="${viewUrl}" style="width: 100%; height: 50vh; border: none; border-radius: 8px; background: white;"></iframe>`;
+          } else {
+            previewHtml = `<div style="padding: 40px; background: color-mix(in srgb, var(--color-foreground) 5%, var(--color-background)); border-radius: 8px; display: flex; align-items: center; justify-content: center;">${genericFileSvg}</div>`;
+          }
+
+          const overlay = document.createElement('div');
+          Object.assign(overlay.style, {
+            position: 'fixed', top: '0', left: '0', right: '0', bottom: '0',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: '9999999', opacity: '0', transition: 'opacity 0.2s', padding: '20px'
+          });
+
+          const dialog = document.createElement('div');
+          Object.assign(dialog.style, {
+            backgroundColor: 'var(--color-secondary)', border: '1px solid var(--color-border)',
+            borderRadius: '12px', padding: '24px', maxWidth: '500px', width: '100%',
+            color: 'var(--color-foreground)', boxShadow: '0 12px 48px rgba(0, 0, 0, 0.5)',
+            transform: 'scale(0.95)', transition: 'transform 0.2s', display: 'flex',
+            flexDirection: 'column', gap: '20px', maxHeight: '90vh', overflowY: 'auto'
+          });
+
+          dialog.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+              <div style="font-size: 16px; font-weight: 700; word-break: break-all;">${file.name}</div>
+              <button class="dockit-preview-close" style="background: transparent; border: none; color: var(--color-foreground-rgba); cursor: pointer; padding: 4px; border-radius: 4px;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              ${previewHtml}
+              <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 12px; color: var(--color-foreground-rgba);">
+                <strong style="color: var(--color-foreground);">Type:</strong> <span>${file.mimeType}</span>
+                <strong style="color: var(--color-foreground);">Size:</strong> <span>${(file.sizeOriginal / 1024).toFixed(2)} KB</span>
+                <strong style="color: var(--color-foreground);">Uploaded:</strong> <span>${new Date(file.$createdAt).toLocaleString()}</span>
+              </div>
+              <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: auto;">
+                <button class="dockit-preview-select" style="padding: 8px 16px; border-radius: 8px; background: ${driveState.selectedFiles.has(file.$id) ? 'var(--color-primary)' : 'transparent'}; color: ${driveState.selectedFiles.has(file.$id) ? '#fff' : 'var(--color-foreground)'}; border: 1px solid ${driveState.selectedFiles.has(file.$id) ? 'var(--color-primary)' : 'var(--color-border)'}; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="${!driveState.selectedFiles.has(file.$id) ? 'opacity: 0;' : ''}"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span class="dockit-preview-select-text">${driveState.selectedFiles.has(file.$id) ? 'Selected' : 'Select'}</span>
+                </button>
+                <button class="dockit-preview-download" style="padding: 8px 16px; border-radius: 8px; background: var(--color-primary); color: #fff; border: none; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Download
+                </button>
+              </div>
+            </div>
+          `;
+
+          const closeDialog = () => {
+            overlay.style.opacity = '0';
+            dialog.style.transform = 'scale(0.95)';
+            setTimeout(() => overlay.remove(), 200);
+          };
+
+          dialog.querySelector('.dockit-preview-close').onclick = closeDialog;
+          overlay.onclick = (e) => { if (e.target === overlay) closeDialog(); };
+
+          dialog.querySelector('.dockit-preview-download').onclick = () => {
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = file.name;
+            a.target = '_blank';
+            a.click();
+          };
+
+          const selectBtn = dialog.querySelector('.dockit-preview-select');
+          selectBtn.onclick = () => {
+            const isSelected = driveState.selectedFiles.has(file.$id);
+            if (isSelected) driveState.selectedFiles.delete(file.$id);
+            else driveState.selectedFiles.add(file.$id);
+
+            const nowSelected = !isSelected;
+            selectBtn.style.background = nowSelected ? 'var(--color-primary)' : 'transparent';
+            selectBtn.style.color = nowSelected ? '#fff' : 'var(--color-foreground)';
+            selectBtn.style.border = `1px solid ${nowSelected ? 'var(--color-primary)' : 'var(--color-border)'}`;
+            selectBtn.querySelector('svg').style.opacity = nowSelected ? '1' : '0';
+            selectBtn.querySelector('.dockit-preview-select-text').textContent = nowSelected ? 'Selected' : 'Select';
+            renderUI();
+          };
+
+          overlay.appendChild(dialog);
+          document.body.appendChild(overlay);
+
+          requestAnimationFrame(() => {
+            overlay.style.opacity = '1';
+            dialog.style.transform = 'scale(1)';
+          });
+        });
+      });
+
+      contentEl.querySelectorAll('.dockit-drive-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const fileId = e.currentTarget.dataset.id;
+          const fileName = driveState.files.find(f => f.$id === fileId)?.name || 'this file';
+          const btnTarget = e.currentTarget;
+
+          // Check if file is used by a theme
+          let usedByTheme = null;
+          try {
+            const docQueries = [
+              JSON.stringify({ method: 'equal', attribute: 'profile', values: [storageData.appwriteSession.userId] })
+            ];
+            let docUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/themes/documents?`;
+            docQueries.forEach(q => docUrl += `queries[]=${encodeURIComponent(q)}&`);
+            const docRes = await fetch(docUrl, { headers });
+            if (docRes.ok) {
+              const docData = await docRes.json();
+              const themeWithFile = docData.documents.find(t => t.background && t.background.includes(fileId));
+              if (themeWithFile) {
+                usedByTheme = themeWithFile.name;
+              }
+            }
+          } catch (err) { }
+
+          const confirmed = await new Promise(resolve => {
+            const overlay = document.createElement('div');
+            Object.assign(overlay.style, {
+              position: 'fixed', top: '0', left: '0', right: '0', bottom: '0',
+              backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: '9999999', opacity: '0', transition: 'opacity 0.2s'
+            });
+
+            const dialog = document.createElement('div');
+            Object.assign(dialog.style, {
+              backgroundColor: 'var(--color-secondary)', border: '1px solid var(--color-border)',
+              borderRadius: '12px', padding: '20px', maxWidth: '300px', width: '90%',
+              color: 'var(--color-foreground)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              transform: 'scale(0.95)', transition: 'transform 0.2s', display: 'flex',
+              flexDirection: 'column', gap: '16px'
+            });
+
+            const text = document.createElement('div');
+            text.style.fontSize = '13px';
+            text.style.lineHeight = '1.5';
+            text.style.whiteSpace = 'pre-wrap';
+
+            if (usedByTheme) {
+              text.innerHTML = `Are you sure you want to delete "<b>${fileName}</b>"?<br><br><span style="color: var(--color-accent); font-weight: 600;">Warning: This file is currently used as the background for your theme "${usedByTheme}".</span><br><br>This action cannot be undone.`;
+            } else {
+              text.innerHTML = `Are you sure you want to delete "<b>${fileName}</b>"?<br><br>This action cannot be undone.`;
+            }
+
+            const btnContainer = document.createElement('div');
+            btnContainer.style.display = 'flex';
+            btnContainer.style.gap = '10px';
+            btnContainer.style.justifyContent = 'flex-end';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            Object.assign(cancelBtn.style, {
+              padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--color-border)',
+              backgroundColor: 'transparent', color: 'var(--color-foreground)', cursor: 'pointer',
+              fontSize: '12px'
+            });
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.textContent = 'Delete';
+            Object.assign(confirmBtn.style, {
+              padding: '6px 12px', borderRadius: '6px', border: 'none',
+              backgroundColor: 'var(--color-accent)', color: '#fff', cursor: 'pointer',
+              fontSize: '12px', fontWeight: 'bold'
+            });
+
+            const close = (val) => {
+              overlay.style.opacity = '0';
+              dialog.style.transform = 'scale(0.95)';
+              setTimeout(() => { overlay.remove(); resolve(val); }, 200);
+            };
+
+            cancelBtn.onclick = () => close(false);
+            confirmBtn.onclick = () => close(true);
+
+            btnContainer.appendChild(cancelBtn);
+            btnContainer.appendChild(confirmBtn);
+            dialog.appendChild(text);
+            dialog.appendChild(btnContainer);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            requestAnimationFrame(() => {
+              overlay.style.opacity = '1';
+              dialog.style.transform = 'scale(1)';
+            });
+          });
+
+          if (confirmed) {
+            try {
+              btnTarget.textContent = '...';
+              const res = await fetch(`https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${fileId}`, {
+                method: 'DELETE',
+                headers
+              });
+              if (!res.ok) throw new Error('Failed to delete from Appwrite');
+              const deletedFile = driveState.files.find(f => f.$id === fileId);
+              if (deletedFile) {
+                if (deletedFile.mimeType.startsWith('image/')) this._userStorageImgs = Math.max(0, (this._userStorageImgs || 0) - deletedFile.sizeOriginal);
+                else if (deletedFile.mimeType.startsWith('video/')) this._userStorageVids = Math.max(0, (this._userStorageVids || 0) - deletedFile.sizeOriginal);
+                else if (deletedFile.mimeType.includes('pdf') || deletedFile.mimeType.includes('text') || deletedFile.mimeType.includes('document')) this._userStorageDocs = Math.max(0, (this._userStorageDocs || 0) - deletedFile.sizeOriginal);
+                else this._userStorageOthers = Math.max(0, (this._userStorageOthers || 0) - deletedFile.sizeOriginal);
+                this._userStorageTotal = (this._userStorageExt || 0) + (this._userStorageImgs || 0) + (this._userStorageVids || 0) + (this._userStorageDocs || 0) + (this._userStorageOthers || 0);
+              }
+              driveState.files = driveState.files.filter(f => f.$id !== fileId);
+              renderUI();
+            } catch (err) {
+              const errOverlay = document.createElement('div');
+              Object.assign(errOverlay.style, {
+                position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+                backgroundColor: 'var(--color-accent)', color: '#fff', padding: '10px 20px',
+                borderRadius: '8px', zIndex: '9999999', fontSize: '13px', fontWeight: 'bold',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)', opacity: '0', transition: 'opacity 0.2s'
+              });
+              errOverlay.textContent = 'Failed to delete file';
+              document.body.appendChild(errOverlay);
+              requestAnimationFrame(() => errOverlay.style.opacity = '1');
+              setTimeout(() => {
+                errOverlay.style.opacity = '0';
+                setTimeout(() => errOverlay.remove(), 200);
+              }, 3000);
+            }
+          }
+        });
+      });
+    };
+
+    let isUploadingFiles = false;
+    const uploadFiles = async (files) => {
+      if (isUploadingFiles) return;
+      isUploadingFiles = true;
+      driveState.loading = true;
+      renderUI();
+
+      for (const file of files) {
+        try {
+          const formData = new FormData();
+          formData.append('fileId', 'unique()');
+          formData.append('file', file, file.name);
+          formData.append('permissions[]', 'read("any")');
+          formData.append('permissions[]', `update("user:${storageData.appwriteSession.userId}")`);
+          formData.append('permissions[]', `delete("user:${storageData.appwriteSession.userId}")`);
+
+          const res = await fetch('https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files', {
+            method: 'POST',
+            headers: {
+              'X-Appwrite-Project': projectId,
+              'X-Fallback-Cookies': headers['X-Fallback-Cookies']
+            },
+            body: formData
+          });
+          if (res.ok) {
+            const f = await res.json();
+            if (f.mimeType.startsWith('image/')) this._userStorageImgs = (this._userStorageImgs || 0) + f.sizeOriginal;
+            else if (f.mimeType.startsWith('video/')) this._userStorageVids = (this._userStorageVids || 0) + f.sizeOriginal;
+            else if (f.mimeType.includes('pdf') || f.mimeType.includes('text') || f.mimeType.includes('document')) this._userStorageDocs = (this._userStorageDocs || 0) + f.sizeOriginal;
+            else this._userStorageOthers = (this._userStorageOthers || 0) + f.sizeOriginal;
+            this._userStorageTotal = (this._userStorageExt || 0) + (this._userStorageImgs || 0) + (this._userStorageVids || 0) + (this._userStorageDocs || 0) + (this._userStorageOthers || 0);
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || 'Failed to upload');
+          }
+        } catch (e) {
+          console.error('Failed to upload', e);
+          const errOverlay = document.createElement('div');
+          Object.assign(errOverlay.style, {
+            position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+            backgroundColor: 'var(--color-accent)', color: '#fff', padding: '10px 20px',
+            borderRadius: '8px', zIndex: '9999999', fontSize: '13px', fontWeight: 'bold',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)', opacity: '0', transition: 'opacity 0.2s'
+          });
+          errOverlay.textContent = 'Upload failed: ' + e.message;
+          document.body.appendChild(errOverlay);
+          requestAnimationFrame(() => errOverlay.style.opacity = '1');
+          setTimeout(() => {
+            errOverlay.style.opacity = '0';
+            setTimeout(() => errOverlay.remove(), 200);
+          }, 4000);
+        }
+      }
+
+      // refresh
+      fetchFiles();
+      isUploadingFiles = false;
+    };
+
+    const fetchFiles = async (cursor = null) => {
+      driveState.loading = true;
+      if (!cursor) {
+        driveState.files = [];
+        driveState.chips = ['All'];
+      }
+      renderUI();
+
+      try {
+        let url = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files?queries[]=${encodeURIComponent(JSON.stringify({ method: 'limit', values: [50] }))}&queries[]=${encodeURIComponent(JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' }))}`;
+        if (cursor) {
+          url += `&queries[]=${encodeURIComponent(JSON.stringify({ method: 'cursorAfter', values: [cursor] }))}`;
+        }
+
+        const res = await fetch(url, { headers });
+        if (!res.ok) throw new Error('Failed to load files');
+
+        const data = await res.json();
+
+        // Ensure we only show files the user has permission to delete (their own files)
+        const userFiles = data.files.filter(f => f.$permissions && f.$permissions.some(p => p.includes(`user:${storageData.appwriteSession.userId}`)));
+
+        driveState.files = cursor ? [...driveState.files, ...userFiles] : userFiles;
+        driveState.hasNext = data.files.length === 50;
+        if (data.files.length > 0) {
+          driveState.pageCursor = data.files[data.files.length - 1].$id;
+        }
+
+        let hasImages = false;
+        let hasVideos = false;
+        let hasDocs = false;
+        let hasOthers = false;
+
+        driveState.files.forEach(f => {
+          if (f.mimeType.startsWith('image/')) hasImages = true;
+          else if (f.mimeType.startsWith('video/')) hasVideos = true;
+          else if (f.mimeType.includes('pdf') || f.mimeType.includes('text') || f.mimeType.includes('document')) hasDocs = true;
+          else hasOthers = true;
+        });
+
+        driveState.chips = ['All'];
+        if (hasDocs) driveState.chips.push('Documents');
+        if (hasImages) driveState.chips.push('Images');
+        if (hasOthers) driveState.chips.push('Others');
+        if (hasVideos) driveState.chips.push('Videos');
+
+        driveState.loading = false;
+        renderUI();
+      } catch (err) {
+        driveState.error = err.message;
+        driveState.loading = false;
+        renderUI();
+      }
+    };
+
+    fetchFiles();
   }
 
   async enterThemeEditor(initialTheme = null) {
