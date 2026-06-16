@@ -2801,7 +2801,7 @@ class DockitSidebar {
             overlay.appendChild(dialog);
             document.body.appendChild(overlay);
 
-            requestAnimationFrame(() => {
+            requestAnimationFrame(() => { 
               overlay.style.opacity = '1';
               dialog.style.transform = 'scale(1)';
             });
