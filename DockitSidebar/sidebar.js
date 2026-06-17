@@ -1,7 +1,7 @@
 // sidebar.js
 
 //global i18n default dictionary
-const I18N_STRINGS_DEFAULT = {
+var I18N_STRINGS_DEFAULT = {
   'edit_apps': 'Edit Apps',
   'customization': 'Customization',
   'settings': 'Settings',
@@ -55,7 +55,7 @@ const I18N_STRINGS_DEFAULT = {
   'discard': 'Discard'
 };
 
-class DockitSidebar {
+var DockitSidebar = class DockitSidebar {
   static createThemeCardDOM(theme) {
     const wrapper = document.createElement('div');
     wrapper.className = 'dockit-theme-card-wrapper';
@@ -3842,7 +3842,6 @@ class DockitSidebar {
             this._flushProfileUpdates();
           }
         });
-      }
 
       const userId = sessionData.userId;
       let totalDocsSize = 0;

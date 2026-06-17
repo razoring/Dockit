@@ -1,3 +1,7 @@
+(() => {
+  if (window.DOCKIT_INJECTED) return;
+  window.DOCKIT_INJECTED = true;
+
 //content.js
 window.DOCKIT_INJECTED = true;
 const SIDEBAR_WIDTH = 48;
@@ -1064,3 +1068,5 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+})();
