@@ -1488,11 +1488,17 @@ class DockitSidebar {
         const target = this._getDropTarget(e.clientY);
         if (target) {
           if (target.type === 'app') {
-            const half = target.rect.top + target.rect.height / 2;
-            if (e.clientY < half) {
+            const h = target.rect.height;
+            const y = e.clientY - target.rect.top;
+            if (y < h * 0.25) {
               target.el.style.boxShadow = '0 -3px 0 0 var(--color-primary)';
-            } else {
+              target.el.style.backgroundColor = 'transparent';
+            } else if (y > h * 0.75) {
               target.el.style.boxShadow = '0 3px 0 0 var(--color-primary)';
+              target.el.style.backgroundColor = 'transparent';
+            } else {
+              target.el.style.boxShadow = 'none';
+              target.el.style.backgroundColor = 'var(--color-primary)';
             }
           } else if (target.type === 'trash') {
             target.el.style.opacity = '1';
@@ -1555,11 +1561,24 @@ class DockitSidebar {
         if (!isOutside) {
           const target = this._getGridDropTarget(e.clientX, e.clientY);
           if (target) {
-            const half = target.rect.left + target.rect.width / 2;
-            if (e.clientX < half) {
-              target.el.style.boxShadow = '-3px 0 0 0 var(--color-primary)';
+            const w = target.rect.width;
+            const x = e.clientX - target.rect.left;
+            const inner = target.el.querySelector('.dockit-grid-app-inner');
+            if (x < w * 0.25) {
+              if (inner) {
+                inner.style.boxShadow = '-3px 0 0 0 var(--color-primary)';
+                inner.style.backgroundColor = 'transparent';
+              }
+            } else if (x > w * 0.75) {
+              if (inner) {
+                inner.style.boxShadow = '3px 0 0 0 var(--color-primary)';
+                inner.style.backgroundColor = 'transparent';
+              }
             } else {
-              target.el.style.boxShadow = '3px 0 0 0 var(--color-primary)';
+              if (inner) {
+                inner.style.boxShadow = 'none';
+                inner.style.backgroundColor = 'var(--color-primary)';
+              }
             }
           }
         }
@@ -1577,6 +1596,7 @@ class DockitSidebar {
 
         //determine drop target before cleaning up visuals
         const target = this._getDropTarget(e.clientY);
+        const oldRects = this._captureAppPositions();
 
         //cleanup visuals
         ds.el.classList.remove('dockit-drag-ghost');
@@ -1594,18 +1614,27 @@ class DockitSidebar {
           if (target.type === 'trash') {
             await this._deleteApp(ds.app, ds.listType);
           } else if (target.type === 'app') {
-            const half = target.rect.top + target.rect.height / 2;
-            let idx = parseInt(target.el.dataset.index);
-            if (e.clientY > half) idx++;
-            await this._moveApp(ds.app, ds.listType, target.el.dataset.list, idx);
+            const h = target.rect.height;
+            const y = e.clientY - target.rect.top;
+            if (y < h * 0.25) {
+              let idx = parseInt(target.el.dataset.index);
+              await this._moveApp(ds.app, ds.listType, target.el.dataset.list, idx);
+            } else if (y > h * 0.75) {
+              let idx = parseInt(target.el.dataset.index) + 1;
+              await this._moveApp(ds.app, ds.listType, target.el.dataset.list, idx);
+            } else {
+              await this._replaceApp(ds.app, ds.listType, target.el.dataset.list, target.el.dataset.id);
+            }
           } else if (target.type === 'section') {
             await this._moveApp(ds.app, ds.listType, target.list, -1);
           }
         }
 
         this._dragState = null;
+        this._animateAppPositions(oldRects);
       } else if (this._gridDragState) {
         const ds = this._gridDragState;
+        const oldRects = this._captureAppPositions();
         ds.el.style.opacity = '1';
         if (ds.ghost) ds.ghost.remove();
 
@@ -1634,16 +1663,22 @@ class DockitSidebar {
           this._clearGridHighlights();
 
           if (target && ds.didMove) {
-            const half = target.rect.left + target.rect.width / 2;
-            let targetIndex = parseInt(target.el.dataset.index, 10);
-            if (e.clientX > half) {
-              targetIndex++;
+            const w = target.rect.width;
+            const x = e.clientX - target.rect.left;
+            if (x < w * 0.25) {
+              let targetIndex = parseInt(target.el.dataset.index, 10);
+              await this._moveGridApp(ds.app, targetIndex);
+            } else if (x > w * 0.75) {
+              let targetIndex = parseInt(target.el.dataset.index, 10) + 1;
+              await this._moveGridApp(ds.app, targetIndex);
+            } else {
+              await this._replaceGridApp(ds.app, target.el.dataset.id);
             }
-            await this._moveGridApp(ds.app, targetIndex);
           }
         }
 
         this._gridDragState = null;
+        this._animateAppPositions(oldRects);
       }
     });
 
@@ -1727,9 +1762,61 @@ class DockitSidebar {
     return null;
   }
 
+  _captureAppPositions() {
+    const rects = new Map();
+    this.element.querySelectorAll('.dockit-app, .dockit-grid-app').forEach(el => {
+      if (!el.dataset.id) return;
+      const key = el.classList.contains('dockit-app') ? `sidebar_${el.dataset.id}` : `grid_${el.dataset.id}`;
+      if (this._dragState && this._dragState.el === el && this._dragState.ghost) {
+        rects.set(key, this._dragState.ghost.getBoundingClientRect());
+      } else if (this._gridDragState && this._gridDragState.el === el && this._gridDragState.ghost) {
+        rects.set(key, this._gridDragState.ghost.getBoundingClientRect());
+      } else {
+        rects.set(key, el.getBoundingClientRect());
+      }
+    });
+    return rects;
+  }
+
+  _animateAppPositions(oldRects) {
+    const afterRects = new Map();
+    this.element.querySelectorAll('.dockit-app, .dockit-grid-app').forEach(el => {
+      if (!el.dataset.id) return;
+      const key = el.classList.contains('dockit-app') ? `sidebar_${el.dataset.id}` : `grid_${el.dataset.id}`;
+      afterRects.set(key, { el, rect: el.getBoundingClientRect() });
+    });
+
+    afterRects.forEach((after, key) => {
+      const beforeRect = oldRects.get(key);
+      if (beforeRect) {
+        const dx = beforeRect.left - after.rect.left;
+        const dy = beforeRect.top - after.rect.top;
+        if (dx !== 0 || dy !== 0) {
+          after.el.style.transform = `translate(${dx}px, ${dy}px)`;
+          after.el.style.transition = 'none';
+          
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              after.el.style.transform = 'translate(0, 0)';
+              after.el.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+              const cleanup = (e) => {
+                if (e.target !== after.el) return;
+                after.el.style.transform = '';
+                after.el.style.transition = '';
+                after.el.removeEventListener('transitionend', cleanup);
+              };
+              after.el.addEventListener('transitionend', cleanup);
+            });
+          });
+        }
+      }
+    });
+  }
+
   _clearHighlights() {
     this.element.querySelectorAll('.dockit-app').forEach(el => {
       el.style.boxShadow = '';
+      el.style.backgroundColor = '';
     });
   }
 
@@ -1758,6 +1845,34 @@ class DockitSidebar {
 
     await chrome.storage.local.set({ pinnedApps: data.pinnedApps, temporaryApps: data.temporaryApps });
     await this.loadData();
+    await this.refreshActiveSite();
+  }
+
+  async _replaceApp(draggedApp, fromList, toList, targetId) {
+    const data = await chrome.storage.local.get(['pinnedApps', 'temporaryApps']);
+    let fromArr = fromList === 'pinned' ? (data.pinnedApps || []) : (data.temporaryApps || []);
+    let toArr = toList === 'pinned' ? (data.pinnedApps || []) : (data.temporaryApps || []);
+
+    const origIndex = fromArr.findIndex(a => a.id === draggedApp.id);
+    if (origIndex !== -1) {
+      fromArr.splice(origIndex, 1);
+    }
+    
+    if (fromList === 'pinned') data.pinnedApps = fromArr; else data.temporaryApps = fromArr;
+    toArr = toList === 'pinned' ? (data.pinnedApps || []) : (data.temporaryApps || []);
+
+    const targetIndex = toArr.findIndex(a => a.id === targetId);
+    if (targetIndex !== -1) {
+      toArr.splice(targetIndex, 1, draggedApp);
+    } else {
+      toArr.push(draggedApp);
+    }
+
+    if (toList === 'pinned') data.pinnedApps = toArr; else data.temporaryApps = toArr;
+
+    await chrome.storage.local.set({ pinnedApps: data.pinnedApps, temporaryApps: data.temporaryApps });
+    await this.loadData();
+    await this.refreshActiveSite();
   }
 
   async _deleteApp(app, listType) {
@@ -1771,6 +1886,7 @@ class DockitSidebar {
       await chrome.storage.local.set({ temporaryApps: arr });
     }
     await this.loadData();
+    await this.refreshActiveSite();
   }
 
   _getGridDropTarget(clientX, clientY) {
@@ -1798,6 +1914,11 @@ class DockitSidebar {
     const apps = this.element.querySelectorAll('.dockit-grid-app');
     apps.forEach(el => {
       el.style.boxShadow = '';
+      const inner = el.querySelector('.dockit-grid-app-inner');
+      if (inner) {
+        inner.style.boxShadow = '';
+        inner.style.backgroundColor = '';
+      }
     });
   }
 
@@ -1820,6 +1941,27 @@ class DockitSidebar {
       targetIndex--;
     }
     pinnedApps.splice(targetIndex, 0, app);
+    await chrome.storage.local.set({ pinnedApps });
+    await this.refreshActiveSite();
+    await this.loadData();
+  }
+
+  async _replaceGridApp(draggedApp, targetId) {
+    const data = await chrome.storage.local.get(['pinnedApps']);
+    let pinnedApps = data.pinnedApps || [];
+
+    const origIndex = pinnedApps.findIndex(a => a.id === draggedApp.id);
+    if (origIndex !== -1) {
+      pinnedApps.splice(origIndex, 1);
+    }
+
+    const targetIndex = pinnedApps.findIndex(a => a.id === targetId);
+    if (targetIndex !== -1) {
+      pinnedApps.splice(targetIndex, 1, draggedApp);
+    } else {
+      pinnedApps.push(draggedApp);
+    }
+
     await chrome.storage.local.set({ pinnedApps });
     await this.refreshActiveSite();
     await this.loadData();
