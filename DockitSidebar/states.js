@@ -468,6 +468,9 @@ async function init() {
 
   //helper to set active iframe reactively and update loaded indicators
   const _setIframeSrc = async (url) => {
+    if (chrome.runtime?.id) {
+      chrome.storage.local.set({ activeApp: { url: url }, activeSystemApp: null });
+    }
     const targetUrl = url || '';
     _activeUrl = targetUrl;
     _currentDisplayUrl = targetUrl;
@@ -615,10 +618,8 @@ async function init() {
   const currentOpen = await chrome.storage.local.get(['activeSystemApp', 'activeApp']);
   if (currentOpen.activeSystemApp) {
     sidebar.openSystemApp(currentOpen.activeSystemApp);
-    chrome.storage.local.remove('activeSystemApp');
   } else if (currentOpen.activeApp) {
     _setIframeSrc(currentOpen.activeApp.url);
-    chrome.storage.local.remove('activeApp');
   }
 
   // Listen to navigation events from sidebar clicks

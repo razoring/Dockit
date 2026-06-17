@@ -322,11 +322,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     });
     return true;
   } else if (msg.type === 'APPWRITE_GET_CLOUD_DATA_COUNTS') {
-    chrome.storage.local.get(['appwriteSession'], async (data) => {
+    chrome.storage.local.get(['appwriteSession', 'cloudDataCountsCache'], async (data) => {
       if (!data.appwriteSession) {
         sendResponse({ success: false, error: 'Not logged in' });
         return;
       }
+      
+      const now = Date.now();
+      // Use cache if it exists and is less than 1 hour old (3600000 ms)
+      if (data.cloudDataCountsCache && (now - data.cloudDataCountsCache.timestamp < 3600000) && !msg.forceRefresh) {
+        sendResponse({ success: true, counts: data.cloudDataCountsCache.counts });
+        return;
+      }
+
       const { secret, userId } = data.appwriteSession;
       try {
         const fallbackCookie = `a_session_6a0a1cc000178886bfaf=${secret}`;
@@ -361,15 +369,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const themesCount = await countDocs('themes', 'profile');
         const interactionsCount = await countDocs('theme_interactions', 'userId');
 
-        sendResponse({
-          success: true,
-          counts: {
-            settings: settingsCount,
-            profiles: profilesCount,
-            themes: themesCount,
-            interactions: interactionsCount
+        const counts = {
+          settings: settingsCount,
+          profiles: profilesCount,
+          themes: themesCount,
+          interactions: interactionsCount
+        };
+
+        await chrome.storage.local.set({
+          cloudDataCountsCache: {
+            counts,
+            timestamp: now
           }
         });
+
+        sendResponse({ success: true, counts });
       } catch (err) {
         sendResponse({ success: false, error: err.toString() });
       }
@@ -549,6 +563,8 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   } catch (err) { }
 });
 
+let _lastSyncPayloadHash = null;
+
 async function _pushSync() {
   return new Promise((resolve) => {
     chrome.storage.local.get(null, async (data) => {
@@ -564,29 +580,28 @@ async function _pushSync() {
         delete settingsToSync.fontCss;
         delete settingsToSync.dockitStyles;
         delete settingsToSync.temporaryApps;
+        delete settingsToSync.cloudDataCountsCache;
         Object.keys(settingsToSync).forEach(key => {
-          if (key.startsWith('sidePanelOpen_') || key.startsWith('dockitTranslations_v2_')) {
+          if (key.startsWith('sidePanelOpen_') || key.startsWith('dockitTranslations_v2_') || key.startsWith('cache_')) {
             delete settingsToSync[key];
           }
         });
 
+        const settingsString = JSON.stringify(settingsToSync);
+        
+        // Skip sync if payload hasn't changed since last successful sync
+        if (_lastSyncPayloadHash === settingsString) {
+          resolve({ success: true, skipped: true });
+          return;
+        }
+
         const payload = {
           profile: userId,
-          settings: JSON.stringify(settingsToSync),
+          settings: settingsString,
           updated: new Date().toISOString()
         };
 
         const fallbackCookie = `a_session_6a0a1cc000178886bfaf=${secret}`;
-
-        await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents`, {
-          method: 'POST',
-          headers: {
-            'X-Appwrite-Project': '6a0a1cc000178886bfaf',
-            'X-Fallback-Cookies': fallbackCookie,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ documentId: userId, data: { username: 'user_' + userId, updated: new Date().toISOString(), created: new Date().toISOString() } })
-        }).catch(() => { });
 
         const res = await fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/settings/documents/${userId}`, {
           method: 'PATCH',
@@ -614,6 +629,8 @@ async function _pushSync() {
           const updateData = await res.json();
           if (updateData.code) throw new Error(updateData.message);
         }
+        
+        _lastSyncPayloadHash = settingsString;
         resolve({ success: true });
       } catch (err) {
         resolve({ success: false, error: err.toString() });

@@ -1196,6 +1196,10 @@ class DockitSidebar {
     if (this._flushProfileUpdates) await this._flushProfileUpdates();
     const inPage = this.element.querySelector('.dockit-in-page');
     if (!inPage) return;
+
+    if (this.isSidePanel && chrome.runtime?.id) {
+      chrome.storage.local.set({ activeSystemApp: name, activeApp: null });
+    }
     const titleEl = this.element.querySelector('#dockit-in-page-title');
     const contentEl = this.element.querySelector('#dockit-in-page-content');
     if (titleEl) {
@@ -1232,6 +1236,10 @@ class DockitSidebar {
     if (inPage) {
       inPage.classList.add('dockit-hidden');
       this._updateSidebarVisibility();
+
+      if (this.isSidePanel && chrome.runtime?.id) {
+        chrome.storage.local.remove('activeSystemApp');
+      }
 
       if (this._flushProfileUpdates) await this._flushProfileUpdates();
 
@@ -3401,28 +3409,33 @@ class DockitSidebar {
 
         if (docs.length > 0) {
           const profileIds = [...new Set(docs.map(d => d.profile || d.publisherId).filter(Boolean))];
-          if (profileIds.length > 0) {
+          this._themeProfileCache = this._themeProfileCache || {};
+          const missingProfileIds = profileIds.filter(id => !this._themeProfileCache[id]);
+
+          if (missingProfileIds.length > 0) {
             try {
               let profilesUrl = `https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents?`;
-              const pQuery = JSON.stringify({ method: 'equal', attribute: '$id', values: profileIds });
+              const pQuery = JSON.stringify({ method: 'equal', attribute: '$id', values: missingProfileIds });
               profilesUrl += `queries[]=${encodeURIComponent(pQuery)}`;
               const pRes = await fetch(profilesUrl, { headers });
               if (pRes.ok) {
                 const pData = await pRes.json();
-                const profileMap = {};
-                const avatarMap = {};
                 pData.documents.forEach(p => {
-                  profileMap[p.$id] = p.username;
-                  if (p.avatar) avatarMap[p.$id] = p.avatar;
-                });
-                docs.forEach(d => {
-                  const pid = d.profile || d.publisherId;
-                  if (profileMap[pid]) d.publisherName = profileMap[pid];
-                  if (avatarMap[pid]) d.publisherAvatar = avatarMap[pid];
+                  this._themeProfileCache[p.$id] = { username: p.username, avatar: p.avatar };
                 });
               }
             } catch (e) { console.error('Failed to fetch profiles', e); }
           }
+          
+          docs.forEach(d => {
+            const pid = d.profile || d.publisherId;
+            if (this._themeProfileCache[pid]) {
+              d.publisherName = this._themeProfileCache[pid].username;
+              if (this._themeProfileCache[pid].avatar) {
+                d.publisherAvatar = this._themeProfileCache[pid].avatar;
+              }
+            }
+          });
 
           if (hasSession && storageData.appwriteSession.userId) {
             try {
@@ -3549,47 +3562,57 @@ class DockitSidebar {
     };
 
     try {
-      const accRes = await fetch('https://nyc.cloud.appwrite.io/v1/account', { headers });
-      if (accRes.ok) {
-        const acc = await accRes.json();
-
-        if (acc.name) {
-          fetch(`https://nyc.cloud.appwrite.io/v1/databases/dockit_cloud/collections/profiles/documents/${sessionData.userId}`, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify({ data: { username: acc.name, updated: new Date().toISOString() } })
-          }).catch(() => { });
+      const getProfileData = async () => {
+        const cacheData = await chrome.storage.local.get(['dockitProfileCache']);
+        if (cacheData.dockitProfileCache && Date.now() - cacheData.dockitProfileCache.timestamp < 3600000) {
+          return cacheData.dockitProfileCache.data;
         }
 
+        const accRes = await fetch('https://nyc.cloud.appwrite.io/v1/account', { headers });
+        if (!accRes.ok) throw new Error('Account fetch failed');
+        const acc = await accRes.json();
+        
         let customAvatar = null;
         try {
           const prefsRes = await fetch('https://nyc.cloud.appwrite.io/v1/account/prefs', { headers });
           if (prefsRes.ok) {
             const prefs = await prefsRes.json();
             if (prefs.avatarUrl) {
-              if (prefs.avatarUrl.startsWith('http')) {
-                customAvatar = prefs.avatarUrl;
-              } else {
-                customAvatar = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${prefs.avatarUrl}/view?project=${projectId}`;
-              }
+              customAvatar = prefs.avatarUrl.startsWith('http') ? prefs.avatarUrl : `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files/${prefs.avatarUrl}/view?project=${projectId}`;
             }
           }
-        } catch (e) { }
-
-        const nameEl = containerEl.querySelector('#dockit-profile-name');
-        nameEl.textContent = acc.name || 'User';
-        nameEl.dataset.placeholder = acc.name || 'User';
-
-        const avatarEl = containerEl.querySelector('#dockit-profile-avatar');
-        if (customAvatar) {
-          avatarEl.src = customAvatar;
-        } else {
+        } catch(e) {}
+        
+        let avatarDataUrl = null;
+        if (!customAvatar) {
           const avatarRes = await fetch(`https://nyc.cloud.appwrite.io/v1/avatars/initials?name=${encodeURIComponent(acc.name || 'User')}&width=80&height=80&project=${projectId}`);
           if (avatarRes.ok) {
-            const blob = await avatarRes.blob();
-            avatarEl.src = URL.createObjectURL(blob);
+             const blob = await avatarRes.blob();
+             const buffer = await blob.arrayBuffer();
+             const bytes = new Uint8Array(buffer);
+             let binary = '';
+             for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+             avatarDataUrl = 'data:image/png;base64,' + btoa(binary);
           }
         }
+        
+        const finalData = { acc, customAvatar, avatarDataUrl };
+        await chrome.storage.local.set({ dockitProfileCache: { data: finalData, timestamp: Date.now() } });
+        return finalData;
+      };
+
+      const { acc, customAvatar, avatarDataUrl } = await getProfileData();
+
+      const nameEl = containerEl.querySelector('#dockit-profile-name');
+      nameEl.textContent = acc.name || 'User';
+      nameEl.dataset.placeholder = acc.name || 'User';
+
+      const avatarEl = containerEl.querySelector('#dockit-profile-avatar');
+      if (customAvatar) {
+        avatarEl.src = customAvatar;
+      } else if (avatarDataUrl) {
+        avatarEl.src = avatarDataUrl;
+      }
 
         this._pendingProfileUpdates = { name: null, avatarUrl: null };
         this._originalProfileName = acc.name || 'User';
@@ -3724,6 +3747,7 @@ class DockitSidebar {
                 });
 
                 this._originalProfileName = newName;
+                await chrome.storage.local.remove('dockitProfileCache');
               } catch (e) { console.error('Failed to update name', e); }
             }
           }
@@ -3803,6 +3827,7 @@ class DockitSidebar {
                   keepalive: true,
                   body: JSON.stringify({ data: { avatar: finalUrl, updated: new Date().toISOString() } })
                 }).catch(() => { });
+                await chrome.storage.local.remove('dockitProfileCache');
               } else {
                 console.error('Failed to upload avatar to storage', await uploadRes.text());
               }
@@ -4630,12 +4655,25 @@ class DockitSidebar {
     };
 
     const fetchFiles = async (cursor = null) => {
-      driveState.loading = true;
       if (!cursor) {
-        driveState.files = [];
-        driveState.chips = ['All'];
+        const cache = await chrome.storage.local.get(['dockitDriveCache']);
+        if (cache.dockitDriveCache) {
+          driveState.files = cache.dockitDriveCache.files;
+          driveState.chips = cache.dockitDriveCache.chips;
+          driveState.hasNext = cache.dockitDriveCache.hasNext;
+          driveState.pageCursor = cache.dockitDriveCache.pageCursor;
+          driveState.loading = false;
+          renderUI();
+        } else {
+          driveState.files = [];
+          driveState.chips = ['All'];
+          driveState.loading = true;
+          renderUI();
+        }
+      } else {
+        driveState.loading = true;
+        renderUI();
       }
-      renderUI();
 
       try {
         let url = `https://nyc.cloud.appwrite.io/v1/storage/buckets/Cloud-Drive/files?queries[]=${encodeURIComponent(JSON.stringify({ method: 'limit', values: [50] }))}&queries[]=${encodeURIComponent(JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' }))}`;
@@ -4674,6 +4712,17 @@ class DockitSidebar {
         if (hasImages) driveState.chips.push('Images');
         if (hasOthers) driveState.chips.push('Others');
         if (hasVideos) driveState.chips.push('Videos');
+
+        if (!cursor) {
+          await chrome.storage.local.set({
+            dockitDriveCache: {
+              files: driveState.files,
+              chips: driveState.chips,
+              hasNext: driveState.hasNext,
+              pageCursor: driveState.pageCursor
+            }
+          });
+        }
 
         driveState.loading = false;
         renderUI();
@@ -6030,8 +6079,9 @@ class DockitThemeEditor {
   initResizing(e, wrapper, direction) {
     e.stopPropagation();
     e.preventDefault();
-    const startWidth = wrapper.offsetWidth;
-    const startHeight = wrapper.offsetHeight;
+    const computedStyle = getComputedStyle(wrapper);
+    const startWidth = parseFloat(computedStyle.width) || wrapper.offsetWidth;
+    const startHeight = parseFloat(computedStyle.height) || wrapper.offsetHeight;
     const startX = e.clientX;
     const startY = e.clientY;
     const startLeft = parseInt(wrapper.style.left) || 0;
