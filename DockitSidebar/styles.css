@@ -133,7 +133,7 @@ body {
 }
 
 .dockit-app:hover {
-  background-color: var(--color-primary);
+  background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
   color: var(--color-foreground);
 }
 
@@ -244,6 +244,10 @@ body {
 .dockit-action-btn:hover {
   opacity: 1;
   background-color: color-mix(in srgb, var(--color-secondary) calc(var(--menu-opacity-value, 1) * 100%), transparent);
+}
+
+.dockit-enter-editor-btn:hover {
+  filter: contrast(1.1) brightness(1.05) !important;
 }
 
 /* Trash State */

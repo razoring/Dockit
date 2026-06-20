@@ -62,6 +62,11 @@ function applyTheme(themeObj) {
   css += '}';
   styleEl.textContent = css;
 
+  const indicator = document.getElementById('dockit-autohide-indicator');
+  if (indicator && themeObj && themeObj.colors && themeObj.colors['--color-primary']) {
+    indicator.style.setProperty('--color-primary', themeObj.colors['--color-primary']);
+  }
+
   const shadow = _hostElement.shadowRoot;
   const sidebarEl = shadow.querySelector('.dockit-sidebar');
   const inPageEl = shadow.querySelector('.dockit-in-page');
@@ -977,7 +982,7 @@ function initAutoHideTracking() {
       }
     } else {
       const isOverSidebar = e.composedPath().includes(_hostElement);
-      if (!isOverSidebar) {
+      if (!isOverSidebar && distance > 50) {
         hideSidebar();
       }
     }
