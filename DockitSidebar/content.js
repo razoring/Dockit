@@ -999,6 +999,20 @@ function initAutoHideTracking() {
     }
   };
   document.addEventListener('mouseleave', _mouseLeaveListener);
+
+  const _edgeClickListener = (e) => {
+    if (!_isAutoHideActive || _isSidebarHidden) return;
+    const distance = window.innerWidth - e.clientX;
+    if (!_isSidebarVisible && distance <= 50 && distance >= 0) {
+      showSidebar();
+      stopHoverTracking();
+      if (_hostElement) {
+        _hostElement.classList.remove('dockit-autohide-hidden');
+      }
+    }
+  };
+  document.addEventListener('mousedown', _edgeClickListener, true);
+  document.addEventListener('click', _edgeClickListener, true);
 }
 
 function startHoverTracking() {

@@ -487,6 +487,12 @@ async function init() {
     const existingFallback = viewportWrapper.querySelector('.dockit-fallback-ui');
     if (existingFallback) existingFallback.remove();
 
+    // Ensure any open system app drawer is closed so app iframe is visible
+    const inPage = document.querySelector('.dockit-in-page');
+    if (inPage) {
+      inPage.classList.add('dockit-hidden');
+    }
+
     if (targetUrl) {
       let hostname = '';
       try {
@@ -606,8 +612,8 @@ async function init() {
       controlBar.style.display = 'none';
     }
 
-    const inPage = document.querySelector('.dockit-in-page');
-    const isSystemOpen = inPage && !inPage.classList.contains('dockit-hidden');
+    const inPageAfter = document.querySelector('.dockit-in-page');
+    const isSystemOpen = inPageAfter && !inPageAfter.classList.contains('dockit-hidden');
     _updateInMemoryIndicator(isSystemOpen);
   };
 
@@ -639,6 +645,20 @@ async function init() {
 
   // Re-render when storage changes
   chrome.storage.onChanged.addListener((changes) => {
+    if (changes.activeSystemApp && changes.activeSystemApp.newValue) {
+      sidebar.openSystemApp(changes.activeSystemApp.newValue);
+    }
+
+    if (changes.activeApp && changes.activeApp.newValue && changes.activeApp.newValue.url) {
+      if (_activeUrl !== changes.activeApp.newValue.url) {
+        _setIframeSrc(changes.activeApp.newValue.url);
+      } else {
+        const inPage = document.querySelector('.dockit-in-page');
+        if (inPage && !inPage.classList.contains('dockit-hidden')) {
+          inPage.classList.add('dockit-hidden');
+        }
+      }
+    }
     if (changes.dockitTheme) {
       applyTheme(changes.dockitTheme.newValue);
     }

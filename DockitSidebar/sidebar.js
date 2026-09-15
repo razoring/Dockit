@@ -1401,6 +1401,10 @@ var DockitSidebar = class DockitSidebar {
 
       //click to navigate
       el.addEventListener('click', (e) => {
+        if (this._didJustDrag) {
+          this._didJustDrag = false;
+          return;
+        }
         if (this._dragState && this._dragState.didMove) return;
         if (this.isSidePanel) {
           document.dispatchEvent(new CustomEvent('dockit-navigate', { detail: app.url }));
@@ -1413,7 +1417,6 @@ var DockitSidebar = class DockitSidebar {
       //mousedown to begin drag tracking
       el.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
-        e.preventDefault();
         this._dragState = {
           app,
           listType,
@@ -1601,6 +1604,9 @@ var DockitSidebar = class DockitSidebar {
           this._dragState = null;
           return;
         }
+
+        this._didJustDrag = true;
+        setTimeout(() => { this._didJustDrag = false; }, 200);
 
         //determine drop target before cleaning up visuals
         const target = this._getDropTarget(e.clientY);

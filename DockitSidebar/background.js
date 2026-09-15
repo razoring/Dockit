@@ -144,11 +144,19 @@ const connectedSidePanels = new Set();
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'sidepanel') {
     let panelWindowId = null;
-    port.onMessage.addListener((msg) => {
+    port.onMessage.addListener(async (msg) => {
       if (msg.type === 'INIT' && msg.windowId) {
         panelWindowId = msg.windowId;
         connectedSidePanels.add(panelWindowId);
         chrome.storage.local.set({ [`sidePanelOpen_${panelWindowId}`]: true });
+
+        // Sync currently active app or system app to the freshly connected sidepanel
+        const currentOpen = await chrome.storage.local.get(['activeSystemApp', 'activeApp']);
+        if (currentOpen.activeSystemApp) {
+          chrome.runtime.sendMessage({ type: 'LOAD_SYSTEM_APP', systemApp: currentOpen.activeSystemApp }).catch(() => { });
+        } else if (currentOpen.activeApp) {
+          chrome.runtime.sendMessage({ type: 'LOAD_APP', app: currentOpen.activeApp }).catch(() => { });
+        }
       } else if (msg.type === 'PING') {
         // Prevent Service Worker suspension
       }
@@ -202,19 +210,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   } else if (msg.type === 'OPEN_SIDEPANEL') {
     if (sender.tab && sender.tab.windowId) {
-      if (msg.systemApp) {
-        chrome.storage.local.set({ activeSystemApp: msg.systemApp, activeApp: null });
-      } else if (msg.app) {
-        chrome.storage.local.set({ activeApp: msg.app, activeSystemApp: null });
-      }
-      chrome.sidePanel.open({ windowId: sender.tab.windowId }).catch(e => console.error(e));
-      setTimeout(() => {
-        if (msg.systemApp) {
-          chrome.runtime.sendMessage({ type: 'LOAD_SYSTEM_APP', systemApp: msg.systemApp }).catch(() => { });
-        } else {
-          chrome.runtime.sendMessage({ type: 'LOAD_APP', app: msg.app }).catch(() => { });
-        }
-      }, 100);
+      const windowId = sender.tab.windowId;
+      const targetData = msg.systemApp
+        ? { activeSystemApp: msg.systemApp, activeApp: null }
+        : { activeApp: msg.app, activeSystemApp: null };
+
+      chrome.storage.local.set(targetData, () => {
+        chrome.sidePanel.open({ windowId: windowId }).catch(e => console.error(e));
+
+        const sendLoadMessage = () => {
+          if (msg.systemApp) {
+            chrome.runtime.sendMessage({ type: 'LOAD_SYSTEM_APP', systemApp: msg.systemApp }).catch(() => { });
+          } else if (msg.app) {
+            chrome.runtime.sendMessage({ type: 'LOAD_APP', app: msg.app }).catch(() => { });
+          }
+        };
+
+        sendLoadMessage();
+        setTimeout(sendLoadMessage, 100);
+        setTimeout(sendLoadMessage, 300);
+        setTimeout(sendLoadMessage, 600);
+      });
     }
   } else if (msg.type === 'REFETCH_ASSETS') {
     cacheAssets();
