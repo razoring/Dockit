@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dockit PDF Viewer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #toolbar {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(22, 27, 34, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 30px;
+      padding: 6px 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      user-select: none;
+    }
+
+    .toolbar-btn {
+      background: transparent;
+      border: none;
+      color: #c9d1d9;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .toolbar-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .toolbar-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .toolbar-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: #8b949e;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .toolbar-text span {
+      color: #f0f6fc;
+    }
+
+    .divider {
+      width: 1px;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.12);
+      margin: 0 4px;
+    }
+
+    #viewer-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: auto;
+      padding: 20px 10px 80px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .page-canvas-wrapper {
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #loading-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #8b949e;
+      font-size: 14px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #58a6ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #error-container {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      padding: 24px;
+      background: #161b22;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      max-width: 320px;
+    }
+
+    #error-container h3 {
+      font-size: 15px;
+      margin-bottom: 8px;
+      color: #f0f6fc;
+    }
+
+    #error-container p {
+      font-size: 13px;
+      color: #8b949e;
+      margin-bottom: 16px;
+    }
+
+    .primary-btn {
+      background: #238636;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .primary-btn:hover {
+      background: #2ea043;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="viewer-container"></div>
+
+  <div id="loading-indicator">
+    <div class="spinner"></div>
+    <span>Loading PDF...</span>
+  </div>
+
+  <div id="error-container">
+    <h3>Unable to Load PDF</h3>
+    <p>This PDF could not be rendered directly inside the sidebar.</p>
+    <button id="open-new-tab-btn" class="primary-btn">Open in New Tab</button>
+  </div>
+
+  <div id="toolbar" style="display: none;">
+    <button class="toolbar-btn" id="prev-page" title="Previous Page">
+      <svg viewBox="0 0 16 16"><path d="M9.78 12.78a.75.75 0 01-1.06 0L4.47 8.53a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 1.06L6.06 8l3.72 3.72a.75.75 0 010 1.06z"/></svg>
+    </button>
+    <div class="toolbar-text">
+      <span id="page-num">1</span> / <span id="page-count">--</span>
+    </div>
+    <button class="toolbar-btn" id="next-page" title="Next Page">
+      <svg viewBox="0 0 16 16"><path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z"/></svg>
+    </button>
+
+    <div class="divider"></div>
+
+    <button class="toolbar-btn" id="zoom-out" title="Zoom Out">
+      <svg viewBox="0 0 16 16"><path d="M3.75 7.25a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5z"/></svg>
+    </button>
+    <div class="toolbar-text">
+      <span id="zoom-val">100%</span>
+    </div>
+    <button class="toolbar-btn" id="zoom-in" title="Zoom In">
+      <svg viewBox="0 0 16 16"><path d="M7.75 3.75a.75.75 0 01.75.75v2.75h2.75a.75.75 0 010 1.5H8.5v2.75a.75.75 0 01-1.5 0V8.75H4.25a.75.75 0 010-1.5H7V4.5a.75.75 0 01.75-.75z"/></svg>
+    </button>
+
+    <div class="divider"></div>
+
+    <button class="toolbar-btn" id="open-tab-icon" title="Open in New Tab">
+      <svg viewBox="0 0 16 16"><path d="M3.75 2h3.5a.75.75 0 010 1.5h-3.5a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25v-3.5a.75.75 0 011.5 0v3.5A1.75 1.75 0 0112.25 14h-8.5A1.75 1.75 0 012 12.25v-8.5C2 2.784 2.784 2 3.75 2zm6.75 0h3.5c.414 0 .75.336.75.75v3.5a.75.75 0 01-1.5 0V4.56L8.53 9.28a.75.75 0 01-1.06-1.06l4.72-4.72h-1.69a.75.75 0 010-1.5z"/></svg>
+    </button>
+  </div>
+
+  <script src="pdfjs/pdf.min.js"></script>
+  <script src="pdfviewer.js"></script>
+</body>
+</html>

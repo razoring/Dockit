@@ -51,7 +51,10 @@
       "resources": [
         "styles.css",
         "scroll.js",
-        "_favicon/*"
+        "_favicon/*",
+        "pdfviewer.html",
+        "pdfviewer.js",
+        "pdfjs/*"
       ],
       "matches": [
         "<all_urls>"

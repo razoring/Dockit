@@ -294,7 +294,7 @@ async function init() {
     reloadBtn.addEventListener('click', () => {
       if (_activeUrl) {
         const frame = _iframes.get(_activeUrl);
-        if (frame) frame.src = _currentDisplayUrl || _activeUrl;
+        if (frame) frame.src = _getEffectiveIframeSrc(_currentDisplayUrl || _activeUrl);
       }
     });
   }
@@ -329,7 +329,7 @@ async function init() {
         chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: false }, () => {
           if (_activeUrl) {
             const frame = _iframes.get(_activeUrl);
-            if (frame) frame.src = _activeUrl;
+            if (frame) frame.src = _getEffectiveIframeSrc(_activeUrl);
           }
         });
       } else {
@@ -342,7 +342,7 @@ async function init() {
         chrome.runtime.sendMessage({ type: 'SET_MOBILE_USER_AGENT', enabled: true, url: _activeUrl }, () => {
           if (_activeUrl) {
             const frame = _iframes.get(_activeUrl);
-            if (frame) frame.src = _activeUrl;
+            if (frame) frame.src = _getEffectiveIframeSrc(_activeUrl);
           }
         });
       }
@@ -466,6 +466,24 @@ async function init() {
     }
   });
 
+  // Helper to detect PDF URLs
+  const _isPdfUrl = (url) => {
+    if (!url) return false;
+    try {
+      const u = new URL(url);
+      return u.pathname.toLowerCase().endsWith('.pdf');
+    } catch (e) {
+      return url.toLowerCase().split('?')[0].split('#')[0].endsWith('.pdf');
+    }
+  };
+
+  const _getEffectiveIframeSrc = (url) => {
+    if (_isPdfUrl(url)) {
+      return chrome.runtime.getURL('pdfviewer.html') + '?file=' + encodeURIComponent(url);
+    }
+    return url;
+  };
+
   //helper to set active iframe reactively and update loaded indicators
   const _setIframeSrc = async (url) => {
     if (chrome.runtime?.id) {
@@ -569,7 +587,7 @@ async function init() {
         if (!frame) {
           frame = document.createElement('iframe');
           frame.className = 'dockit-iframe';
-          frame.src = targetUrl;
+          frame.src = _getEffectiveIframeSrc(targetUrl);
           frame.style.cssText = 'width: 100%; height: 100%; border: none; display: none;';
           if (viewportWrapper) {
             viewportWrapper.appendChild(frame);
