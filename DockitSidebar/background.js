@@ -471,6 +471,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse([]);
       });
     return true; //asynchronous response
+  } else if (msg.type === 'GET_ZOOM') {
+    if (sender && sender.tab && sender.tab.id) {
+      chrome.tabs.getZoom(sender.tab.id, (zoom) => {
+        sendResponse(zoom);
+      });
+      return true;
+    } else {
+      sendResponse(1);
+    }
   } else if (msg.type === 'SET_MOBILE_USER_AGENT') {
     const ruleId = 9999;
     if (msg.enabled && msg.url) {
@@ -666,4 +675,11 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       await _pushSync().catch(() => { });
     }, 20000);
   }
+});
+
+chrome.tabs.onZoomChange.addListener((zoomChangeInfo) => {
+  chrome.tabs.sendMessage(zoomChangeInfo.tabId, {
+    type: 'ZOOM_CHANGED',
+    zoom: zoomChangeInfo.newZoomFactor
+  }).catch(() => {});
 });

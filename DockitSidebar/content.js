@@ -5,6 +5,10 @@
 //content.js
 window.DOCKIT_INJECTED = true;
 const SIDEBAR_WIDTH = 48;
+function _getSidebarLayoutWidth() {
+  const zoom = parseFloat(document.documentElement.style.getPropertyValue('--dockit-zoom') || '1');
+  return SIDEBAR_WIDTH / zoom;
+}
 const _shouldScanAbsolute = window.location.hostname.includes('mail.google.com') || window.location.hostname.includes('stitch.withgoogle.com') || window.location.hostname.includes('stitch.google.com') || window.location.hostname.includes('earth.google.com');
 let _hostElement = null;
 let _sidebar = null;
@@ -333,13 +337,17 @@ async function init() {
   const layoutStyle = document.createElement('style');
   layoutStyle.id = 'dockit-layout-styles';
   layoutStyle.textContent = `
+    :root {
+      --dockit-zoom: 1;
+      --dockit-sidebar-width: calc(48px / var(--dockit-zoom, 1));
+    }
     html:not(.dockit-autohide-active) {
       overflow: hidden !important;
       height: 100% !important;
       scrollbar-gutter: auto !important;
     }
     html:not(.dockit-autohide-active) body {
-      width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
+      width: calc(100% - var(--dockit-sidebar-width)) !important;
       height: 100% !important;
       overflow-y: auto !important;
       overflow-x: hidden !important;
@@ -395,12 +403,12 @@ async function init() {
     html:not(.dockit-autohide-active) body [data-turbo-body] > header,
     html:not(.dockit-autohide-active) body .react-header-container,
     html:not(.dockit-autohide-active) body [class*="sticky-header"] {
-      max-width: calc(100vw - ${SIDEBAR_WIDTH}px) !important;
+      max-width: calc(100vw - var(--dockit-sidebar-width)) !important;
     }
     html:not(.dockit-autohide-active) #nav-flyout-ewc,
     html:not(.dockit-autohide-active) #attach-sidesheet,
     html:not(.dockit-autohide-active) [class*="nav-flyout-ewc"] {
-      right: ${SIDEBAR_WIDTH}px !important;
+      right: var(--dockit-sidebar-width) !important;
       margin-right: 0 !important;
     }
     html body.dockit-full-width,
@@ -418,8 +426,9 @@ async function init() {
     }
     #dockit-host-root {
       width: ${SIDEBAR_WIDTH}px;
-      height: 100vh;
+      height: calc(100vh * var(--dockit-zoom, 1));
       position: fixed !important;
+      zoom: calc(1 / var(--dockit-zoom, 1));
       top: 0 !important;
       right: 0 !important;
       z-index: 2147483647;
@@ -448,8 +457,9 @@ async function init() {
       top: 0;
       right: 0;
       width: 50px;
-      height: 100vh;
+      height: calc(100vh * var(--dockit-zoom, 1));
       pointer-events: none;
+      zoom: calc(1 / var(--dockit-zoom, 1));
       z-index: 2147483646;
       opacity: 0;
       background: linear-gradient(to bottom, var(--color-primary, #3b82f6), hsl(from var(--color-primary, #3b82f6) calc(h + 50) s l), var(--color-primary, #3b82f6));
@@ -473,8 +483,8 @@ async function init() {
       }
       body:not(.dockit-full-width) #gb + div,
       body:not(.dockit-full-width) #gb + .nH {
-        width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
-        margin-right: ${SIDEBAR_WIDTH}px !important;
+        width: calc(100% - var(--dockit-sidebar-width)) !important;
+        margin-right: var(--dockit-sidebar-width) !important;
       }
       body:not(.dockit-full-width) .nH {
         max-width: 100% !important;
@@ -504,7 +514,7 @@ async function init() {
       body:not(.dockit-full-width) flutter-view,
       body:not(.dockit-full-width) [class*="widget-scene-canvas"],
       body:not(.dockit-full-width) [class*="navigation-controls"] {
-        max-width: calc(100vw - ${SIDEBAR_WIDTH}px) !important;
+        max-width: calc(100vw - var(--dockit-sidebar-width)) !important;
       }
     `;
     document.head.appendChild(appStyle);
@@ -539,8 +549,8 @@ async function init() {
     linkedinStyle.textContent = `
       body:not(.dockit-full-width) .application-outlet__overlay-container,
       html:not(.dockit-full-width) .application-outlet__overlay-container {
-        width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
-        max-width: calc(100% - ${SIDEBAR_WIDTH}px) !important;
+        width: calc(100% - var(--dockit-sidebar-width)) !important;
+        max-width: calc(100% - var(--dockit-sidebar-width)) !important;
         min-width: 0 !important;
       }
     `;
@@ -691,6 +701,22 @@ async function init() {
   document.addEventListener('visibilitychange', _visibilityListener);
   _statusCheckInterval = setInterval(_checkSidePanelStatus, 10000);
 
+  const updateZoom = (zoom) => {
+    if (zoom > 0) {
+      document.documentElement.style.setProperty('--dockit-zoom', zoom);
+    }
+  };
+
+  chrome.runtime.sendMessage({ type: 'GET_ZOOM' }, (zoom) => {
+    if (zoom) updateZoom(zoom);
+  });
+
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'ZOOM_CHANGED') {
+      updateZoom(msg.zoom);
+    }
+  });
+
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.dockitTheme) {
       applyTheme(changes.dockitTheme.newValue);
@@ -832,7 +858,7 @@ function _constrainFixedElement(el) {
     if (el.closest('ytd-guide') || el.closest('tp-yt-app-drawer') || el.closest('ytd-popup-container') || el.closest('tp-yt-iron-overlay-backdrop') || el.tagName.toLowerCase().includes('iron-') || el.tagName.toLowerCase().includes('paper-')) return;
   }
 
-  const totalOffset = SIDEBAR_WIDTH;
+  const totalOffset = _getSidebarLayoutWidth();
   const targetWidth = `calc(100vw - ${totalOffset}px)`;
 
   //re-check already-constrained elements for site js overrides
@@ -849,7 +875,7 @@ function _constrainFixedElement(el) {
   }
 
   const rect = el.getBoundingClientRect();
-  const isOverlappingRight = rect.right > window.innerWidth - SIDEBAR_WIDTH;
+  const isOverlappingRight = rect.right > window.innerWidth - _getSidebarLayoutWidth();
   const isFullWidth = rect.width >= window.innerWidth - 1;
   const computed = getComputedStyle(el);
   const usesVw = computed.width.includes('vw') || computed.minWidth.includes('vw');
