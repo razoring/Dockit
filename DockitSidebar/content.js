@@ -5,7 +5,7 @@
 //content.js
 window.DOCKIT_INJECTED = true;
 const SIDEBAR_WIDTH = 48;
-const _shouldScanAbsolute = window.location.hostname.includes('mail.google.com') || window.location.hostname.includes('stitch.withgoogle.com');
+const _shouldScanAbsolute = window.location.hostname.includes('mail.google.com') || window.location.hostname.includes('stitch.withgoogle.com') || window.location.hostname.includes('stitch.google.com') || window.location.hostname.includes('earth.google.com');
 let _hostElement = null;
 let _sidebar = null;
 let _isSidebarHidden = false;
@@ -347,6 +347,48 @@ async function init() {
       margin: 0 !important;
       box-sizing: border-box !important;
     }
+    html:not(.dockit-autohide-active) body > #wrapper,
+    html:not(.dockit-autohide-active) body > #container-main,
+    html:not(.dockit-autohide-active) body > #app-container,
+    html:not(.dockit-autohide-active) body > [class*="wrapper"]:not(aside):not(nav) {
+      min-height: 100% !important;
+      box-sizing: border-box !important;
+    }
+    html:not(.dockit-autohide-active) body > #wrapper {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    html:not(.dockit-autohide-active) body > #wrapper > .site-content {
+      flex: 1 0 auto !important;
+    }
+    html:not(.dockit-autohide-active) body > #container-main {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    html:not(.dockit-autohide-active) body > #container-main > #footer-container,
+    html:not(.dockit-autohide-active) body > #container-main > footer,
+    html:not(.dockit-autohide-active) body > #wrapper > footer {
+      margin-top: auto !important;
+    }
+    html:not(.dockit-autohide-active) .main-frame,
+    html:not(.dockit-autohide-active) [class*="main-frame"] {
+      overflow-y: visible !important;
+      min-height: unset !important;
+    }
+    html:not(.dockit-autohide-active) body [class*="AppHeader"],
+    html:not(.dockit-autohide-active) body [data-turbo-body] > header,
+    html:not(.dockit-autohide-active) body .react-header-container,
+    html:not(.dockit-autohide-active) body [class*="sticky-header"] {
+      max-width: calc(100vw - ${SIDEBAR_WIDTH}px) !important;
+    }
+    html:not(.dockit-autohide-active) [id*="flyout"][style*="right"],
+    html:not(.dockit-autohide-active) [class*="flyout"][style*="right"],
+    html:not(.dockit-autohide-active) [id*="sidesheet"],
+    html:not(.dockit-autohide-active) [class*="sidesheet"],
+    html:not(.dockit-autohide-active) #nav-flyout-ewc,
+    html:not(.dockit-autohide-active) #attach-sidesheet {
+      margin-right: ${SIDEBAR_WIDTH}px !important;
+    }
     html body.dockit-full-width,
     html:not(.dockit-autohide-active) body.dockit-full-width {
       width: 100% !important;
@@ -428,7 +470,7 @@ async function init() {
   }
 
   //full viewport app targeted patches
-  if (window.location.hostname.includes('stitch.withgoogle.com') || window.location.hostname.includes('chatgpt.com')) {
+  if (window.location.hostname.includes('stitch.withgoogle.com') || window.location.hostname.includes('stitch.google.com') || window.location.hostname.includes('chatgpt.com') || window.location.hostname.includes('earth.google.com')) {
     const appStyle = document.createElement('style');
     appStyle.id = 'dockit-app-patch';
     appStyle.textContent = `
@@ -444,6 +486,11 @@ async function init() {
       body:not(.dockit-full-width) [id*="appcompanion-layout"] {
         max-width: 100% !important;
         width: 100% !important;
+      }
+      body:not(.dockit-full-width) flutter-view,
+      body:not(.dockit-full-width) [class*="widget-scene-canvas"],
+      body:not(.dockit-full-width) [class*="navigation-controls"] {
+        max-width: calc(100vw - ${SIDEBAR_WIDTH}px) !important;
       }
     `;
     document.head.appendChild(appStyle);
@@ -775,6 +822,10 @@ function _constrainFixedElement(el) {
 
   //re-check already-constrained elements for site js overrides
   if (el.dataset.dockitFixed) {
+    const computedRightVal = parseFloat(computed.right);
+    if (!isNaN(computedRightVal) && computedRightVal < totalOffset) {
+      _safeSetStyle(el, 'right', (computedRightVal + totalOffset) + 'px');
+    }
     //right-only constraints don't need re-checking
     if (!el.dataset.dockitWidth) return;
     //if our width constraint is still intact, skip
@@ -798,7 +849,7 @@ function _constrainFixedElement(el) {
   _safeSetStyle(el, 'overflow-x', 'clip');
 
   //constrain vw-based widths to account for sidebar
-  if (usesVw) {
+  if (usesVw || (computed.position === 'sticky' && isFullWidth)) {
     _safeSetStyle(el, 'width', targetWidth);
     _safeSetStyle(el, 'max-width', targetWidth);
     _safeSetStyle(el, 'min-width', '0');
@@ -831,13 +882,22 @@ function _constrainFixedElement(el) {
   }
 }
 
+function _isConstrainablePosition(computed, el) {
+  if (computed.position === 'fixed' || computed.position === 'sticky') return true;
+  if (_shouldScanAbsolute && computed.position === 'absolute') return true;
+  if (computed.position === 'absolute' && el.matches && el.matches('[class*="flyout"], [id*="flyout"], [class*="sidesheet"], [id*="sidesheet"], [class*="drawer"], [id*="drawer"], [class*="cart"], [id*="cart"], [id*="ewc"]')) {
+    return true;
+  }
+  return false;
+}
+
 function _scanFixedElements() {
   if (_isAutoHideActive) return;
   const allElements = document.documentElement.querySelectorAll('*');
   for (const el of allElements) {
     if (_SKIPPED_TAGS.has(el.tagName.toLowerCase())) continue;
     const computed = getComputedStyle(el);
-    if (computed.position === 'fixed' || computed.position === 'sticky' || (_shouldScanAbsolute && computed.position === 'absolute')) {
+    if (_isConstrainablePosition(computed, el)) {
       _fixedElementsSet.add(el);
       _constrainFixedElement(el);
     }
@@ -851,7 +911,7 @@ function _checkAndConstrain(el) {
   if (_SKIPPED_TAGS.has(tagName)) return;
 
   const computed = getComputedStyle(el);
-  if (computed.position === 'fixed' || computed.position === 'sticky' || (_shouldScanAbsolute && computed.position === 'absolute')) {
+  if (_isConstrainablePosition(computed, el)) {
     _fixedElementsSet.add(el);
     _constrainFixedElement(el);
   } else {
@@ -864,7 +924,7 @@ function _checkAndConstrain(el) {
   for (const child of children) {
     if (_SKIPPED_TAGS.has(child.tagName.toLowerCase())) continue;
     const childComputed = getComputedStyle(child);
-    if (childComputed.position === 'fixed' || childComputed.position === 'sticky' || (_shouldScanAbsolute && childComputed.position === 'absolute')) {
+    if (_isConstrainablePosition(childComputed, child)) {
       _fixedElementsSet.add(child);
       _constrainFixedElement(child);
     } else {
