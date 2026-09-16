@@ -346,6 +346,22 @@ async function init() {
       position: relative !important;
       margin: 0 !important;
       box-sizing: border-box !important;
+      scrollbar-width: thin !important;
+      scrollbar-color: rgba(120, 120, 120, 0.45) transparent !important;
+    }
+    html:not(.dockit-autohide-active) body::-webkit-scrollbar {
+      width: 10px !important;
+      display: block !important;
+    }
+    html:not(.dockit-autohide-active) body::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.04) !important;
+    }
+    html:not(.dockit-autohide-active) body::-webkit-scrollbar-thumb {
+      background: rgba(120, 120, 120, 0.45) !important;
+      border-radius: 5px !important;
+    }
+    html:not(.dockit-autohide-active) body::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 100, 100, 0.75) !important;
     }
     html:not(.dockit-autohide-active) body > #wrapper,
     html:not(.dockit-autohide-active) body > #container-main,
@@ -381,13 +397,11 @@ async function init() {
     html:not(.dockit-autohide-active) body [class*="sticky-header"] {
       max-width: calc(100vw - ${SIDEBAR_WIDTH}px) !important;
     }
-    html:not(.dockit-autohide-active) [id*="flyout"][style*="right"],
-    html:not(.dockit-autohide-active) [class*="flyout"][style*="right"],
-    html:not(.dockit-autohide-active) [id*="sidesheet"],
-    html:not(.dockit-autohide-active) [class*="sidesheet"],
     html:not(.dockit-autohide-active) #nav-flyout-ewc,
-    html:not(.dockit-autohide-active) #attach-sidesheet {
-      margin-right: ${SIDEBAR_WIDTH}px !important;
+    html:not(.dockit-autohide-active) #attach-sidesheet,
+    html:not(.dockit-autohide-active) [class*="nav-flyout-ewc"] {
+      right: ${SIDEBAR_WIDTH}px !important;
+      margin-right: 0 !important;
     }
     html body.dockit-full-width,
     html:not(.dockit-autohide-active) body.dockit-full-width {
@@ -811,6 +825,7 @@ function _constrainFixedElement(el) {
   if (_hostElement && (_hostElement === el || _hostElement.contains(el))) return;
   if (el.id === 'dockit-host-root') return;
   if (el.closest('#gb')) return;
+  if (el.id === 'nav-belt' || el.closest('#navbar')) return;
 
   //skip youtube drawer and popup elements
   if (window.location.hostname.includes('youtube.com')) {
