@@ -1414,6 +1414,33 @@ var DockitSidebar = class DockitSidebar {
         }
       });
 
+      //drag hover to navigate
+      let dragTimer = null;
+      el.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        if (dragTimer) return;
+        dragTimer = setTimeout(() => {
+          if (this.isSidePanel) {
+            document.dispatchEvent(new CustomEvent('dockit-navigate', { detail: app.url }));
+          }
+          dragTimer = null;
+        }, 500);
+      });
+      el.addEventListener('dragleave', () => {
+        if (dragTimer) {
+          clearTimeout(dragTimer);
+          dragTimer = null;
+        }
+      });
+      el.addEventListener('dragover', (e) => {
+        e.preventDefault();
+      });
+      el.addEventListener('drop', (e) => {
+        // Prevent default so the browser doesn't try to navigate the side panel document
+        e.preventDefault();
+      });
+
+
       //mousedown to begin drag tracking
       el.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
