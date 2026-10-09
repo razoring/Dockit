@@ -1,1 +1,1 @@
-TBD
+Embedded sidebar
